@@ -105,14 +105,6 @@ export default function Brands() {
       return next;
     });
 
-  const allSelected = filtered.length > 0 && filtered.every(b => selectedIds.has(b.id));
-  const someSelected = filtered.some(b => selectedIds.has(b.id)) && !allSelected;
-
-  const toggleSelectAll = () =>
-    setSelectedIds(
-      allSelected ? new Set() : new Set(filtered.map(b => b.id))
-    );
-
   const handleBulkDelete = async () => {
     const count = selectedIds.size;
     if (!confirm(`Supprimer ${count} marque${count > 1 ? 's' : ''} ? Les produits associés perdront leur référence marque.`)) return;
@@ -185,6 +177,14 @@ export default function Brands() {
   const filtered = brands.filter(b =>
     !search || b.name.toLowerCase().includes(search.toLowerCase())
   );
+
+  const allSelected = filtered.length > 0 && filtered.every(b => selectedIds.has(b.id));
+  const someSelected = filtered.some(b => selectedIds.has(b.id)) && !allSelected;
+
+  const toggleSelectAll = () =>
+    setSelectedIds(
+      allSelected ? new Set() : new Set(filtered.map(b => b.id))
+    );
 
   // ─── Render ───────────────────────────────────────────────────────────────
 
