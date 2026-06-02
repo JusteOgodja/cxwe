@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react';
-import { Plus, Pencil, Trash2, X, Save, Search, Minus } from 'lucide-react';
+import { useEffect, useState, useRef } from 'react';
+import { Plus, Pencil, Trash2, X, Save, Search, Minus, Upload, Download, FileJson, AlertCircle } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import type { Product, Category, Brand, Supplier } from '../../types';
 
@@ -22,6 +22,48 @@ const STATUT_COLORS: Record<string, string> = {
   brouillon: 'bg-blue-100 text-blue-700',
   'archivé': 'bg-red-100 text-red-600',
 };
+
+// ─── Import / Export helpers ──────────────────────────────────────────────────
+
+function downloadJSON(data: unknown, filename: string) {
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = filename; a.click();
+  URL.revokeObjectURL(url);
+}
+
+const IMPORT_TEMPLATE: Record<string, unknown>[] = [
+  {
+    _note: "Supprimer ce champ avant l'import. category_slug doit correspondre au slug d'une catégorie existante (ex: olive-oil, argan-oil, canned-sardines…).",
+    name: "Huile d'olive extra vierge 1L",
+    description: "Huile d'olive premium issue des olives du Maroc, première pression à froid.",
+    details: ["Contenu net : 1L", "Acidité < 0,5%", "Première pression à froid"],
+    image_url: "",
+    ean: "",
+    hs_code: "150910",
+    category_slug: "olive-oil",
+    temperature: "Ambiante",
+    commande_min: 100,
+    colisage: 12,
+    duree_conservation: 730,
+    devise: "EUR",
+    pays_origine: "Morocco",
+    pays_export_autorises: ["France", "Espagne", "Allemagne"],
+    incoterms_dispo: ["FOB", "CIF"],
+    certifications: ["Halal", "Bio"],
+    regimes: ["Halal", "Vegan"],
+    allergenes: [],
+    ingredients_texte: "100% huile d'olive extra vierge",
+    nutrition_texte: "",
+    statut: "actif",
+    is_active: true,
+    is_new: false,
+    is_promo: false,
+    est_sponsored: false,
+    sort_order: 0,
+  },
+];
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -137,6 +179,12 @@ export default function Products() {
   const [pricingTiers, setPricingTiers] = useState<PriceTierRow[]>([]);
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState<string | null>(null);
+
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [importModal, setImportModal] = useState(false);
+  const [importRows, setImportRows] = useState<Record<string, unknown>[]>([]);
+  const [importErrors, setImportErrors] = useState<string[]>([]);
+  const [importing, setImporting] = useState(false);
 
   const load = async () => {
     const [prodRes, catRes, brandRes, supRes] = await Promise.all([
@@ -307,6 +355,120 @@ export default function Products() {
     load();
   };
 
+  const handleExportTemplate = () => downloadJSON(IMPORT_TEMPLATE, 'template_produits.json');
+
+  const handleExport = () => {
+    const data = filtered.map(p => ({
+      name: p.name,
+      description: p.description,
+      details: p.details,
+      image_url: p.image_url,
+      ean: p.ean ?? '',
+      hs_code: p.hs_code ?? '',
+      category_slug: p.category?.slug ?? '',
+      temperature: p.temperature,
+      commande_min: p.commande_min,
+      colisage: p.colisage,
+      duree_conservation: p.duree_conservation,
+      devise: p.devise,
+      pays_origine: p.pays_origine,
+      pays_export_autorises: p.pays_export_autorises ?? [],
+      incoterms_dispo: p.incoterms_dispo ?? [],
+      certifications: p.certifications ?? [],
+      regimes: p.regimes ?? [],
+      allergenes: p.allergenes ?? [],
+      ingredients_texte: p.ingredients_texte ?? '',
+      nutrition_texte: p.nutrition_texte ?? '',
+      statut: p.statut,
+      is_active: p.is_active,
+      is_new: p.is_new,
+      is_promo: p.is_promo,
+      est_sponsored: p.est_sponsored,
+      sort_order: p.sort_order,
+    }));
+    downloadJSON(data, `produits_${new Date().toISOString().slice(0, 10)}.json`);
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = ev => {
+      try {
+        const parsed = JSON.parse(ev.target?.result as string);
+        if (!Array.isArray(parsed)) throw new Error('Le fichier doit contenir un tableau JSON [ ... ]');
+
+        const catSlugs = new Set(categories.map(c => c.slug));
+        const errors: string[] = [];
+
+        parsed.forEach((row, i) => {
+          const label = `Produit ${i + 1}${row.name ? ` ("${row.name}")` : ''}`;
+          if (!row.name) errors.push(`${label} : champ "name" manquant`);
+          if (!row.category_slug) errors.push(`${label} : champ "category_slug" manquant`);
+          else if (!catSlugs.has(row.category_slug)) errors.push(`${label} : slug de catégorie "${row.category_slug}" introuvable`);
+        });
+
+        setImportRows(parsed);
+        setImportErrors(errors);
+        setImportModal(true);
+      } catch (err) {
+        alert('Fichier JSON invalide : ' + (err as Error).message);
+      }
+    };
+    reader.readAsText(file);
+    e.target.value = '';
+  };
+
+  const closeImportModal = () => {
+    setImportModal(false);
+    setImportRows([]);
+    setImportErrors([]);
+  };
+
+  const validImportRows = importRows.filter(row => {
+    const catSlugs = new Set(categories.map(c => c.slug));
+    return row.name && row.category_slug && catSlugs.has(row.category_slug as string);
+  });
+
+  const handleImportConfirm = async () => {
+    setImporting(true);
+    const catMap = new Map(categories.map(c => [c.slug, c.id]));
+
+    const toInsert = validImportRows.map(row => ({
+      name: row.name as string,
+      description: (row.description as string) || '',
+      details: Array.isArray(row.details) ? row.details : [],
+      image_url: (row.image_url as string) || '',
+      ean: (row.ean as string) || null,
+      hs_code: (row.hs_code as string) || null,
+      category_id: catMap.get(row.category_slug as string)!,
+      temperature: (['Ambiante', 'Réfrigéré', 'Frais', 'Surgelé'].includes(row.temperature as string) ? row.temperature : 'Ambiante') as string,
+      commande_min: Number(row.commande_min) || 1,
+      colisage: Number(row.colisage) || 1,
+      duree_conservation: Number(row.duree_conservation) || 365,
+      devise: (row.devise as string) || 'EUR',
+      pays_origine: (row.pays_origine as string) || 'Morocco',
+      pays_export_autorises: Array.isArray(row.pays_export_autorises) ? row.pays_export_autorises : [],
+      incoterms_dispo: Array.isArray(row.incoterms_dispo) ? row.incoterms_dispo : [],
+      certifications: Array.isArray(row.certifications) ? row.certifications : [],
+      regimes: Array.isArray(row.regimes) ? row.regimes : [],
+      allergenes: Array.isArray(row.allergenes) ? row.allergenes : [],
+      ingredients_texte: (row.ingredients_texte as string) || null,
+      nutrition_texte: (row.nutrition_texte as string) || null,
+      statut: (['actif', 'inactif', 'brouillon', 'archivé'].includes(row.statut as string) ? row.statut : 'actif') as string,
+      is_active: row.is_active !== false,
+      is_new: !!row.is_new,
+      is_promo: !!row.is_promo,
+      est_sponsored: !!row.est_sponsored,
+      sort_order: Number(row.sort_order) || 0,
+    }));
+
+    await supabase.from('products').insert(toInsert);
+    setImporting(false);
+    closeImportModal();
+    load();
+  };
+
   const setF = (field: keyof FormState) =>
     (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) =>
       setForm(prev => ({ ...prev, [field]: e.target.value }));
@@ -331,15 +493,30 @@ export default function Products() {
   // ─── Render ──────────────────────────────────────────────────────────────────
   return (
     <div>
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
         <div>
           <h1 className="text-2xl font-bold text-stone-800">Produits</h1>
           <p className="text-stone-500 text-sm mt-1">{products.length} produit{products.length !== 1 ? 's' : ''}</p>
         </div>
-        <button onClick={openAdd}
-          className="flex items-center gap-2 bg-amber-500 hover:bg-amber-400 text-white text-sm font-semibold px-4 py-2.5 rounded-xl transition-colors">
-          <Plus className="w-4 h-4" /> Ajouter un produit
-        </button>
+        <div className="flex items-center gap-2 flex-wrap">
+          <button onClick={handleExportTemplate} title="Télécharger le modèle JSON vide"
+            className="flex items-center gap-1.5 border border-stone-200 text-stone-600 hover:bg-stone-50 text-sm font-medium px-3 py-2.5 rounded-xl transition-colors">
+            <FileJson className="w-4 h-4" /> Modèle
+          </button>
+          <button onClick={handleExport} title={`Exporter ${filtered.length} produit(s) affiché(s) en JSON`}
+            className="flex items-center gap-1.5 border border-stone-200 text-stone-600 hover:bg-stone-50 text-sm font-medium px-3 py-2.5 rounded-xl transition-colors">
+            <Download className="w-4 h-4" /> Exporter ({filtered.length})
+          </button>
+          <button onClick={() => fileInputRef.current?.click()}
+            className="flex items-center gap-1.5 border border-amber-200 text-amber-700 hover:bg-amber-50 text-sm font-medium px-3 py-2.5 rounded-xl transition-colors">
+            <Upload className="w-4 h-4" /> Importer JSON
+          </button>
+          <button onClick={openAdd}
+            className="flex items-center gap-2 bg-amber-500 hover:bg-amber-400 text-white text-sm font-semibold px-4 py-2.5 rounded-xl transition-colors">
+            <Plus className="w-4 h-4" /> Ajouter un produit
+          </button>
+          <input ref={fileInputRef} type="file" accept=".json,application/json" className="hidden" onChange={handleFileChange} />
+        </div>
       </div>
 
       {/* Filters */}
@@ -420,6 +597,107 @@ export default function Products() {
               </tbody>
             </table>
           )}
+        </div>
+      )}
+
+      {/* ─── Modale Import JSON ──────────────────────────────────────────────── */}
+      {importModal && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[85vh] flex flex-col">
+
+            <div className="flex items-center justify-between px-6 py-4 border-b border-stone-100 shrink-0">
+              <div>
+                <h2 className="font-bold text-stone-800">
+                  Import JSON — {importRows.length} produit{importRows.length !== 1 ? 's' : ''} détecté{importRows.length !== 1 ? 's' : ''}
+                </h2>
+                {importErrors.length > 0 && (
+                  <p className="text-xs text-red-500 mt-0.5">
+                    {importErrors.length} erreur{importErrors.length > 1 ? 's' : ''} — les produits invalides seront ignorés
+                  </p>
+                )}
+              </div>
+              <button onClick={closeImportModal} className="text-stone-400 hover:text-stone-600">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="overflow-y-auto flex-1 p-6 space-y-4">
+              {importErrors.length > 0 && (
+                <div className="bg-red-50 border border-red-100 rounded-xl p-4">
+                  <div className="flex items-center gap-2 mb-2">
+                    <AlertCircle className="w-4 h-4 text-red-500 shrink-0" />
+                    <p className="text-xs font-semibold text-red-600">Erreurs détectées</p>
+                  </div>
+                  <ul className="space-y-1 max-h-32 overflow-y-auto">
+                    {importErrors.map((err, i) => (
+                      <li key={i} className="text-xs text-red-500">• {err}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              {importRows.length > 0 && (
+                <div>
+                  <p className="text-xs font-semibold text-stone-500 mb-2">
+                    Aperçu — {validImportRows.length} valide{validImportRows.length !== 1 ? 's' : ''} sur {importRows.length}
+                    {importRows.length > 5 && ` (5 premiers affichés)`}
+                  </p>
+                  <div className="rounded-xl overflow-hidden border border-stone-100">
+                    <table className="w-full text-xs">
+                      <thead>
+                        <tr className="bg-stone-50 border-b border-stone-100">
+                          <th className="text-left px-4 py-2.5 text-stone-400 font-semibold">Nom</th>
+                          <th className="text-left px-4 py-2.5 text-stone-400 font-semibold hidden sm:table-cell">Catégorie</th>
+                          <th className="text-left px-4 py-2.5 text-stone-400 font-semibold hidden sm:table-cell">Code SH</th>
+                          <th className="text-left px-4 py-2.5 text-stone-400 font-semibold">Statut</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-stone-50">
+                        {importRows.slice(0, 5).map((row, i) => {
+                          const catSlugs = new Set(categories.map(c => c.slug));
+                          const isValid = row.name && row.category_slug && catSlugs.has(row.category_slug as string);
+                          return (
+                            <tr key={i} className={isValid ? '' : 'bg-red-50/50'}>
+                              <td className="px-4 py-2.5 font-medium text-stone-700 truncate max-w-[140px]">
+                                {(row.name as string) || <span className="text-red-400 italic">manquant</span>}
+                              </td>
+                              <td className="px-4 py-2.5 font-mono text-stone-500 hidden sm:table-cell">
+                                {(row.category_slug as string) || '—'}
+                              </td>
+                              <td className="px-4 py-2.5 font-mono text-stone-400 hidden sm:table-cell">
+                                {(row.hs_code as string) || '—'}
+                              </td>
+                              <td className="px-4 py-2.5">
+                                <span className={`px-2 py-0.5 rounded-full text-[10px] font-semibold ${STATUT_COLORS[(row.statut as string)] || 'bg-stone-100 text-stone-500'}`}>
+                                  {(row.statut as string) || 'actif'}
+                                </span>
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <div className="flex gap-3 px-6 py-4 border-t border-stone-100 shrink-0 bg-stone-50 rounded-b-2xl">
+              <button onClick={closeImportModal}
+                className="flex-1 border border-stone-200 text-stone-600 text-sm py-2.5 rounded-xl hover:bg-white transition-colors">
+                Annuler
+              </button>
+              <button
+                onClick={handleImportConfirm}
+                disabled={importing || validImportRows.length === 0}
+                className="flex-1 bg-amber-500 hover:bg-amber-400 disabled:opacity-60 text-white text-sm font-semibold py-2.5 rounded-xl flex items-center justify-center gap-2 transition-colors">
+                {importing
+                  ? <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                  : <Upload className="w-4 h-4" />}
+                Importer {validImportRows.length} produit{validImportRows.length !== 1 ? 's' : ''}
+              </button>
+            </div>
+          </div>
         </div>
       )}
 
@@ -523,12 +801,27 @@ export default function Products() {
                       <div>
                         <label className="block text-xs font-medium text-stone-600 mb-1.5">Code EAN-13</label>
                         <input type="text" value={form.ean} onChange={setF('ean')} maxLength={13}
+                          placeholder="ex : 6111234567890"
                           className="w-full border border-stone-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-amber-400 font-mono tracking-widest" />
                       </div>
                       <div>
-                        <label className="block text-xs font-medium text-stone-600 mb-1.5">Code HS (douane)</label>
-                        <input type="text" value={form.hs_code} onChange={setF('hs_code')}
-                          className="w-full border border-stone-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-amber-400 font-mono" />
+                        <label className="block text-xs font-medium text-stone-600 mb-1.5">
+                          Code SH / HS Code
+                          <span className="ml-1.5 text-stone-400 font-normal">(6 chiffres)</span>
+                        </label>
+                        <input
+                          type="text"
+                          value={form.hs_code}
+                          onChange={setF('hs_code')}
+                          maxLength={10}
+                          placeholder="ex : 150910 ou 1509.10"
+                          pattern="^\d{4}\.?\d{2}$|^\d{6}$"
+                          title="6 chiffres — format 150910 ou 1509.10"
+                          className="w-full border border-stone-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-amber-400 font-mono tracking-widest"
+                        />
+                        <p className="text-[10px] text-stone-400 mt-1 leading-snug">
+                          Nomenclature douanière internationale (OMD) — détermine les droits de douane applicables à l'export.
+                        </p>
                       </div>
                     </div>
 

@@ -384,12 +384,6 @@ export default function ProductDetail() {
                 </div>
               )}
 
-              {product.ean && (
-                <div>
-                  <p className="text-xs text-stone-400 mb-0.5">Code EAN-13</p>
-                  <p className="text-sm font-mono tracking-widest text-stone-700">{product.ean}</p>
-                </div>
-              )}
             </div>
           </Section>
         )}
@@ -431,14 +425,24 @@ export default function ProductDetail() {
           </Section>
         ) : null}
 
-        {/* ── Identifiants techniques ───────────────────────────────────────── */}
-        {(product.hs_code) && (
+        {/* ── Codes & Références ───────────────────────────────────────────── */}
+        {(product.hs_code || product.ean) && (
           <Section icon={Info} title="Codes & Références">
-            <div className="grid sm:grid-cols-2 gap-4 text-sm">
+            <div className="grid sm:grid-cols-2 gap-6 text-sm">
               {product.hs_code && (
                 <div>
-                  <p className="text-xs text-stone-400 mb-0.5">Code HS (douane)</p>
-                  <p className="font-mono text-stone-700">{product.hs_code}</p>
+                  <p className="text-xs font-semibold text-stone-500 mb-1">Code SH (Système Harmonisé)</p>
+                  <p className="font-mono text-lg font-bold text-stone-800 tracking-widest mb-1">{product.hs_code}</p>
+                  <p className="text-[11px] text-stone-400 leading-snug">
+                    Nomenclature douanière internationale à 6 chiffres (OMD) — détermine les droits de douane, taxes et restrictions applicables dans 195 pays.
+                  </p>
+                </div>
+              )}
+              {product.ean && (
+                <div>
+                  <p className="text-xs font-semibold text-stone-500 mb-1">Code EAN-13</p>
+                  <p className="font-mono text-stone-700 tracking-widest">{product.ean}</p>
+                  <p className="text-[11px] text-stone-400 mt-1">Code-barres international d'identification produit.</p>
                 </div>
               )}
             </div>
