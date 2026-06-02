@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react';
-import { Plus, Pencil, Trash2, X, Save, Search, ToggleLeft, ToggleRight, ExternalLink } from 'lucide-react';
+import { useEffect, useState, useRef } from 'react';
+import { Plus, Pencil, Trash2, X, Save, Search, ToggleLeft, ToggleRight, ExternalLink, Upload, Download, FileJson, AlertCircle } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import type { Brand } from '../../types';
 
@@ -9,6 +9,29 @@ const toSlug = (s: string) =>
 const EMPTY = {
   name: '', slug: '', description: '', logo_url: '', is_active: true,
 };
+
+// ─── Import / Export ──────────────────────────────────────────────────────────
+
+function downloadJSON(data: unknown, filename: string) {
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = filename; a.click();
+  URL.revokeObjectURL(url);
+}
+
+const BRAND_TEMPLATE = [
+  {
+    _note: "Supprimer ce champ avant l'import. Le slug est auto-généré depuis le nom si absent.",
+    name: "Ouargane",
+    slug: "ouargane",
+    description: "Marque premium d'huile d'argan du Maroc",
+    logo_url: "",
+    is_active: true,
+  },
+];
+
+// ─── Component ────────────────────────────────────────────────────────────────
 
 export default function Brands() {
   const [brands, setBrands] = useState<Brand[]>([]);
@@ -21,6 +44,12 @@ export default function Brands() {
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState<string | null>(null);
 
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [importModal, setImportModal] = useState(false);
+  const [importRows, setImportRows] = useState<Record<string, unknown>[]>([]);
+  const [importErrors, setImportErrors] = useState<string[]>([]);
+  const [importing, setImporting] = useState(false);
+
   const load = async () => {
     const { data } = await supabase.from('brands').select('*').order('name');
     setBrands((data || []) as Brand[]);
@@ -29,21 +58,10 @@ export default function Brands() {
 
   useEffect(() => { load(); }, []);
 
-  const openAdd = () => {
-    setForm({ ...EMPTY });
-    setSlugLocked(false);
-    setEditing(null);
-    setModal('add');
-  };
+  const openAdd = () => { setForm({ ...EMPTY }); setSlugLocked(false); setEditing(null); setModal('add'); };
 
   const openEdit = (b: Brand) => {
-    setForm({
-      name: b.name,
-      slug: b.slug,
-      description: b.description || '',
-      logo_url: b.logo_url || '',
-      is_active: b.is_active,
-    });
+    setForm({ name: b.name, slug: b.slug, description: b.description || '', logo_url: b.logo_url || '', is_active: b.is_active });
     setSlugLocked(true);
     setEditing(b);
     setModal('edit');
@@ -51,21 +69,16 @@ export default function Brands() {
 
   const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const name = e.target.value;
-    setForm(f => ({
-      ...f,
-      name,
-      slug: slugLocked ? f.slug : toSlug(name),
-    }));
+    setForm(f => ({ ...f, name, slug: slugLocked ? f.slug : toSlug(name) }));
   };
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     setSaving(true);
-    const payload = { ...form };
     if (modal === 'edit' && editing) {
-      await supabase.from('brands').update(payload).eq('id', editing.id);
+      await supabase.from('brands').update({ ...form }).eq('id', editing.id);
     } else {
-      await supabase.from('brands').insert([payload]);
+      await supabase.from('brands').insert([{ ...form }]);
     }
     setSaving(false);
     setModal(null);
@@ -85,21 +98,92 @@ export default function Brands() {
     load();
   };
 
+  // ─── Import / Export handlers ──────────────────────────────────────────────
+
+  const handleExportTemplate = () => downloadJSON(BRAND_TEMPLATE, 'template_marques.json');
+
+  const handleExport = () => {
+    const data = brands.map(b => ({
+      name: b.name, slug: b.slug,
+      description: b.description || '', logo_url: b.logo_url || '', is_active: b.is_active,
+    }));
+    downloadJSON(data, `marques_${new Date().toISOString().slice(0, 10)}.json`);
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = ev => {
+      try {
+        const parsed = JSON.parse(ev.target?.result as string);
+        if (!Array.isArray(parsed)) throw new Error('Le fichier doit contenir un tableau JSON [ ... ]');
+        const errors: string[] = [];
+        parsed.forEach((row, i) => {
+          if (!row.name) errors.push(`Ligne ${i + 1} : champ "name" manquant`);
+        });
+        setImportRows(parsed);
+        setImportErrors(errors);
+        setImportModal(true);
+      } catch (err) {
+        alert('Fichier JSON invalide : ' + (err as Error).message);
+      }
+    };
+    reader.readAsText(file);
+    e.target.value = '';
+  };
+
+  const closeImportModal = () => { setImportModal(false); setImportRows([]); setImportErrors([]); };
+
+  const validImportRows = importRows.filter(r => r.name);
+
+  const handleImportConfirm = async () => {
+    setImporting(true);
+    const toInsert = validImportRows.map(row => ({
+      name: row.name as string,
+      slug: (row.slug as string) || toSlug(row.name as string),
+      description: (row.description as string) || '',
+      logo_url: (row.logo_url as string) || '',
+      is_active: row.is_active !== false,
+    }));
+    await supabase.from('brands').insert(toInsert);
+    setImporting(false);
+    closeImportModal();
+    load();
+  };
+
   const filtered = brands.filter(b =>
     !search || b.name.toLowerCase().includes(search.toLowerCase())
   );
 
+  // ─── Render ───────────────────────────────────────────────────────────────
+
   return (
     <div>
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
         <div>
           <h1 className="text-2xl font-bold text-stone-800">Marques</h1>
           <p className="text-stone-500 text-sm mt-1">{brands.length} marque{brands.length !== 1 ? 's' : ''}</p>
         </div>
-        <button onClick={openAdd}
-          className="flex items-center gap-2 bg-amber-500 hover:bg-amber-400 text-white text-sm font-semibold px-4 py-2.5 rounded-xl transition-colors">
-          <Plus className="w-4 h-4" /> Ajouter une marque
-        </button>
+        <div className="flex items-center gap-2 flex-wrap">
+          <button onClick={handleExportTemplate} title="Télécharger le modèle JSON"
+            className="flex items-center gap-1.5 border border-stone-200 text-stone-600 hover:bg-stone-50 text-sm font-medium px-3 py-2.5 rounded-xl transition-colors">
+            <FileJson className="w-4 h-4" /> Modèle
+          </button>
+          <button onClick={handleExport}
+            className="flex items-center gap-1.5 border border-stone-200 text-stone-600 hover:bg-stone-50 text-sm font-medium px-3 py-2.5 rounded-xl transition-colors">
+            <Download className="w-4 h-4" /> Exporter ({brands.length})
+          </button>
+          <button onClick={() => fileInputRef.current?.click()}
+            className="flex items-center gap-1.5 border border-amber-200 text-amber-700 hover:bg-amber-50 text-sm font-medium px-3 py-2.5 rounded-xl transition-colors">
+            <Upload className="w-4 h-4" /> Importer JSON
+          </button>
+          <button onClick={openAdd}
+            className="flex items-center gap-2 bg-amber-500 hover:bg-amber-400 text-white text-sm font-semibold px-4 py-2.5 rounded-xl transition-colors">
+            <Plus className="w-4 h-4" /> Ajouter une marque
+          </button>
+          <input ref={fileInputRef} type="file" accept=".json,application/json" className="hidden" onChange={handleFileChange} />
+        </div>
       </div>
 
       {/* Search */}
@@ -178,7 +262,85 @@ export default function Brands() {
         </div>
       )}
 
-      {/* Modal */}
+      {/* ─── Modale Import JSON ───────────────────────────────────────────────── */}
+      {importModal && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[80vh] flex flex-col">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-stone-100 shrink-0">
+              <div>
+                <h2 className="font-bold text-stone-800">
+                  Import JSON — {importRows.length} marque{importRows.length !== 1 ? 's' : ''} détectée{importRows.length !== 1 ? 's' : ''}
+                </h2>
+                {importErrors.length > 0 && (
+                  <p className="text-xs text-red-500 mt-0.5">{importErrors.length} erreur{importErrors.length > 1 ? 's' : ''} — entrées invalides ignorées</p>
+                )}
+              </div>
+              <button onClick={closeImportModal} className="text-stone-400 hover:text-stone-600"><X className="w-5 h-5" /></button>
+            </div>
+
+            <div className="overflow-y-auto flex-1 p-6 space-y-4">
+              {importErrors.length > 0 && (
+                <div className="bg-red-50 border border-red-100 rounded-xl p-4">
+                  <div className="flex items-center gap-2 mb-2">
+                    <AlertCircle className="w-4 h-4 text-red-500 shrink-0" />
+                    <p className="text-xs font-semibold text-red-600">Erreurs détectées</p>
+                  </div>
+                  <ul className="space-y-1">
+                    {importErrors.map((err, i) => <li key={i} className="text-xs text-red-500">• {err}</li>)}
+                  </ul>
+                </div>
+              )}
+              {importRows.length > 0 && (
+                <div>
+                  <p className="text-xs font-semibold text-stone-500 mb-2">
+                    Aperçu — {validImportRows.length} valide{validImportRows.length !== 1 ? 's' : ''} sur {importRows.length}
+                  </p>
+                  <div className="rounded-xl overflow-hidden border border-stone-100">
+                    <table className="w-full text-xs">
+                      <thead>
+                        <tr className="bg-stone-50 border-b border-stone-100">
+                          <th className="text-left px-4 py-2.5 text-stone-400 font-semibold">Nom</th>
+                          <th className="text-left px-4 py-2.5 text-stone-400 font-semibold">Slug</th>
+                          <th className="text-left px-4 py-2.5 text-stone-400 font-semibold">Description</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-stone-50">
+                        {importRows.slice(0, 8).map((row, i) => (
+                          <tr key={i} className={row.name ? '' : 'bg-red-50/50'}>
+                            <td className="px-4 py-2.5 font-medium text-stone-700">
+                              {(row.name as string) || <span className="text-red-400 italic">manquant</span>}
+                            </td>
+                            <td className="px-4 py-2.5 font-mono text-stone-400">
+                              {(row.slug as string) || <span className="text-stone-300 italic">auto</span>}
+                            </td>
+                            <td className="px-4 py-2.5 text-stone-400 truncate max-w-[120px]">
+                              {(row.description as string) || '—'}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <div className="flex gap-3 px-6 py-4 border-t border-stone-100 shrink-0 bg-stone-50 rounded-b-2xl">
+              <button onClick={closeImportModal}
+                className="flex-1 border border-stone-200 text-stone-600 text-sm py-2.5 rounded-xl hover:bg-white transition-colors">
+                Annuler
+              </button>
+              <button onClick={handleImportConfirm} disabled={importing || validImportRows.length === 0}
+                className="flex-1 bg-amber-500 hover:bg-amber-400 disabled:opacity-60 text-white text-sm font-semibold py-2.5 rounded-xl flex items-center justify-center gap-2 transition-colors">
+                {importing ? <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <Upload className="w-4 h-4" />}
+                Importer {validImportRows.length} marque{validImportRows.length !== 1 ? 's' : ''}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ─── Modale édition ──────────────────────────────────────────────────── */}
       {modal && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md max-h-[90vh] overflow-y-auto">
@@ -209,9 +371,7 @@ export default function Brands() {
                   {slugLocked && (
                     <button type="button" onClick={() => { setSlugLocked(false); setForm(f => ({ ...f, slug: toSlug(f.name) })); }}
                       title="Regénérer depuis le nom"
-                      className="px-3 py-2.5 border border-stone-200 rounded-xl text-xs text-stone-500 hover:bg-stone-50 transition-colors">
-                      ↺
-                    </button>
+                      className="px-3 py-2.5 border border-stone-200 rounded-xl text-xs text-stone-500 hover:bg-stone-50 transition-colors">↺</button>
                   )}
                 </div>
               </div>
@@ -256,9 +416,7 @@ export default function Brands() {
                 </button>
                 <button type="submit" disabled={saving}
                   className="flex-1 bg-amber-500 hover:bg-amber-400 disabled:opacity-60 text-white text-sm font-semibold py-2.5 rounded-xl flex items-center justify-center gap-2 transition-colors">
-                  {saving
-                    ? <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                    : <Save className="w-4 h-4" />}
+                  {saving ? <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <Save className="w-4 h-4" />}
                   {modal === 'add' ? 'Créer' : 'Enregistrer'}
                 </button>
               </div>
