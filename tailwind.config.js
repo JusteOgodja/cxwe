@@ -19,6 +19,15 @@ export default {
         'card-hover': '0 8px 28px rgba(15,32,68,0.12), 0 0 0 1px rgba(15,32,68,0.08)',
         'nav':        '0 4px 20px rgba(15,32,68,0.22)',
       },
+      keyframes: {
+        shimmer: {
+          '0%':   { transform: 'translateX(-100%)' },
+          '100%': { transform: 'translateX(200%)' },
+        },
+      },
+      animation: {
+        shimmer: 'shimmer 1.6s infinite linear',
+      },
     },
   },
   plugins: [],

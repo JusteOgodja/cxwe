@@ -1,6 +1,6 @@
 import { useEffect, useState, useMemo } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Package, MessageSquare, Tag, Truck, X } from 'lucide-react';
+import { ArrowLeft, Package, MessageSquare, Tag, Truck, X, Layers } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import ProductCard from '../components/ProductCard';
 import type { Brand, Product } from '../types';
@@ -12,7 +12,6 @@ export default function BrandPage() {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [quoteProduct, setQuoteProduct] = useState<Product | null>(null);
-
   const [filterCategory, setFilterCategory] = useState('');
   const [filterSupplier, setFilterSupplier] = useState('');
 
@@ -24,7 +23,6 @@ export default function BrandPage() {
         .select('*')
         .eq('slug', slug)
         .maybeSingle();
-
       if (!br) { navigate('/catalog', { replace: true }); return; }
       setBrand(br);
 
@@ -34,7 +32,6 @@ export default function BrandPage() {
         .eq('marque_id', br.id)
         .eq('is_active', true)
         .order('sort_order');
-
       setProducts((prods || []) as Product[]);
       setLoading(false);
     })();
@@ -51,6 +48,11 @@ export default function BrandPage() {
     products.forEach(p => { if (p.supplier?.name) map.set(p.supplier.name, p.supplier.name); });
     return [...map.keys()].sort();
   }, [products]);
+
+  const heroImages = useMemo(
+    () => products.map(p => p.image_url).filter(Boolean).slice(0, 6) as string[],
+    [products]
+  );
 
   const filtered = useMemo(() => products.filter(p => {
     if (filterCategory && p.category?.name !== filterCategory) return false;
@@ -78,33 +80,112 @@ export default function BrandPage() {
 
   if (!brand) return null;
 
+  const initials = brand.name.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase();
+
   return (
     <div className="min-h-screen bg-ma-cream">
-      {/* Header */}
-      <div className="bg-gradient-to-b from-ma-navy to-[#0A1833] pt-24 pb-10 px-4">
-        <div className="max-w-6xl mx-auto">
+
+      {/* ── Hero ─────────────────────────────────────────────────────────────── */}
+      <div className="relative bg-[#0F2044] pt-24 pb-12 px-4 overflow-hidden">
+
+        {/* Background: blurred product image collage */}
+        {heroImages.length > 0 && (
+          <div className="absolute inset-0 flex">
+            {heroImages.map((src, i) => (
+              <div
+                key={i}
+                className="flex-1 overflow-hidden"
+                style={{ opacity: 0.18 }}
+              >
+                <img
+                  src={src}
+                  alt=""
+                  className="w-full h-full object-cover blur-md scale-110"
+                  onError={e => { (e.target as HTMLImageElement).style.opacity = '0'; }}
+                />
+              </div>
+            ))}
+            {/* Dark overlay on top of collage */}
+            <div className="absolute inset-0 bg-gradient-to-b from-[#0F2044]/60 via-[#0F2044]/50 to-[#0F2044]" />
+          </div>
+        )}
+
+        {/* Dot-grid texture */}
+        <div
+          className="absolute inset-0 opacity-[0.04] pointer-events-none"
+          style={{
+            backgroundImage: 'radial-gradient(circle, rgba(255,255,255,0.8) 1px, transparent 1px)',
+            backgroundSize: '24px 24px',
+          }}
+        />
+
+        <div className="relative max-w-6xl mx-auto">
+          {/* Breadcrumb */}
           <Link
             to="/catalog"
-            className="inline-flex items-center gap-2 text-stone-400 hover:text-white text-sm mb-5 transition-colors"
+            className="inline-flex items-center gap-2 text-stone-400 hover:text-white text-sm mb-7 transition-colors"
           >
             <ArrowLeft className="w-4 h-4" /> Catalogue
           </Link>
-          <div className="flex items-center gap-4">
-            {brand.logo_url && (
-              <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-3 shrink-0">
-                <img src={brand.logo_url} alt={brand.name} className="h-12 w-auto object-contain" />
-              </div>
-            )}
-            <div>
-              <h1 className="text-3xl font-bold text-white">{brand.name}</h1>
+
+          {/* Brand identity row */}
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-5">
+
+            {/* Logo block */}
+            <div className="shrink-0">
+              {brand.logo_url ? (
+                <div className="w-20 h-20 rounded-2xl bg-white/10 backdrop-blur-sm border border-white/15 flex items-center justify-center shadow-xl p-3">
+                  <img
+                    src={brand.logo_url}
+                    alt={brand.name}
+                    className="w-full h-full object-contain drop-shadow-lg"
+                    onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }}
+                  />
+                </div>
+              ) : (
+                <div className="w-20 h-20 rounded-2xl bg-white/10 border border-white/15 flex items-center justify-center">
+                  <span className="text-3xl font-bold text-white/70 tracking-tight">{initials}</span>
+                </div>
+              )}
+            </div>
+
+            {/* Name + description */}
+            <div className="flex-1 min-w-0">
+              <h1 className="text-3xl sm:text-4xl font-bold text-white leading-tight">{brand.name}</h1>
               {brand.description && (
-                <p className="text-stone-400 mt-1 text-sm max-w-xl">{brand.description}</p>
+                <p className="text-stone-400 mt-2 text-sm leading-relaxed max-w-xl">{brand.description}</p>
               )}
             </div>
           </div>
+
+          {/* Stats row */}
+          {!loading && (
+            <div className="flex items-center gap-5 mt-7 pt-6 border-t border-white/10">
+              <div className="flex items-center gap-2 text-stone-300 text-sm">
+                <Package className="w-4 h-4 text-stone-500" />
+                <span className="font-semibold text-white">{products.length}</span>
+                <span>produit{products.length !== 1 ? 's' : ''}</span>
+              </div>
+              {categoryNames.length > 0 && (
+                <div className="flex items-center gap-2 text-stone-300 text-sm">
+                  <Layers className="w-4 h-4 text-stone-500" />
+                  <span className="font-semibold text-white">{categoryNames.length}</span>
+                  <span>catégorie{categoryNames.length !== 1 ? 's' : ''}</span>
+                </div>
+              )}
+              {supplierNames.length > 0 && (
+                <div className="flex items-center gap-2 text-stone-300 text-sm">
+                  <Truck className="w-4 h-4 text-stone-500" />
+                  <span className="font-semibold text-white">{supplierNames.length}</span>
+                  <span>grossiste{supplierNames.length !== 1 ? 's' : ''}</span>
+                </div>
+              )}
+            </div>
+          )}
         </div>
       </div>
 
+      {/* ── Content ──────────────────────────────────────────────────────────── */}
       <div className="max-w-6xl mx-auto px-4 py-10">
 
         {/* Filters */}
@@ -220,22 +301,38 @@ export default function BrandPage() {
         )}
 
         {/* CTA banner */}
-        <div className="mt-12 bg-gradient-to-br from-ma-navy to-[#0A1833] rounded-2xl p-8 text-center">
-          <h3 className="text-white font-semibold mb-2">Intéressé par {brand.name} ?</h3>
-          <p className="text-stone-400 text-sm mb-5">
-            Obtenez un devis personnalisé avec tailles, conditionnement et tarifs export.
-          </p>
-          <Link
-            to={`/quote?brand=${encodeURIComponent(brand.name)}`}
-            className="inline-flex items-center gap-2 bg-ma-red hover:bg-[#9B1E24] text-white text-sm font-semibold px-7 py-3 rounded-xl transition-colors"
-          >
-            <MessageSquare className="w-4 h-4" />
-            Devis pour {brand.name}
-          </Link>
+        <div className="mt-12 relative overflow-hidden bg-gradient-to-br from-ma-navy to-[#0A1833] rounded-2xl p-8 text-center">
+          <div
+            className="absolute inset-0 opacity-[0.04]"
+            style={{
+              backgroundImage: 'radial-gradient(circle, rgba(255,255,255,0.8) 1px, transparent 1px)',
+              backgroundSize: '20px 20px',
+            }}
+          />
+          <div className="relative">
+            {brand.logo_url && (
+              <div className="flex justify-center mb-4">
+                <div className="w-12 h-12 rounded-xl bg-white/10 flex items-center justify-center p-2">
+                  <img src={brand.logo_url} alt={brand.name} className="w-full h-full object-contain" />
+                </div>
+              </div>
+            )}
+            <h3 className="text-white font-semibold mb-2">Intéressé par {brand.name} ?</h3>
+            <p className="text-stone-400 text-sm mb-5">
+              Obtenez un devis personnalisé avec tailles, conditionnement et tarifs export.
+            </p>
+            <Link
+              to={`/quote?brand=${encodeURIComponent(brand.name)}`}
+              className="inline-flex items-center gap-2 bg-ma-red hover:bg-[#9B1E24] text-white text-sm font-semibold px-7 py-3 rounded-xl transition-colors"
+            >
+              <MessageSquare className="w-4 h-4" />
+              Devis pour {brand.name}
+            </Link>
+          </div>
         </div>
       </div>
 
-      {/* Quick quote modal */}
+      {/* ── Quick quote modal ─────────────────────────────────────────────────── */}
       {quoteProduct && (
         <div
           className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4 backdrop-blur-sm"
