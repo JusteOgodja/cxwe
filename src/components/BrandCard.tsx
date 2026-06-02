@@ -70,6 +70,7 @@ export default function BrandCard({ brand, productCount }: Props) {
   const N = Math.max(strip.length, 1);
   const translatePct = (slide * 100) / N;
   const activeIdx = images.length > 0 ? slide % images.length : 0;
+  const hasImages = strip.length > 0;
 
   const initials = brand.name
     .split(' ')
@@ -81,21 +82,21 @@ export default function BrandCard({ brand, productCount }: Props) {
   return (
     <Link
       to={`/brand/${brand.slug}`}
-      className="group relative overflow-hidden rounded-2xl bg-white shadow-card hover:shadow-card-hover transition-all duration-500 hover:-translate-y-1.5 border border-ma-sand/60 flex flex-col"
+      className="group overflow-hidden rounded-2xl bg-white shadow-card hover:shadow-card-hover transition-all duration-500 hover:-translate-y-1.5 border border-stone-100 flex flex-col h-72"
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
     >
-      {/* ── Image area ─────────────────────────────────────────────────────── */}
-      <div className="relative h-52 overflow-hidden bg-gradient-to-br from-[#0F2044] to-[#1A3570] shrink-0">
+      {/* ── Image — 80% ─────────────────────────────────────────────────────── */}
+      <div className="flex-[4] min-h-0 relative overflow-hidden bg-stone-50">
 
         {/* Shimmer while loading */}
         {loadingImages && (
           <div className="absolute inset-0 z-20 overflow-hidden">
-            <div className="absolute inset-0 -translate-x-full animate-shimmer bg-gradient-to-r from-transparent via-white/12 to-transparent" />
+            <div className="absolute inset-0 -translate-x-full animate-shimmer bg-gradient-to-r from-transparent via-black/5 to-transparent" />
           </div>
         )}
 
-        {strip.length > 0 ? (
+        {hasImages ? (
           <>
             {/* Sliding strip */}
             <div
@@ -118,78 +119,73 @@ export default function BrandCard({ brand, productCount }: Props) {
                 </div>
               ))}
             </div>
-            {/* Gradient overlay */}
-            <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-transparent pointer-events-none z-10" />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent pointer-events-none z-10" />
           </>
         ) : (
-          /* ── No-image placeholder ─────────────────────────────────────── */
-          <div className="w-full h-full flex flex-col items-center justify-center relative overflow-hidden">
-            {/* Dot-grid texture */}
+          /* ── No-image placeholder: clean white ──────────────────────────── */
+          <div className="w-full h-full flex items-center justify-center relative bg-white">
             <div
-              className="absolute inset-0 opacity-[0.07]"
+              className="absolute inset-0"
               style={{
-                backgroundImage: 'radial-gradient(circle, rgba(255,255,255,0.8) 1px, transparent 1px)',
-                backgroundSize: '20px 20px',
+                backgroundImage: 'radial-gradient(circle, rgba(0,0,0,0.06) 1px, transparent 1px)',
+                backgroundSize: '18px 18px',
               }}
             />
-            {/* Diagonal shine on hover */}
-            <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 bg-gradient-to-br from-white/5 via-transparent to-white/5" />
-
             {brand.logo_url ? (
-              <div className="relative z-10">
-                <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-5 border border-white/10 group-hover:bg-white/15 transition-all duration-400 shadow-xl">
-                  <img
-                    src={brand.logo_url}
-                    alt={brand.name}
-                    className="h-16 w-auto max-w-[140px] object-contain drop-shadow-lg"
-                    onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }}
-                  />
-                </div>
+              <div className="relative z-10 p-6">
+                <img
+                  src={brand.logo_url}
+                  alt={brand.name}
+                  className="h-20 w-auto max-w-[160px] object-contain group-hover:scale-105 transition-transform duration-300"
+                  onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }}
+                />
               </div>
             ) : (
-              <div className="relative z-10">
-                <div className="w-16 h-16 rounded-2xl bg-white/10 border border-white/20 flex items-center justify-center group-hover:bg-white/15 transition-colors duration-300">
-                  <span className="text-2xl font-bold text-white/80 tracking-tight">{initials}</span>
+              <div className="relative z-10 flex flex-col items-center gap-2">
+                <div className="w-16 h-16 rounded-2xl bg-stone-100 border border-stone-200 flex items-center justify-center">
+                  <span className="text-2xl font-bold text-stone-400 tracking-tight">{initials}</span>
                 </div>
-                <p className="text-white/50 text-xs text-center mt-3 font-medium tracking-wide">{brand.name}</p>
+                <p className="text-stone-400 text-xs font-medium tracking-wide">{brand.name}</p>
               </div>
             )}
-
-            <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent pointer-events-none z-10" />
           </div>
         )}
 
-        {/* ── Logo pill — bottom-left when images are shown ──────────────── */}
-        {brand.logo_url && strip.length > 0 && (
-          <div className="absolute bottom-3 left-3 z-20">
-            <div className="bg-white/90 backdrop-blur-md rounded-xl px-2.5 py-1.5 shadow-lg border border-white/60">
+        {/* Logo pill bottom-left — only when product images are shown */}
+        {brand.logo_url && hasImages && (
+          <div className="absolute bottom-2.5 left-2.5 z-20">
+            <div className="bg-white/95 backdrop-blur-sm rounded-lg px-2 py-1.5 shadow-md border border-white/60">
               <img
                 src={brand.logo_url}
                 alt={brand.name}
-                className="h-5 w-auto object-contain max-w-[80px]"
+                className="h-4 w-auto max-w-[72px] object-contain"
                 onError={e => { (e.target as HTMLImageElement).closest('div')?.remove(); }}
               />
             </div>
           </div>
         )}
 
-        {/* ── Product count badge — top-right ───────────────────────────── */}
+        {/* Product count badge */}
         {productCount !== undefined && (
-          <div className="absolute top-3 right-3 z-20">
-            <span className="text-[10px] font-bold text-white bg-black/40 backdrop-blur-sm px-2.5 py-1 rounded-full border border-white/10">
+          <div className="absolute top-2.5 right-2.5 z-20">
+            <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+              hasImages
+                ? 'text-white bg-black/35 backdrop-blur-sm'
+                : 'text-stone-500 bg-white shadow-sm border border-stone-100'
+            }`}>
               {productCount} produit{productCount !== 1 ? 's' : ''}
             </span>
           </div>
         )}
 
-        {/* ── Dot indicators — bottom-right ─────────────────────────────── */}
+        {/* Dot indicators bottom-right */}
         {images.length > 1 && (
-          <div className="absolute bottom-3.5 right-3 flex gap-1 z-20">
+          <div className="absolute bottom-3 right-2.5 flex gap-1 z-20">
             {images.map((_, i) => (
               <span
                 key={i}
                 className={`block rounded-full transition-all duration-300 ${
-                  i === activeIdx ? 'w-4 h-1.5 bg-white' : 'w-1.5 h-1.5 bg-white/40'
+                  i === activeIdx ? 'w-4 h-1.5 bg-white' : 'w-1.5 h-1.5 bg-white/50'
                 }`}
               />
             ))}
@@ -197,29 +193,17 @@ export default function BrandCard({ brand, productCount }: Props) {
         )}
       </div>
 
-      {/* ── Content ────────────────────────────────────────────────────────── */}
-      <div className="p-4 flex flex-col flex-1">
-        <h3 className="font-bold text-stone-800 text-sm leading-snug group-hover:text-ma-navy transition-colors mb-1">
-          {brand.name}
-        </h3>
-        {brand.description ? (
-          <p className="text-stone-400 text-xs leading-relaxed line-clamp-2 flex-1">
-            {brand.description}
-          </p>
-        ) : (
-          <div className="flex-1" />
-        )}
-        <div className="flex items-center justify-between mt-3 pt-3 border-t border-stone-100">
-          <span className="text-xs font-semibold text-ma-green flex items-center gap-1">
-            Voir les produits
-            <ArrowRight className="w-3 h-3 group-hover:translate-x-1 transition-transform duration-200" />
-          </span>
-          {productCount !== undefined && productCount > 0 && (
-            <span className="text-[10px] text-stone-300 font-medium tabular-nums">
-              {productCount} réf.
-            </span>
+      {/* ── Content — 20% ───────────────────────────────────────────────────── */}
+      <div className="flex-[1] min-h-0 flex items-center justify-between px-3.5 border-t border-stone-100 bg-white">
+        <div className="min-w-0 flex-1">
+          <h3 className="font-bold text-stone-800 text-sm truncate group-hover:text-ma-navy transition-colors">
+            {brand.name}
+          </h3>
+          {brand.description && (
+            <p className="text-stone-400 text-[11px] truncate mt-0.5 leading-tight">{brand.description}</p>
           )}
         </div>
+        <ArrowRight className="w-4 h-4 text-ma-green ml-3 shrink-0 group-hover:translate-x-0.5 transition-transform duration-200" />
       </div>
     </Link>
   );
