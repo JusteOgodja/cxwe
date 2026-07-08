@@ -26,7 +26,9 @@ const slugify=s=>clean(s).toLowerCase().replace(/[&/]/g,' ').replace(/[^a-z0-9]+
 const titleBrand=s=>clean(s).split(/\s+/).map(w=>{
   if(/\d/.test(w))return w;
   if(w.length<=4 && w===w.toUpperCase())return w;   // APIA, C&C…
-  return w.toLowerCase().replace(/(^|['’-])([a-zà-ÿ])/g,(_,sep,ch)=>sep+ch.toUpperCase());
+  return w.toLowerCase()
+    .replace(/(^|[-])([a-zà-ÿ])/g,(_,sep,ch)=>sep+ch.toUpperCase())          // début + après trait d'union
+    .replace(/(['’])([a-zà-ÿ])(?=[a-zà-ÿ])/g,(_,sep,ch)=>sep+ch.toUpperCase()); // après apostrophe seulement si 2+ lettres (L'Olivier oui, Carter's non)
 }).join(' ');
 
 async function main(){
