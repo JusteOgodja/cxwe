@@ -17,6 +17,10 @@ export default function CategoryPage() {
   const [filterBrand, setFilterBrand] = useState('');
   const [filterSupplier, setFilterSupplier] = useState('');
 
+  // Pagination
+  const PAGE_SIZE = 24;
+  const [page, setPage] = useState(1);
+
   useEffect(() => {
     if (!slug) return;
     (async () => {
@@ -63,6 +67,20 @@ export default function CategoryPage() {
 
   const hasFilters = filterBrand || filterSupplier;
   const hasFilterOptions = brands.length > 0 || suppliers.length > 0;
+
+  // Reset to first page when the filters or the category change
+  useEffect(() => { setPage(1); }, [filterBrand, filterSupplier, slug]);
+
+  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  const currentPage = Math.min(page, totalPages);
+  const pageItems = useMemo(
+    () => filtered.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE),
+    [filtered, currentPage],
+  );
+  const goTo = (p: number) => {
+    setPage(Math.min(Math.max(1, p), totalPages));
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
 
   if (loading) {
     return (
@@ -192,7 +210,7 @@ export default function CategoryPage() {
               </p>
             )}
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-5">
-              {filtered.map(product => (
+              {pageItems.map(product => (
                 <ProductCard
                   key={product.id}
                   product={product}
@@ -200,6 +218,43 @@ export default function CategoryPage() {
                 />
               ))}
             </div>
+
+            {/* ── Pagination ─────────────────────────────────────────────── */}
+            {totalPages > 1 && (
+              <div className="mt-10 flex items-center justify-center gap-1.5 flex-wrap">
+                <button
+                  onClick={() => goTo(currentPage - 1)}
+                  disabled={currentPage === 1}
+                  className="px-3 py-2 text-sm rounded-lg border border-stone-200 bg-white text-stone-600 hover:border-stone-400 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                >
+                  Précédent
+                </button>
+                {Array.from({ length: totalPages }, (_, i) => i + 1)
+                  .filter(p => p === 1 || p === totalPages || Math.abs(p - currentPage) <= 1)
+                  .map((p, idx, arr) => (
+                    <span key={p} className="flex items-center">
+                      {idx > 0 && arr[idx - 1] !== p - 1 && <span className="px-1 text-stone-400">…</span>}
+                      <button
+                        onClick={() => goTo(p)}
+                        className={`min-w-[38px] px-3 py-2 text-sm rounded-lg border transition-colors ${
+                          p === currentPage
+                            ? 'bg-ma-green text-white border-ma-green'
+                            : 'bg-white text-stone-600 border-stone-200 hover:border-ma-green'
+                        }`}
+                      >
+                        {p}
+                      </button>
+                    </span>
+                  ))}
+                <button
+                  onClick={() => goTo(currentPage + 1)}
+                  disabled={currentPage === totalPages}
+                  className="px-3 py-2 text-sm rounded-lg border border-stone-200 bg-white text-stone-600 hover:border-stone-400 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                >
+                  Suivant
+                </button>
+              </div>
+            )}
           </>
         )}
 
