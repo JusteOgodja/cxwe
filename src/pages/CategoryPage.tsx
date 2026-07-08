@@ -121,49 +121,35 @@ export default function CategoryPage() {
         {hasFilterOptions && (
           <div className="mb-6 space-y-3">
 
-            {/* Supplier filter */}
-            {suppliers.length > 0 && (
-              <div className="flex items-center gap-2 flex-wrap">
-                <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-stone-500 uppercase tracking-wide shrink-0">
-                  <Truck className="w-3.5 h-3.5" /> Grossiste
-                </span>
-                <div className="flex flex-wrap gap-1.5">
-                  {suppliers.map(s => (
-                    <button key={s} type="button"
-                      onClick={() => setFilterSupplier(filterSupplier === s ? '' : s)}
-                      className={`text-xs font-semibold px-3 py-1 rounded-full border transition-all ${
-                        filterSupplier === s
-                          ? 'bg-stone-800 text-white border-stone-800'
-                          : 'bg-white text-stone-600 border-stone-200 hover:border-stone-400'
-                      }`}>
-                      {s}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
+            <div className="flex flex-wrap items-center gap-3">
+              {/* Supplier filter */}
+              {suppliers.length > 0 && (
+                <label className="inline-flex items-center gap-2">
+                  <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-stone-500 uppercase tracking-wide shrink-0">
+                    <Truck className="w-3.5 h-3.5" /> Grossiste
+                  </span>
+                  <select value={filterSupplier} onChange={e => setFilterSupplier(e.target.value)}
+                    className="text-sm bg-white border border-stone-200 rounded-lg px-3 py-2 text-stone-700 focus:outline-none focus:border-stone-400 max-w-[220px]">
+                    <option value="">Tous ({suppliers.length})</option>
+                    {suppliers.map(s => <option key={s} value={s}>{s}</option>)}
+                  </select>
+                </label>
+              )}
 
-            {/* Brand filter */}
-            {brands.length > 0 && (
-              <div className="flex items-center gap-2 flex-wrap">
-                <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-stone-500 uppercase tracking-wide shrink-0">
-                  <Building2 className="w-3.5 h-3.5" /> Marque
-                </span>
-                <div className="flex flex-wrap gap-1.5">
-                  {brands.map(b => (
-                    <button key={b} type="button"
-                      onClick={() => setFilterBrand(filterBrand === b ? '' : b)}
-                      className={`text-xs font-semibold px-3 py-1 rounded-full border transition-all ${
-                        filterBrand === b
-                          ? 'bg-ma-green text-white border-ma-green'
-                          : 'bg-white text-stone-600 border-stone-200 hover:border-ma-green'
-                      }`}>
-                      {b}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
+              {/* Brand filter */}
+              {brands.length > 0 && (
+                <label className="inline-flex items-center gap-2">
+                  <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-stone-500 uppercase tracking-wide shrink-0">
+                    <Building2 className="w-3.5 h-3.5" /> Marque
+                  </span>
+                  <select value={filterBrand} onChange={e => setFilterBrand(e.target.value)}
+                    className="text-sm bg-white border border-stone-200 rounded-lg px-3 py-2 text-stone-700 focus:outline-none focus:border-ma-green max-w-[220px]">
+                    <option value="">Toutes ({brands.length})</option>
+                    {brands.map(b => <option key={b} value={b}>{b}</option>)}
+                  </select>
+                </label>
+              )}
+            </div>
 
             {/* Active filter summary + clear */}
             {hasFilters && (
