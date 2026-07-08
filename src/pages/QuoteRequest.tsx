@@ -173,7 +173,7 @@ export default function QuoteRequest() {
       .ilike('name', `%${productName}%`)
       .limit(1)
       .then(({ data }) => {
-        if (data?.[0]) setSelectedProducts([{ ...(data[0] as SearchProduct), quantity: '', unit: 'Cartons' }]);
+        if (data?.[0]) setSelectedProducts([{ ...(data[0] as unknown as SearchProduct), quantity: '', unit: 'Cartons' }]);
       });
   }, []);
 
@@ -201,7 +201,7 @@ export default function QuoteRequest() {
       if (searchMode === 'brand' && ids) q = q.in('marque_id', ids);
       if (searchMode === 'supplier' && ids) q = q.in('fournisseur_id', ids);
       const { data } = await q;
-      setSearchResults((data || []) as SearchProduct[]);
+      setSearchResults((data || []) as unknown as SearchProduct[]);
       setShowDropdown(true);
       setSearching(false);
     }, 280);

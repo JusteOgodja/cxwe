@@ -21,3 +21,14 @@ dist-ssr
 *.sln
 *.sw?
 .env
+.env.*
+!.env.example
+
+# Sauvegardes & données brutes (volumineuses)
+supabase/backup_products_*.json
+supabase/PRODUITS_CIBLES.csv
+supabase/PRODUITS_CIBLES.json
+supabase/seed_catalog.sql
+
+# Réglages locaux machine-spécifiques
+.claude/settings.local.json
