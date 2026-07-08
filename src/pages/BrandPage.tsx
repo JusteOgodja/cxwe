@@ -15,6 +15,10 @@ export default function BrandPage() {
   const [filterCategory, setFilterCategory] = useState('');
   const [filterSupplier, setFilterSupplier] = useState('');
 
+  // Pagination
+  const PAGE_SIZE = 24;
+  const [page, setPage] = useState(1);
+
   useEffect(() => {
     if (!slug) return;
     (async () => {
@@ -62,6 +66,20 @@ export default function BrandPage() {
 
   const hasFilters = filterCategory || filterSupplier;
   const hasFilterOptions = categoryNames.length > 0 || supplierNames.length > 0;
+
+  // Reset to first page when filters or brand change
+  useEffect(() => { setPage(1); }, [filterCategory, filterSupplier, slug]);
+
+  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  const currentPage = Math.min(page, totalPages);
+  const pageItems = useMemo(
+    () => filtered.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE),
+    [filtered, currentPage],
+  );
+  const goTo = (p: number) => {
+    setPage(Math.min(Math.max(1, p), totalPages));
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
 
   if (loading) {
     return (
@@ -191,53 +209,33 @@ export default function BrandPage() {
         {/* Filters */}
         {hasFilterOptions && (
           <div className="mb-6 space-y-3">
-            {supplierNames.length > 0 && (
-              <div className="flex items-center gap-2 flex-wrap">
-                <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-stone-500 uppercase tracking-wide shrink-0">
-                  <Truck className="w-3.5 h-3.5" /> Grossiste
-                </span>
-                <div className="flex flex-wrap gap-1.5">
-                  {supplierNames.map(s => (
-                    <button
-                      key={s}
-                      type="button"
-                      onClick={() => setFilterSupplier(filterSupplier === s ? '' : s)}
-                      className={`text-xs font-semibold px-3 py-1 rounded-full border transition-all ${
-                        filterSupplier === s
-                          ? 'bg-stone-800 text-white border-stone-800'
-                          : 'bg-white text-stone-600 border-stone-200 hover:border-stone-400'
-                      }`}
-                    >
-                      {s}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
+            <div className="flex flex-wrap items-center gap-3">
+              {supplierNames.length > 0 && (
+                <label className="inline-flex items-center gap-2">
+                  <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-stone-500 uppercase tracking-wide shrink-0">
+                    <Truck className="w-3.5 h-3.5" /> Grossiste
+                  </span>
+                  <select value={filterSupplier} onChange={e => setFilterSupplier(e.target.value)}
+                    className="text-sm bg-white border border-stone-200 rounded-lg px-3 py-2 text-stone-700 focus:outline-none focus:border-stone-400 max-w-[220px]">
+                    <option value="">Tous ({supplierNames.length})</option>
+                    {supplierNames.map(s => <option key={s} value={s}>{s}</option>)}
+                  </select>
+                </label>
+              )}
 
-            {categoryNames.length > 0 && (
-              <div className="flex items-center gap-2 flex-wrap">
-                <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-stone-500 uppercase tracking-wide shrink-0">
-                  <Tag className="w-3.5 h-3.5" /> Catégorie
-                </span>
-                <div className="flex flex-wrap gap-1.5">
-                  {categoryNames.map(c => (
-                    <button
-                      key={c}
-                      type="button"
-                      onClick={() => setFilterCategory(filterCategory === c ? '' : c)}
-                      className={`text-xs font-semibold px-3 py-1 rounded-full border transition-all ${
-                        filterCategory === c
-                          ? 'bg-ma-red text-white border-ma-red'
-                          : 'bg-white text-stone-600 border-stone-200 hover:border-ma-red'
-                      }`}
-                    >
-                      {c}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
+              {categoryNames.length > 0 && (
+                <label className="inline-flex items-center gap-2">
+                  <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-stone-500 uppercase tracking-wide shrink-0">
+                    <Tag className="w-3.5 h-3.5" /> Catégorie
+                  </span>
+                  <select value={filterCategory} onChange={e => setFilterCategory(e.target.value)}
+                    className="text-sm bg-white border border-stone-200 rounded-lg px-3 py-2 text-stone-700 focus:outline-none focus:border-ma-red max-w-[220px]">
+                    <option value="">Toutes ({categoryNames.length})</option>
+                    {categoryNames.map(c => <option key={c} value={c}>{c}</option>)}
+                  </select>
+                </label>
+              )}
+            </div>
 
             {hasFilters && (
               <div className="flex items-center gap-2 pt-1">
@@ -289,7 +287,7 @@ export default function BrandPage() {
               </p>
             )}
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-5">
-              {filtered.map(product => (
+              {pageItems.map(product => (
                 <ProductCard
                   key={product.id}
                   product={product}
@@ -297,6 +295,35 @@ export default function BrandPage() {
                 />
               ))}
             </div>
+
+            {/* Pagination */}
+            {totalPages > 1 && (
+              <div className="mt-10 flex items-center justify-center gap-1.5 flex-wrap">
+                <button onClick={() => goTo(currentPage - 1)} disabled={currentPage === 1}
+                  className="px-3 py-2 text-sm rounded-lg border border-stone-200 bg-white text-stone-600 hover:border-stone-400 disabled:opacity-40 disabled:cursor-not-allowed transition-colors">
+                  Précédent
+                </button>
+                {Array.from({ length: totalPages }, (_, i) => i + 1)
+                  .filter(p => p === 1 || p === totalPages || Math.abs(p - currentPage) <= 1)
+                  .map((p, idx, arr) => (
+                    <span key={p} className="flex items-center">
+                      {idx > 0 && arr[idx - 1] !== p - 1 && <span className="px-1 text-stone-400">…</span>}
+                      <button onClick={() => goTo(p)}
+                        className={`min-w-[38px] px-3 py-2 text-sm rounded-lg border transition-colors ${
+                          p === currentPage
+                            ? 'bg-ma-red text-white border-ma-red'
+                            : 'bg-white text-stone-600 border-stone-200 hover:border-ma-red'
+                        }`}>
+                        {p}
+                      </button>
+                    </span>
+                  ))}
+                <button onClick={() => goTo(currentPage + 1)} disabled={currentPage === totalPages}
+                  className="px-3 py-2 text-sm rounded-lg border border-stone-200 bg-white text-stone-600 hover:border-stone-400 disabled:opacity-40 disabled:cursor-not-allowed transition-colors">
+                  Suivant
+                </button>
+              </div>
+            )}
           </>
         )}
 
