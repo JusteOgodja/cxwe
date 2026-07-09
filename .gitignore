@@ -32,3 +32,10 @@ supabase/seed_catalog.sql
 
 # Réglages locaux machine-spécifiques
 .claude/settings.local.json
+
+# Export de la base (volumineux)
+supabase/export/
+supabase/export_*.zip
+
+# Rapports d'analyse (données produit)
+supabase/analysis/
