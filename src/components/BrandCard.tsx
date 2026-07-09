@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowRight } from 'lucide-react';
 import { supabase } from '../lib/supabase';
+import { productImage } from '../lib/img';
 import type { Brand } from '../types';
 
 interface Props {
@@ -111,8 +112,10 @@ export default function BrandCard({ brand, productCount }: Props) {
               {strip.map((src, i) => (
                 <div key={i} className="relative h-full shrink-0" style={{ width: `${100 / N}%` }}>
                   <img
-                    src={src}
+                    src={productImage(src, 400)}
                     alt=""
+                    loading="lazy"
+                    decoding="async"
                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
                     onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }}
                   />
