@@ -6,6 +6,7 @@ import {
   Truck, Box, Layers, AlertTriangle, Info, Scale,
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
+import { productImage } from '../lib/img';
 import type { Product, PricingTier } from '../types';
 
 const TEMP_COLORS: Record<string, string> = {
@@ -154,7 +155,7 @@ export default function ProductDetail() {
           <div>
             <div className="relative rounded-2xl overflow-hidden bg-stone-100 aspect-square shadow-sm">
               {images.length > 0 ? (
-                <img src={images[imgIdx]} alt={product.name} className="w-full h-full object-cover"
+                <img src={productImage(images[imgIdx], 800)} alt={product.name} loading="eager" decoding="async" className="w-full h-full object-cover"
                   onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
               ) : (
                 <div className="w-full h-full flex flex-col items-center justify-center gap-3 text-stone-300">
@@ -461,7 +462,7 @@ export default function ProductDetail() {
                   className="group bg-white rounded-2xl border border-stone-100 shadow-sm hover:shadow-md transition-all duration-300 overflow-hidden flex flex-col">
                   <div className="h-36 bg-stone-100 overflow-hidden">
                     {p.image_url ? (
-                      <img src={p.image_url} alt={p.name}
+                      <img src={productImage(p.image_url, 400)} alt={p.name} loading="lazy" decoding="async"
                         className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
                     ) : (
                       <div className="w-full h-full flex items-center justify-center">
