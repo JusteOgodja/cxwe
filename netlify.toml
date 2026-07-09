@@ -2,6 +2,17 @@
   command = "npm run build"
   publish = "dist"
 
+# Sources autorisées pour le Netlify Image CDN (/.netlify/images)
+# Couvre les sites marocains (.ma) et CDN tiers d'où proviennent les images produit.
+[images]
+  remote_images = [
+    "^https://[a-z0-9.-]+\\.ma/.*",
+    "^https://cdn\\.shopify\\.com/.*",
+    "^https://produits\\.bienmanger\\.com/.*",
+    "^https://storage\\.googleapis\\.com/.*",
+    "^https://[a-z0-9.-]+\\.com/.*"
+  ]
+
 [[redirects]]
   from = "/*"
   to = "/index.html"

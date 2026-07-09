@@ -3,6 +3,7 @@ import { useParams, Link, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Package, MessageSquare, Tag, Truck, X, Layers } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import ProductCard from '../components/ProductCard';
+import { productImage } from '../lib/img';
 import type { Brand, Product } from '../types';
 
 export default function BrandPage() {
@@ -116,7 +117,9 @@ export default function BrandPage() {
                 style={{ opacity: 0.18 }}
               >
                 <img
-                  src={src}
+                  src={productImage(src, 400)}
+                  loading="lazy"
+                  decoding="async"
                   alt=""
                   className="w-full h-full object-cover blur-md scale-110"
                   onError={e => { (e.target as HTMLImageElement).style.opacity = '0'; }}

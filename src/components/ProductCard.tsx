@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 import { Package, CheckCircle, ArrowRight, Thermometer, Leaf } from 'lucide-react';
 import type { Product } from '../types';
+import { productImage } from '../lib/img';
 
 interface Props {
   product: Product;
@@ -31,8 +32,10 @@ export default function ProductCard({ product, onQuote }: Props) {
       <Link to={`/product/${product.id}`} className="relative mt-2 mx-3 h-40 bg-ma-sand/40 overflow-hidden rounded-xl block shrink-0">
         {product.image_url ? (
           <img
-            src={product.image_url}
+            src={productImage(product.image_url, 400)}
             alt={product.name}
+            loading="lazy"
+            decoding="async"
             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
             onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }}
           />
