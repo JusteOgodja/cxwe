@@ -18,6 +18,7 @@ import Suppliers from './pages/admin/Suppliers';
 import Quotes from './pages/admin/Quotes';
 import Partners from './pages/admin/Partners';
 import Partner from './pages/Partner';
+import Trust from './pages/Trust';
 import BrandPage from './pages/BrandPage';
 
 function PublicLayout({ children }: { children: React.ReactNode }) {
@@ -79,6 +80,10 @@ export default function App() {
         <Route
           path="/partner"
           element={<PublicLayout><Partner /></PublicLayout>}
+        />
+        <Route
+          path="/confiance"
+          element={<PublicLayout><Trust /></PublicLayout>}
         />
         <Route
           path="/brand/:slug"
