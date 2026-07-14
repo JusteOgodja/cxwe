@@ -39,3 +39,9 @@ supabase/export_*.zip
 
 # Rapports d'analyse (données produit)
 supabase/analysis/
+
+# Fichiers d'enrichissement (données produit)
+supabase/enrichment/
+
+# Sauvegardes de suppression
+supabase/deleted_backup_*.json

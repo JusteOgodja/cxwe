@@ -57,6 +57,7 @@ export default function Navbar() {
           <nav className="hidden md:flex items-center gap-8">
             <Link to="/" className={`text-sm transition-colors ${isActive('/')}`}>Accueil</Link>
             <Link to="/catalog" className={`text-sm transition-colors ${isActive('/catalog')}`}>Catalogue</Link>
+            <Link to="/confiance" className={`text-sm transition-colors ${isActive('/confiance')}`}>Confiance</Link>
             <Link to="/quote" className={`text-sm transition-colors ${isActive('/quote')}`}>Demander un devis</Link>
             <Link to="/partner" className={`flex items-center gap-1.5 text-sm transition-colors ${isActive('/partner')}`}>
               <Handshake className="w-3.5 h-3.5" /> Collaborer
@@ -96,6 +97,7 @@ export default function Navbar() {
           {[
             { to: '/', label: 'Accueil' },
             { to: '/catalog', label: 'Catalogue' },
+            { to: '/confiance', label: 'Confiance & Qualité' },
             { to: '/quote', label: 'Demander un devis' },
           ].map(l => (
             <Link key={l.to} to={l.to} className="block text-stone-300 hover:text-white hover:bg-white/5 py-2.5 px-3 rounded-lg text-sm font-medium transition-colors">
