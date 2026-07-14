@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowRight } from 'lucide-react';
 import { supabase } from '../lib/supabase';
+import { productImage } from '../lib/img';
 import type { Category } from '../types';
 
 const CATEGORY_COLORS = [
@@ -26,25 +27,13 @@ export default function CategoryCard({ category, index }: Props) {
   const [images, setImages] = useState<string[]>([]);
   const [slide, setSlide] = useState(0);
   const [animated, setAnimated] = useState(true);
-  const fetchedRef = useRef(false);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  const stop = () => {
-    if (timerRef.current) { clearInterval(timerRef.current); timerRef.current = null; }
-  };
-
-  const startTimer = (count: number) => {
-    stop();
-    if (count < 2) return;
-    timerRef.current = setInterval(() => {
-      setAnimated(true);
-      setSlide(s => s + 1);
-    }, 1600);
-  };
-
-  const handleMouseEnter = async () => {
-    if (!fetchedRef.current) {
-      fetchedRef.current = true;
+  // Charge les images ET démarre le défilement automatique dès l'affichage (sans survol).
+  useEffect(() => {
+    let cancelled = false;
+    let startTimeout: ReturnType<typeof setTimeout>;
+    (async () => {
       const { data } = await supabase
         .from('products')
         .select('image_url')
@@ -53,21 +42,27 @@ export default function CategoryCard({ category, index }: Props) {
         .not('image_url', 'is', null)
         .neq('image_url', '')
         .limit(7);
+      if (cancelled) return;
       const imgs = (data || [])
         .map((p: { image_url: string }) => p.image_url)
         .filter(Boolean) as string[];
       setImages(imgs);
-      startTimer(imgs.length);
-    } else {
-      startTimer(images.length);
-    }
-  };
-
-  const handleMouseLeave = () => {
-    stop();
-    setAnimated(false);
-    setSlide(0);
-  };
+      if (imgs.length >= 2) {
+        // léger décalage par carte pour éviter un défilement parfaitement synchrone
+        startTimeout = setTimeout(() => {
+          timerRef.current = setInterval(() => {
+            setAnimated(true);
+            setSlide(s => s + 1);
+          }, 2800);
+        }, (index % 6) * 250);
+      }
+    })();
+    return () => {
+      cancelled = true;
+      clearTimeout(startTimeout);
+      if (timerRef.current) clearInterval(timerRef.current);
+    };
+  }, [category.id, index]);
 
   const handleTransitionEnd = () => {
     if (images.length > 1 && slide >= images.length) {
@@ -75,8 +70,6 @@ export default function CategoryCard({ category, index }: Props) {
       setSlide(0);
     }
   };
-
-  useEffect(() => () => stop(), []);
 
   const strip = images.length > 1 ? [...images, images[0]] : images;
   const N = Math.max(strip.length, 1);
@@ -87,8 +80,6 @@ export default function CategoryCard({ category, index }: Props) {
     <Link
       to={`/catalog/${category.slug}`}
       className="group relative overflow-hidden rounded-2xl bg-white shadow-card hover:shadow-card-hover transition-all duration-300 hover:-translate-y-1 border border-ma-sand/60"
-      onMouseEnter={handleMouseEnter}
-      onMouseLeave={handleMouseLeave}
     >
       {/* Image area */}
       <div className={`relative h-44 bg-gradient-to-br ${gradient} overflow-hidden`}>
@@ -106,8 +97,10 @@ export default function CategoryCard({ category, index }: Props) {
             {strip.map((src, i) => (
               <div key={i} className="relative h-full shrink-0" style={{ width: `${100 / N}%` }}>
                 <img
-                  src={src}
+                  src={productImage(src, 500)}
                   alt=""
+                  loading="lazy"
+                  decoding="async"
                   className="w-full h-full object-cover"
                   onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }}
                 />
