@@ -544,67 +544,185 @@ export default function Products() {
           {filtered.length === 0 ? (
             <div className="text-center py-12 text-stone-400 text-sm">Aucun produit trouvé</div>
           ) : (
-            <table className="w-full text-sm">
+            <table className="min-w-max w-full text-sm">
               <thead>
                 <tr className="border-b border-stone-100 bg-stone-50">
-                  <th className="text-left px-5 py-3 text-xs font-semibold text-stone-500 uppercase tracking-wide">Produit</th>
-                  <th className="text-left px-5 py-3 text-xs font-semibold text-stone-500 uppercase tracking-wide hidden md:table-cell">Catégorie</th>
-                  <th className="text-left px-5 py-3 text-xs font-semibold text-stone-500 uppercase tracking-wide hidden lg:table-cell">Marque</th>
-                  <th className="text-left px-5 py-3 text-xs font-semibold text-stone-500 uppercase tracking-wide">EAN</th>
-                  <th className="text-left px-5 py-3 text-xs font-semibold text-stone-500 uppercase tracking-wide">Origine</th>
-                  <th className="text-left px-5 py-3 text-xs font-semibold text-stone-500 uppercase tracking-wide">Source</th>
-                  <th className="text-left px-5 py-3 text-xs font-semibold text-stone-500 uppercase tracking-wide">Certifications</th>
-                  <th className="text-left px-5 py-3 text-xs font-semibold text-stone-500 uppercase tracking-wide">Statut</th>
-                  <th className="text-left px-5 py-3 text-xs font-semibold text-stone-500 uppercase tracking-wide hidden sm:table-cell">Flags</th>
-                  <th className="px-5 py-3" />
+                  <th className="sticky left-0 z-10 bg-stone-50 text-left px-3 py-3 text-xs font-semibold text-stone-500 uppercase tracking-wide">Image</th>
+                  <th className="text-left px-3 py-3 text-xs font-semibold text-stone-500 uppercase tracking-wide min-w-[200px]">Produit</th>
+                  <th className="text-left px-3 py-3 text-xs font-semibold text-stone-500 uppercase tracking-wide">Catégorie</th>
+                  <th className="text-left px-3 py-3 text-xs font-semibold text-stone-500 uppercase tracking-wide">Marque</th>
+                  <th className="text-left px-3 py-3 text-xs font-semibold text-stone-500 uppercase tracking-wide">Fournisseur</th>
+                  <th className="text-left px-3 py-3 text-xs font-semibold text-stone-500 uppercase tracking-wide">EAN</th>
+                  <th className="text-left px-3 py-3 text-xs font-semibold text-stone-500 uppercase tracking-wide">HS Code</th>
+                  <th className="text-left px-3 py-3 text-xs font-semibold text-stone-500 uppercase tracking-wide">Origine</th>
+                  <th className="text-left px-3 py-3 text-xs font-semibold text-stone-500 uppercase tracking-wide">Pays export</th>
+                  <th className="text-left px-3 py-3 text-xs font-semibold text-stone-500 uppercase tracking-wide">Incoterms</th>
+                  <th className="text-left px-3 py-3 text-xs font-semibold text-stone-500 uppercase tracking-wide">Devise</th>
+                  <th className="text-left px-3 py-3 text-xs font-semibold text-stone-500 uppercase tracking-wide">Temp.</th>
+                  <th className="text-left px-3 py-3 text-xs font-semibold text-stone-500 uppercase tracking-wide">DLC (j)</th>
+                  <th className="text-left px-3 py-3 text-xs font-semibold text-stone-500 uppercase tracking-wide">MOQ</th>
+                  <th className="text-left px-3 py-3 text-xs font-semibold text-stone-500 uppercase tracking-wide">Colisage</th>
+                  <th className="text-left px-3 py-3 text-xs font-semibold text-stone-500 uppercase tracking-wide">Poids</th>
+                  <th className="text-left px-3 py-3 text-xs font-semibold text-stone-500 uppercase tracking-wide">Prix ancien</th>
+                  <th className="text-left px-3 py-3 text-xs font-semibold text-stone-500 uppercase tracking-wide">Remise %</th>
+                  <th className="text-left px-3 py-3 text-xs font-semibold text-stone-500 uppercase tracking-wide">Certifications</th>
+                  <th className="text-left px-3 py-3 text-xs font-semibold text-stone-500 uppercase tracking-wide">Régimes</th>
+                  <th className="text-left px-3 py-3 text-xs font-semibold text-stone-500 uppercase tracking-wide">Allergènes</th>
+                  <th className="text-left px-3 py-3 text-xs font-semibold text-stone-500 uppercase tracking-wide min-w-[160px]">Ingrédients</th>
+                  <th className="text-left px-3 py-3 text-xs font-semibold text-stone-500 uppercase tracking-wide">Note</th>
+                  <th className="text-left px-3 py-3 text-xs font-semibold text-stone-500 uppercase tracking-wide">Avis</th>
+                  <th className="text-left px-3 py-3 text-xs font-semibold text-stone-500 uppercase tracking-wide">Actif</th>
+                  <th className="text-left px-3 py-3 text-xs font-semibold text-stone-500 uppercase tracking-wide">Ordre</th>
+                  <th className="text-left px-3 py-3 text-xs font-semibold text-stone-500 uppercase tracking-wide">Source</th>
+                  <th className="text-left px-3 py-3 text-xs font-semibold text-stone-500 uppercase tracking-wide">URL source</th>
+                  <th className="text-left px-3 py-3 text-xs font-semibold text-stone-500 uppercase tracking-wide">Créé le</th>
+                  <th className="text-left px-3 py-3 text-xs font-semibold text-stone-500 uppercase tracking-wide">Statut</th>
+                  <th className="text-left px-3 py-3 text-xs font-semibold text-stone-500 uppercase tracking-wide">Flags</th>
+                  <th className="px-3 py-3" />
                 </tr>
               </thead>
               <tbody className="divide-y divide-stone-50">
                 {filtered.map(p => (
                   <tr key={p.id} className="hover:bg-stone-50 transition-colors">
-                    <td className="px-5 py-3">
-                      <div className="font-medium text-stone-800">{p.name}</div>
-                      {p.description && <div className="text-stone-400 text-xs truncate max-w-xs">{p.description}</div>}
+                    {/* Image */}
+                    <td className="sticky left-0 z-10 bg-white px-3 py-2">
+                      {p.image_url
+                        ? <a href={p.image_url} target="_blank" rel="noopener noreferrer">
+                            <img src={p.image_url} alt={p.name} className="w-10 h-10 object-cover rounded-lg border border-stone-100 hover:opacity-80 transition-opacity" />
+                          </a>
+                        : <div className="w-10 h-10 rounded-lg bg-stone-100 flex items-center justify-center text-stone-300 text-xs">—</div>}
                     </td>
-                    <td className="px-5 py-3 text-stone-500 hidden md:table-cell">
-                      {p.category?.name || '—'}
+                    {/* Produit */}
+                    <td className="px-3 py-2">
+                      <div className="font-medium text-stone-800 text-xs">{p.name}</div>
+                      {p.description && <div className="text-stone-400 text-[10px] truncate max-w-[180px]">{p.description}</div>}
                     </td>
-                    <td className="px-5 py-3 text-stone-500 hidden lg:table-cell">
-                      {p.brand?.name || '—'}
-                    </td>
-                    <td className="px-5 py-3 text-stone-400 font-mono text-xs">
-                      {p.ean || '—'}
-                    </td>
-                    <td className="px-5 py-3 text-stone-500 text-xs">
-                      {p.pays_origine || '—'}
-                    </td>
-                    <td className="px-5 py-3 text-stone-400 text-xs">
-                      {p.source_platform
-                        ? <span className="px-1.5 py-0.5 bg-stone-100 rounded text-stone-600">{p.source_platform}</span>
+                    {/* Catégorie */}
+                    <td className="px-3 py-2 text-stone-500 text-xs whitespace-nowrap">{p.category?.name || '—'}</td>
+                    {/* Marque */}
+                    <td className="px-3 py-2 text-stone-500 text-xs whitespace-nowrap">{p.brand?.name || '—'}</td>
+                    {/* Fournisseur */}
+                    <td className="px-3 py-2 text-stone-500 text-xs whitespace-nowrap">{p.supplier?.name || '—'}</td>
+                    {/* EAN */}
+                    <td className="px-3 py-2 font-mono text-xs text-stone-400">{p.ean || '—'}</td>
+                    {/* HS Code */}
+                    <td className="px-3 py-2 font-mono text-xs text-stone-400">{p.hs_code || '—'}</td>
+                    {/* Origine */}
+                    <td className="px-3 py-2 text-xs text-stone-500 whitespace-nowrap">{p.pays_origine || '—'}</td>
+                    {/* Pays export */}
+                    <td className="px-3 py-2 text-xs text-stone-400">
+                      {(p.pays_export_autorises || []).length > 0
+                        ? <span title={(p.pays_export_autorises || []).join(', ')}>{(p.pays_export_autorises || []).slice(0, 2).join(', ')}{(p.pays_export_autorises || []).length > 2 ? ` +${(p.pays_export_autorises || []).length - 2}` : ''}</span>
                         : '—'}
                     </td>
-                    <td className="px-5 py-3">
-                      <div className="flex gap-1 flex-wrap">
+                    {/* Incoterms */}
+                    <td className="px-3 py-2 text-xs text-stone-400">
+                      {(p.incoterms_dispo || []).length > 0
+                        ? (p.incoterms_dispo as string[]).join(', ')
+                        : '—'}
+                    </td>
+                    {/* Devise */}
+                    <td className="px-3 py-2 text-xs text-stone-500">{p.devise || '—'}</td>
+                    {/* Température */}
+                    <td className="px-3 py-2 text-xs text-stone-500 whitespace-nowrap">{p.temperature || '—'}</td>
+                    {/* DLC */}
+                    <td className="px-3 py-2 text-xs text-stone-400 text-right">{p.duree_conservation ?? '—'}</td>
+                    {/* MOQ */}
+                    <td className="px-3 py-2 text-xs text-stone-500 text-right">{p.commande_min ?? '—'}</td>
+                    {/* Colisage */}
+                    <td className="px-3 py-2 text-xs text-stone-400 text-right">{p.colisage ?? '—'}</td>
+                    {/* Poids */}
+                    <td className="px-3 py-2 text-xs text-stone-400 whitespace-nowrap">
+                      {p.poids ? `${p.poids}${p.poids_unite ? ' ' + p.poids_unite : ''}` : '—'}
+                    </td>
+                    {/* Prix ancien */}
+                    <td className="px-3 py-2 text-xs text-stone-400 text-right">
+                      {p.prix_ancien != null ? `${p.prix_ancien} ${p.devise || ''}` : '—'}
+                    </td>
+                    {/* Remise % */}
+                    <td className="px-3 py-2 text-xs text-right">
+                      {p.remise_pct != null
+                        ? <span className="text-amber-600 font-medium">-{p.remise_pct}%</span>
+                        : <span className="text-stone-300">—</span>}
+                    </td>
+                    {/* Certifications */}
+                    <td className="px-3 py-2">
+                      <div className="flex gap-1 flex-wrap min-w-[80px]">
                         {(p.certifications || []).length > 0
                           ? (p.certifications as string[]).map(c => (
-                              <span key={c} className="text-[10px] bg-emerald-50 text-emerald-700 border border-emerald-100 px-1.5 py-0.5 rounded">{c}</span>
+                              <span key={c} className="text-[10px] bg-emerald-50 text-emerald-700 border border-emerald-100 px-1 py-0.5 rounded">{c}</span>
                             ))
                           : <span className="text-stone-300 text-xs">—</span>}
                       </div>
                     </td>
-                    <td className="px-5 py-3">
+                    {/* Régimes */}
+                    <td className="px-3 py-2">
+                      <div className="flex gap-1 flex-wrap min-w-[80px]">
+                        {(p.regimes || []).length > 0
+                          ? (p.regimes as string[]).map(r => (
+                              <span key={r} className="text-[10px] bg-blue-50 text-blue-700 border border-blue-100 px-1 py-0.5 rounded">{r}</span>
+                            ))
+                          : <span className="text-stone-300 text-xs">—</span>}
+                      </div>
+                    </td>
+                    {/* Allergènes */}
+                    <td className="px-3 py-2">
+                      <div className="flex gap-1 flex-wrap min-w-[80px]">
+                        {(p.allergenes || []).length > 0
+                          ? (p.allergenes as string[]).map(a => (
+                              <span key={a} className="text-[10px] bg-red-50 text-red-600 border border-red-100 px-1 py-0.5 rounded">{a}</span>
+                            ))
+                          : <span className="text-stone-300 text-xs">—</span>}
+                      </div>
+                    </td>
+                    {/* Ingrédients */}
+                    <td className="px-3 py-2 text-xs text-stone-400">
+                      {p.ingredients_texte
+                        ? <span title={p.ingredients_texte} className="truncate block max-w-[150px]">{p.ingredients_texte}</span>
+                        : '—'}
+                    </td>
+                    {/* Note */}
+                    <td className="px-3 py-2 text-xs text-stone-500 text-right">{p.note_moyenne ? p.note_moyenne.toFixed(1) : '—'}</td>
+                    {/* Avis */}
+                    <td className="px-3 py-2 text-xs text-stone-400 text-right">{p.nb_avis ?? '—'}</td>
+                    {/* Actif */}
+                    <td className="px-3 py-2 text-center">
+                      <span className={`inline-block w-2 h-2 rounded-full ${p.is_active ? 'bg-emerald-400' : 'bg-stone-300'}`} title={p.is_active ? 'Actif' : 'Inactif'} />
+                    </td>
+                    {/* Ordre */}
+                    <td className="px-3 py-2 text-xs text-stone-400 text-right">{p.sort_order ?? '—'}</td>
+                    {/* Source plateforme */}
+                    <td className="px-3 py-2 text-xs">
+                      {p.source_platform
+                        ? <span className="px-1.5 py-0.5 bg-stone-100 rounded text-stone-600">{p.source_platform}</span>
+                        : <span className="text-stone-300">—</span>}
+                    </td>
+                    {/* URL source */}
+                    <td className="px-3 py-2 text-xs">
+                      {p.source_url
+                        ? <a href={p.source_url} target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:text-blue-700 hover:underline truncate block max-w-[120px]" title={p.source_url}>Voir ↗</a>
+                        : <span className="text-stone-300">—</span>}
+                    </td>
+                    {/* Créé le */}
+                    <td className="px-3 py-2 text-xs text-stone-400 whitespace-nowrap">
+                      {p.created_at ? new Date(p.created_at).toLocaleDateString('fr-FR') : '—'}
+                    </td>
+                    {/* Statut */}
+                    <td className="px-3 py-2">
                       <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${STATUT_COLORS[p.statut] || 'bg-stone-100 text-stone-500'}`}>
                         {p.statut || 'actif'}
                       </span>
                     </td>
-                    <td className="px-5 py-3 hidden sm:table-cell">
-                      <div className="flex gap-1 flex-wrap">
-                        {p.is_new && <span className="text-xs bg-green-100 text-green-700 px-1.5 py-0.5 rounded">New</span>}
-                        {p.is_promo && <span className="text-xs bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded">Promo</span>}
-                        {p.est_sponsored && <span className="text-xs bg-purple-100 text-purple-700 px-1.5 py-0.5 rounded">Sponsorisé</span>}
+                    {/* Flags */}
+                    <td className="px-3 py-2">
+                      <div className="flex gap-1 flex-wrap min-w-[60px]">
+                        {p.is_new && <span className="text-[10px] bg-green-100 text-green-700 px-1 py-0.5 rounded">New</span>}
+                        {p.is_promo && <span className="text-[10px] bg-amber-100 text-amber-700 px-1 py-0.5 rounded">Promo</span>}
+                        {p.est_sponsored && <span className="text-[10px] bg-purple-100 text-purple-700 px-1 py-0.5 rounded">Sponsorisé</span>}
+                        {!p.is_new && !p.is_promo && !p.est_sponsored && <span className="text-stone-300 text-xs">—</span>}
                       </div>
                     </td>
-                    <td className="px-5 py-3">
+                    <td className="px-3 py-2">
                       <div className="flex items-center gap-2 justify-end">
                         <button onClick={() => openEdit(p)}
                           className="p-1.5 text-stone-400 hover:text-amber-600 hover:bg-amber-50 rounded-lg transition-colors">
