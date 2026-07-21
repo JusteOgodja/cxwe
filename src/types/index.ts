@@ -113,6 +113,14 @@ export interface Product {
   is_promo: boolean;
   est_sponsored: boolean;
 
+  // Sourcing
+  source_platform?: string;
+  source_url?: string;
+  poids?: number;
+  poids_unite?: string;
+  prix_ancien?: number;
+  remise_pct?: number;
+
   // Status
   statut: 'actif' | 'inactif' | 'brouillon' | 'archivé';
 

@@ -540,7 +540,7 @@ export default function Products() {
             <div key={i} className="h-16 bg-white rounded-xl animate-pulse border border-stone-100" />)}
         </div>
       ) : (
-        <div className="bg-white rounded-2xl shadow-sm border border-stone-100 overflow-hidden">
+        <div className="bg-white rounded-2xl shadow-sm border border-stone-100 overflow-x-auto">
           {filtered.length === 0 ? (
             <div className="text-center py-12 text-stone-400 text-sm">Aucun produit trouvé</div>
           ) : (
@@ -550,6 +550,10 @@ export default function Products() {
                   <th className="text-left px-5 py-3 text-xs font-semibold text-stone-500 uppercase tracking-wide">Produit</th>
                   <th className="text-left px-5 py-3 text-xs font-semibold text-stone-500 uppercase tracking-wide hidden md:table-cell">Catégorie</th>
                   <th className="text-left px-5 py-3 text-xs font-semibold text-stone-500 uppercase tracking-wide hidden lg:table-cell">Marque</th>
+                  <th className="text-left px-5 py-3 text-xs font-semibold text-stone-500 uppercase tracking-wide">EAN</th>
+                  <th className="text-left px-5 py-3 text-xs font-semibold text-stone-500 uppercase tracking-wide">Origine</th>
+                  <th className="text-left px-5 py-3 text-xs font-semibold text-stone-500 uppercase tracking-wide">Source</th>
+                  <th className="text-left px-5 py-3 text-xs font-semibold text-stone-500 uppercase tracking-wide">Certifications</th>
                   <th className="text-left px-5 py-3 text-xs font-semibold text-stone-500 uppercase tracking-wide">Statut</th>
                   <th className="text-left px-5 py-3 text-xs font-semibold text-stone-500 uppercase tracking-wide hidden sm:table-cell">Flags</th>
                   <th className="px-5 py-3" />
@@ -567,6 +571,26 @@ export default function Products() {
                     </td>
                     <td className="px-5 py-3 text-stone-500 hidden lg:table-cell">
                       {p.brand?.name || '—'}
+                    </td>
+                    <td className="px-5 py-3 text-stone-400 font-mono text-xs">
+                      {p.ean || '—'}
+                    </td>
+                    <td className="px-5 py-3 text-stone-500 text-xs">
+                      {p.pays_origine || '—'}
+                    </td>
+                    <td className="px-5 py-3 text-stone-400 text-xs">
+                      {p.source_platform
+                        ? <span className="px-1.5 py-0.5 bg-stone-100 rounded text-stone-600">{p.source_platform}</span>
+                        : '—'}
+                    </td>
+                    <td className="px-5 py-3">
+                      <div className="flex gap-1 flex-wrap">
+                        {(p.certifications || []).length > 0
+                          ? (p.certifications as string[]).map(c => (
+                              <span key={c} className="text-[10px] bg-emerald-50 text-emerald-700 border border-emerald-100 px-1.5 py-0.5 rounded">{c}</span>
+                            ))
+                          : <span className="text-stone-300 text-xs">—</span>}
+                      </div>
                     </td>
                     <td className="px-5 py-3">
                       <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${STATUT_COLORS[p.statut] || 'bg-stone-100 text-stone-500'}`}>
