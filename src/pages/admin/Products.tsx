@@ -551,11 +551,8 @@ export default function Products() {
                   <th className="text-left px-3 py-3 text-xs font-semibold text-stone-500 uppercase tracking-wide min-w-[200px]">Produit</th>
                   <th className="text-left px-3 py-3 text-xs font-semibold text-stone-500 uppercase tracking-wide">Catégorie</th>
                   <th className="text-left px-3 py-3 text-xs font-semibold text-stone-500 uppercase tracking-wide">Marque</th>
-                  <th className="text-left px-3 py-3 text-xs font-semibold text-stone-500 uppercase tracking-wide">Fournisseur</th>
                   <th className="text-left px-3 py-3 text-xs font-semibold text-stone-500 uppercase tracking-wide">EAN</th>
                   <th className="text-left px-3 py-3 text-xs font-semibold text-stone-500 uppercase tracking-wide">HS Code</th>
-                  <th className="text-left px-3 py-3 text-xs font-semibold text-stone-500 uppercase tracking-wide">Origine</th>
-                  <th className="text-left px-3 py-3 text-xs font-semibold text-stone-500 uppercase tracking-wide">Pays export</th>
                   <th className="text-left px-3 py-3 text-xs font-semibold text-stone-500 uppercase tracking-wide">Incoterms</th>
                   <th className="text-left px-3 py-3 text-xs font-semibold text-stone-500 uppercase tracking-wide">Devise</th>
                   <th className="text-left px-3 py-3 text-xs font-semibold text-stone-500 uppercase tracking-wide">Temp.</th>
@@ -601,20 +598,10 @@ export default function Products() {
                     <td className="px-3 py-2 text-stone-500 text-xs whitespace-nowrap">{p.category?.name || '—'}</td>
                     {/* Marque */}
                     <td className="px-3 py-2 text-stone-500 text-xs whitespace-nowrap">{p.brand?.name || '—'}</td>
-                    {/* Fournisseur */}
-                    <td className="px-3 py-2 text-stone-500 text-xs whitespace-nowrap">{p.supplier?.name || '—'}</td>
                     {/* EAN */}
                     <td className="px-3 py-2 font-mono text-xs text-stone-400">{p.ean || '—'}</td>
                     {/* HS Code */}
                     <td className="px-3 py-2 font-mono text-xs text-stone-400">{p.hs_code || '—'}</td>
-                    {/* Origine */}
-                    <td className="px-3 py-2 text-xs text-stone-500 whitespace-nowrap">{p.pays_origine || '—'}</td>
-                    {/* Pays export */}
-                    <td className="px-3 py-2 text-xs text-stone-400">
-                      {(p.pays_export_autorises || []).length > 0
-                        ? <span title={(p.pays_export_autorises || []).join(', ')}>{(p.pays_export_autorises || []).slice(0, 2).join(', ')}{(p.pays_export_autorises || []).length > 2 ? ` +${(p.pays_export_autorises || []).length - 2}` : ''}</span>
-                        : '—'}
-                    </td>
                     {/* Incoterms */}
                     <td className="px-3 py-2 text-xs text-stone-400">
                       {(p.incoterms_dispo || []).length > 0
