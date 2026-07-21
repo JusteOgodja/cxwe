@@ -37,7 +37,8 @@ const CAT_TEMPLATE = [
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export default function Categories() {
-  const [items, setItems] = useState<Category[]>([]);
+  type CategoryWithCount = Category & { products: { count: number }[] };
+  const [items, setItems] = useState<CategoryWithCount[]>([]);
   const [loading, setLoading] = useState(true);
   const [modal, setModal] = useState<'add' | 'edit' | null>(null);
   const [editing, setEditing] = useState<Category | null>(null);
@@ -52,8 +53,8 @@ export default function Categories() {
   const [importing, setImporting] = useState(false);
 
   const load = async () => {
-    const { data } = await supabase.from('categories').select('*').order('sort_order');
-    setItems(data || []);
+    const { data } = await supabase.from('categories').select('*, products(count)').order('sort_order');
+    setItems((data || []) as CategoryWithCount[]);
     setLoading(false);
   };
 
@@ -194,33 +195,62 @@ export default function Categories() {
           ))}
         </div>
       ) : (
-        <div className="bg-white rounded-2xl shadow-sm border border-stone-100 overflow-hidden">
-          <table className="w-full text-sm">
+        <div className="bg-white rounded-2xl shadow-sm border border-stone-100 overflow-x-auto">
+          <table className="min-w-max w-full text-sm">
             <thead>
               <tr className="border-b border-stone-100 bg-stone-50">
-                <th className="text-left px-5 py-3 text-xs font-semibold text-stone-500 uppercase tracking-wide">#</th>
-                <th className="text-left px-5 py-3 text-xs font-semibold text-stone-500 uppercase tracking-wide">Catégorie</th>
-                <th className="text-left px-5 py-3 text-xs font-semibold text-stone-500 uppercase tracking-wide hidden sm:table-cell">Slug</th>
-                <th className="text-left px-5 py-3 text-xs font-semibold text-stone-500 uppercase tracking-wide hidden md:table-cell">Ordre</th>
-                <th className="text-left px-5 py-3 text-xs font-semibold text-stone-500 uppercase tracking-wide">Statut</th>
-                <th className="px-5 py-3" />
+                <th className="text-left px-4 py-3 text-xs font-semibold text-stone-500 uppercase tracking-wide">Image</th>
+                <th className="text-left px-4 py-3 text-xs font-semibold text-stone-500 uppercase tracking-wide min-w-[160px]">Catégorie</th>
+                <th className="text-left px-4 py-3 text-xs font-semibold text-stone-500 uppercase tracking-wide">Slug</th>
+                <th className="text-left px-4 py-3 text-xs font-semibold text-stone-500 uppercase tracking-wide min-w-[200px]">Description</th>
+                <th className="text-left px-4 py-3 text-xs font-semibold text-stone-500 uppercase tracking-wide">Produits</th>
+                <th className="text-left px-4 py-3 text-xs font-semibold text-stone-500 uppercase tracking-wide">Ordre</th>
+                <th className="text-left px-4 py-3 text-xs font-semibold text-stone-500 uppercase tracking-wide">Créé le</th>
+                <th className="text-left px-4 py-3 text-xs font-semibold text-stone-500 uppercase tracking-wide">Statut</th>
+                <th className="px-4 py-3" />
               </tr>
             </thead>
             <tbody className="divide-y divide-stone-50">
               {items.map(cat => (
                 <tr key={cat.id} className="hover:bg-stone-50 transition-colors">
-                  <td className="px-5 py-3 text-stone-400 text-xs">{cat.sort_order}</td>
-                  <td className="px-5 py-3 font-medium text-stone-800">{cat.name}</td>
-                  <td className="px-5 py-3 text-stone-400 hidden sm:table-cell font-mono text-xs">{cat.slug}</td>
-                  <td className="px-5 py-3 text-stone-400 hidden md:table-cell">{cat.sort_order}</td>
-                  <td className="px-5 py-3">
+                  {/* Image */}
+                  <td className="px-4 py-2">
+                    {cat.image_url
+                      ? <a href={cat.image_url} target="_blank" rel="noopener noreferrer">
+                          <img src={cat.image_url} alt={cat.name} className="w-10 h-10 object-cover rounded-lg border border-stone-100 hover:opacity-80 transition-opacity" />
+                        </a>
+                      : <div className="w-10 h-10 rounded-lg bg-stone-100 flex items-center justify-center text-stone-300 text-xs">—</div>}
+                  </td>
+                  {/* Nom */}
+                  <td className="px-4 py-2 font-medium text-stone-800 text-sm">{cat.name}</td>
+                  {/* Slug */}
+                  <td className="px-4 py-2 text-stone-400 font-mono text-xs">{cat.slug}</td>
+                  {/* Description */}
+                  <td className="px-4 py-2 text-stone-500 text-xs">
+                    <span className="truncate block max-w-[200px]" title={cat.description}>{cat.description || '—'}</span>
+                  </td>
+                  {/* Nb produits */}
+                  <td className="px-4 py-2 text-center">
+                    <span className="text-xs font-semibold bg-stone-100 text-stone-600 px-2 py-0.5 rounded-full">
+                      {cat.products?.[0]?.count ?? 0}
+                    </span>
+                  </td>
+                  {/* Ordre */}
+                  <td className="px-4 py-2 text-stone-400 text-xs text-center">{cat.sort_order}</td>
+                  {/* Créé le */}
+                  <td className="px-4 py-2 text-stone-400 text-xs whitespace-nowrap">
+                    {cat.created_at ? new Date(cat.created_at).toLocaleDateString('fr-FR') : '—'}
+                  </td>
+                  {/* Statut */}
+                  <td className="px-4 py-2">
                     <button onClick={() => toggleActive(cat)} className="transition-colors">
                       {cat.is_active
                         ? <ToggleRight className="w-5 h-5 text-emerald-500" />
                         : <ToggleLeft className="w-5 h-5 text-stone-300" />}
                     </button>
                   </td>
-                  <td className="px-5 py-3">
+                  {/* Actions */}
+                  <td className="px-4 py-2">
                     <div className="flex items-center gap-2 justify-end">
                       <button onClick={() => openEdit(cat)}
                         className="p-1.5 text-stone-400 hover:text-amber-600 hover:bg-amber-50 rounded-lg transition-colors">

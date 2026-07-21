@@ -34,7 +34,8 @@ const BRAND_TEMPLATE = [
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export default function Brands() {
-  const [brands, setBrands] = useState<Brand[]>([]);
+  type BrandWithCount = Brand & { products: { count: number }[] };
+  const [brands, setBrands] = useState<BrandWithCount[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [modal, setModal] = useState<'add' | 'edit' | null>(null);
@@ -53,8 +54,8 @@ export default function Brands() {
   const [importing, setImporting] = useState(false);
 
   const load = async () => {
-    const { data } = await supabase.from('brands').select('*').order('name');
-    setBrands((data || []) as Brand[]);
+    const { data } = await supabase.from('brands').select('*, products(count)').order('name');
+    setBrands((data || []) as BrandWithCount[]);
     setLoading(false);
   };
 
@@ -257,69 +258,86 @@ export default function Brands() {
             <div key={i} className="h-16 bg-white rounded-xl animate-pulse border border-stone-100" />)}
         </div>
       ) : (
-        <div className="bg-white rounded-2xl shadow-sm border border-stone-100 overflow-hidden">
+        <div className="bg-white rounded-2xl shadow-sm border border-stone-100 overflow-x-auto">
           {filtered.length === 0 ? (
             <div className="text-center py-12 text-stone-400 text-sm">Aucune marque trouvée</div>
           ) : (
-            <table className="w-full text-sm">
+            <table className="min-w-max w-full text-sm">
               <thead>
                 <tr className="border-b border-stone-100 bg-stone-50">
                   <th className="px-4 py-3 w-10">
-                    <input
-                      type="checkbox"
-                      checked={allSelected}
+                    <input type="checkbox" checked={allSelected}
                       ref={el => { if (el) el.indeterminate = someSelected; }}
                       onChange={toggleSelectAll}
-                      className="w-4 h-4 rounded border-stone-300 text-amber-500 cursor-pointer"
-                    />
+                      className="w-4 h-4 rounded border-stone-300 text-amber-500 cursor-pointer" />
                   </th>
-                  <th className="text-left px-5 py-3 text-xs font-semibold text-stone-500 uppercase tracking-wide">Marque</th>
-                  <th className="text-left px-5 py-3 text-xs font-semibold text-stone-500 uppercase tracking-wide hidden sm:table-cell">Slug</th>
-                  <th className="text-left px-5 py-3 text-xs font-semibold text-stone-500 uppercase tracking-wide hidden md:table-cell">Description</th>
-                  <th className="text-left px-5 py-3 text-xs font-semibold text-stone-500 uppercase tracking-wide">Statut</th>
-                  <th className="px-5 py-3" />
+                  <th className="text-left px-4 py-3 text-xs font-semibold text-stone-500 uppercase tracking-wide">Logo</th>
+                  <th className="text-left px-4 py-3 text-xs font-semibold text-stone-500 uppercase tracking-wide min-w-[160px]">Marque</th>
+                  <th className="text-left px-4 py-3 text-xs font-semibold text-stone-500 uppercase tracking-wide">Slug</th>
+                  <th className="text-left px-4 py-3 text-xs font-semibold text-stone-500 uppercase tracking-wide min-w-[200px]">Description</th>
+                  <th className="text-left px-4 py-3 text-xs font-semibold text-stone-500 uppercase tracking-wide">Produits</th>
+                  <th className="text-left px-4 py-3 text-xs font-semibold text-stone-500 uppercase tracking-wide">URL Logo</th>
+                  <th className="text-left px-4 py-3 text-xs font-semibold text-stone-500 uppercase tracking-wide">Créé le</th>
+                  <th className="text-left px-4 py-3 text-xs font-semibold text-stone-500 uppercase tracking-wide">Statut</th>
+                  <th className="px-4 py-3" />
                 </tr>
               </thead>
               <tbody className="divide-y divide-stone-50">
                 {filtered.map(b => (
-                  <tr
-                    key={b.id}
-                    className={`transition-colors ${selectedIds.has(b.id) ? 'bg-amber-50/60' : 'hover:bg-stone-50'}`}
-                  >
-                    <td className="px-4 py-3">
-                      <input
-                        type="checkbox"
-                        checked={selectedIds.has(b.id)}
-                        onChange={() => toggleSelect(b.id)}
-                        className="w-4 h-4 rounded border-stone-300 text-amber-500 cursor-pointer"
-                      />
+                  <tr key={b.id} className={`transition-colors ${selectedIds.has(b.id) ? 'bg-amber-50/60' : 'hover:bg-stone-50'}`}>
+                    {/* Checkbox */}
+                    <td className="px-4 py-2">
+                      <input type="checkbox" checked={selectedIds.has(b.id)} onChange={() => toggleSelect(b.id)}
+                        className="w-4 h-4 rounded border-stone-300 text-amber-500 cursor-pointer" />
                     </td>
-                    <td className="px-5 py-3">
-                      <div className="flex items-center gap-3">
-                        {b.logo_url ? (
-                          <img src={b.logo_url} alt={b.name}
-                            className="w-8 h-8 rounded-lg object-contain bg-stone-100"
-                            onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }} />
-                        ) : (
-                          <div className="w-8 h-8 rounded-lg bg-stone-100 flex items-center justify-center text-xs font-bold text-stone-400">
+                    {/* Logo */}
+                    <td className="px-4 py-2">
+                      {b.logo_url
+                        ? <a href={b.logo_url} target="_blank" rel="noopener noreferrer">
+                            <img src={b.logo_url} alt={b.name}
+                              className="w-10 h-10 rounded-lg object-contain bg-stone-100 hover:opacity-80 transition-opacity border border-stone-100"
+                              onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+                          </a>
+                        : <div className="w-10 h-10 rounded-lg bg-stone-100 flex items-center justify-center text-xs font-bold text-stone-400">
                             {b.name.charAt(0).toUpperCase()}
-                          </div>
-                        )}
-                        <span className="font-medium text-stone-800">{b.name}</span>
-                      </div>
+                          </div>}
                     </td>
-                    <td className="px-5 py-3 text-stone-400 font-mono text-xs hidden sm:table-cell">{b.slug}</td>
-                    <td className="px-5 py-3 text-stone-500 hidden md:table-cell">
-                      <span className="truncate max-w-xs block">{b.description || '—'}</span>
+                    {/* Nom */}
+                    <td className="px-4 py-2 font-medium text-stone-800 text-sm whitespace-nowrap">{b.name}</td>
+                    {/* Slug */}
+                    <td className="px-4 py-2 text-stone-400 font-mono text-xs">{b.slug}</td>
+                    {/* Description */}
+                    <td className="px-4 py-2 text-stone-500 text-xs">
+                      <span className="truncate block max-w-[200px]" title={b.description}>{b.description || '—'}</span>
                     </td>
-                    <td className="px-5 py-3">
+                    {/* Nb produits */}
+                    <td className="px-4 py-2 text-center">
+                      <span className="text-xs font-semibold bg-stone-100 text-stone-600 px-2 py-0.5 rounded-full">
+                        {(b as BrandWithCount).products?.[0]?.count ?? 0}
+                      </span>
+                    </td>
+                    {/* URL Logo */}
+                    <td className="px-4 py-2 text-xs">
+                      {b.logo_url
+                        ? <a href={b.logo_url} target="_blank" rel="noopener noreferrer"
+                            className="text-blue-500 hover:text-blue-700 hover:underline truncate block max-w-[120px]"
+                            title={b.logo_url}>Voir ↗</a>
+                        : <span className="text-stone-300">—</span>}
+                    </td>
+                    {/* Créé le */}
+                    <td className="px-4 py-2 text-stone-400 text-xs whitespace-nowrap">
+                      {b.created_at ? new Date(b.created_at).toLocaleDateString('fr-FR') : '—'}
+                    </td>
+                    {/* Statut */}
+                    <td className="px-4 py-2">
                       <button onClick={() => toggleActive(b)}>
                         {b.is_active
                           ? <ToggleRight className="w-5 h-5 text-emerald-500" />
                           : <ToggleLeft className="w-5 h-5 text-stone-300" />}
                       </button>
                     </td>
-                    <td className="px-5 py-3">
+                    {/* Actions */}
+                    <td className="px-4 py-2">
                       <div className="flex items-center gap-2 justify-end">
                         <button onClick={() => openEdit(b)}
                           className="p-1.5 text-stone-400 hover:text-amber-600 hover:bg-amber-50 rounded-lg transition-colors">
