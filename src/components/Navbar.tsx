@@ -1,11 +1,19 @@
 import { useState, useEffect } from 'react';
-import { Link, useLocation } from 'react-router-dom';
-import { Menu, X, Handshake } from 'lucide-react';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { Menu, X, Handshake, LogIn, LogOut, User } from 'lucide-react';
+import { useAuth } from '../contexts/AuthContext';
 
 export default function Navbar() {
   const [open, setOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const location = useLocation();
+  const navigate = useNavigate();
+  const { session, profile, signOut } = useAuth();
+
+  const handleSignOut = async () => {
+    await signOut();
+    navigate('/');
+  };
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 20);
@@ -72,12 +80,27 @@ export default function Navbar() {
             >
               <Handshake className="w-3.5 h-3.5" /> Collaborer
             </Link>
-            <Link
-              to="/quote"
-              className="bg-ma-red hover:bg-[#A83928] text-white text-sm font-semibold px-5 py-2 rounded-lg transition-colors shadow-sm"
-            >
-              Devis
-            </Link>
+            {session ? (
+              <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 text-sm text-stone-300 border border-stone-600 rounded-lg px-3 py-1.5">
+                  <User className="w-3.5 h-3.5 text-amber-400" />
+                  <span className="max-w-[120px] truncate">{profile?.company_name ?? profile?.full_name ?? 'Mon compte'}</span>
+                </div>
+                <button
+                  onClick={handleSignOut}
+                  className="flex items-center gap-1.5 text-stone-400 hover:text-white border border-stone-600 hover:border-stone-400 text-sm px-3 py-1.5 rounded-lg transition-all"
+                >
+                  <LogOut className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            ) : (
+              <Link
+                to="/login"
+                className="flex items-center gap-1.5 bg-amber-500 hover:bg-amber-400 text-white text-sm font-semibold px-4 py-2 rounded-lg transition-colors shadow-sm"
+              >
+                <LogIn className="w-3.5 h-3.5" /> Accès catalogue
+              </Link>
+            )}
           </div>
 
           {/* Mobile toggle */}
@@ -107,12 +130,21 @@ export default function Navbar() {
           <Link to="/partner" className="flex items-center gap-1.5 text-ma-green hover:text-white hover:bg-white/5 py-2.5 px-3 rounded-lg text-sm font-medium transition-colors">
             <Handshake className="w-4 h-4" /> Collaborer avec nous
           </Link>
-          <Link
-            to="/quote"
-            className="block bg-ma-red hover:bg-[#A83928] text-white text-center text-sm font-semibold px-4 py-2.5 rounded-lg mt-2 transition-colors"
-          >
-            Demander un devis
-          </Link>
+          {session ? (
+            <button
+              onClick={handleSignOut}
+              className="flex items-center gap-2 text-stone-300 hover:text-white hover:bg-white/5 py-2.5 px-3 rounded-lg text-sm font-medium transition-colors w-full"
+            >
+              <LogOut className="w-4 h-4" /> Se déconnecter
+            </button>
+          ) : (
+            <Link
+              to="/login"
+              className="flex items-center gap-2 bg-amber-500 hover:bg-amber-400 text-white text-center text-sm font-semibold px-4 py-2.5 rounded-lg mt-2 transition-colors"
+            >
+              <LogIn className="w-4 h-4" /> Accès catalogue
+            </Link>
+          )}
         </div>
       )}
     </header>

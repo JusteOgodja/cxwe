@@ -1,13 +1,17 @@
 import { useEffect, useState } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { supabase } from './lib/supabase';
+import { AuthProvider } from './contexts/AuthContext';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
+import ProtectedRoute from './components/ProtectedRoute';
 import Home from './pages/Home';
 import Catalog from './pages/Catalog';
 import CategoryPage from './pages/CategoryPage';
 import QuoteRequest from './pages/QuoteRequest';
 import ProductDetail from './pages/ProductDetail';
+import Login from './pages/Login';
+import SignUp from './pages/SignUp';
 import AdminLogin from './pages/admin/AdminLogin';
 import AdminLayout from './pages/admin/AdminLayout';
 import Dashboard from './pages/admin/Dashboard';
@@ -56,38 +60,29 @@ export default function App() {
 
   return (
     <BrowserRouter>
+      <AuthProvider>
       <Routes>
-        <Route
-          path="/"
-          element={<PublicLayout><Home /></PublicLayout>}
-        />
-        <Route
-          path="/catalog"
-          element={<PublicLayout><Catalog /></PublicLayout>}
-        />
+        <Route path="/" element={<PublicLayout><Home /></PublicLayout>} />
+        <Route path="/catalog" element={<PublicLayout><Catalog /></PublicLayout>} />
+        <Route path="/login" element={<Login />} />
+        <Route path="/signup" element={<SignUp />} />
         <Route
           path="/catalog/:slug"
-          element={<PublicLayout><CategoryPage /></PublicLayout>}
+          element={<PublicLayout><ProtectedRoute><CategoryPage /></ProtectedRoute></PublicLayout>}
         />
         <Route
           path="/product/:id"
-          element={<PublicLayout><ProductDetail /></PublicLayout>}
+          element={<PublicLayout><ProtectedRoute><ProductDetail /></ProtectedRoute></PublicLayout>}
         />
         <Route
           path="/quote"
-          element={<PublicLayout><QuoteRequest /></PublicLayout>}
+          element={<PublicLayout><ProtectedRoute><QuoteRequest /></ProtectedRoute></PublicLayout>}
         />
-        <Route
-          path="/partner"
-          element={<PublicLayout><Partner /></PublicLayout>}
-        />
-        <Route
-          path="/confiance"
-          element={<PublicLayout><Trust /></PublicLayout>}
-        />
+        <Route path="/partner" element={<PublicLayout><Partner /></PublicLayout>} />
+        <Route path="/confiance" element={<PublicLayout><Trust /></PublicLayout>} />
         <Route
           path="/brand/:slug"
-          element={<PublicLayout><BrandPage /></PublicLayout>}
+          element={<PublicLayout><ProtectedRoute><BrandPage /></ProtectedRoute></PublicLayout>}
         />
 
         <Route
@@ -109,6 +104,7 @@ export default function App() {
 
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
+      </AuthProvider>
     </BrowserRouter>
   );
 }
