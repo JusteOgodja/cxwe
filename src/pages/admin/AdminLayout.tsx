@@ -26,12 +26,24 @@ const NAV = [
   { label: 'Paramètres', to: '/admin/settings', icon: Settings },
 ];
 
+const ADMIN_EMAILS = (import.meta.env.VITE_ADMIN_EMAILS ?? '')
+  .split(',').map((e: string) => e.trim().toLowerCase()).filter(Boolean);
+
 export default function AdminLayout({ isLoggedIn, onLogout }: Props) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [newQuotes, setNewQuotes] = useState(0);
+  const [isAdmin, setIsAdmin] = useState<boolean | null>(null);
   const location = useLocation();
 
   useEffect(() => {
+    supabase.auth.getSession().then(({ data }) => {
+      const email = (data.session?.user?.email ?? '').toLowerCase();
+      setIsAdmin(ADMIN_EMAILS.length > 0 && ADMIN_EMAILS.includes(email));
+    });
+  }, [isLoggedIn]);
+
+  useEffect(() => {
+    if (!isAdmin) return;
     const fetchBadge = async () => {
       const { count } = await supabase
         .from('quote_requests')
@@ -40,12 +52,16 @@ export default function AdminLayout({ isLoggedIn, onLogout }: Props) {
       setNewQuotes(count ?? 0);
     };
     fetchBadge();
-    // Refresh badge every 60s
     const timer = setInterval(fetchBadge, 60_000);
     return () => clearInterval(timer);
-  }, []);
+  }, [isAdmin]);
 
-  if (!isLoggedIn) return <Navigate to="/admin/login" replace />;
+  if (!isLoggedIn || isAdmin === false) return <Navigate to="/admin/login" replace />;
+  if (isAdmin === null) return (
+    <div className="min-h-screen bg-stone-900 flex items-center justify-center">
+      <div className="w-8 h-8 border-2 border-amber-500/30 border-t-amber-500 rounded-full animate-spin" />
+    </div>
+  );
 
   const handleLogout = async () => {
     await supabase.auth.signOut();

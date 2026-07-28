@@ -32,7 +32,8 @@ export default function AdminLogin({ onLogin, isLoggedIn }: Props) {
       return;
     }
     const userEmail = (data.user?.email ?? '').toLowerCase();
-    if (ADMIN_EMAILS.length > 0 && !ADMIN_EMAILS.includes(userEmail)) {
+    // Fail-closed: if no admin emails configured OR email not in list → deny
+    if (ADMIN_EMAILS.length === 0 || !ADMIN_EMAILS.includes(userEmail)) {
       await supabase.auth.signOut();
       setError('Accès refusé. Ce compte ne dispose pas des droits administrateur.');
       setLoading(false);

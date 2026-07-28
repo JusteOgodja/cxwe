@@ -44,7 +44,7 @@ export default function BrandPage() {
       // Fetch filter options and hero images in parallel
       const [catRes, supRes, imgRes] = await Promise.all([
         supabase.from('products').select('category:categories!inner(id,name)').eq('marque_id', br.id).eq('is_active', true),
-        supabase.from('products').select('supplier:suppliers!inner(id,name)').eq('marque_id', br.id).eq('is_active', true).not('supplier_id', 'is', null),
+        supabase.from('products').select('supplier:suppliers!inner(id,name)').eq('marque_id', br.id).eq('is_active', true).not('fournisseur_id', 'is', null),
         supabase.from('products').select('image_url').eq('marque_id', br.id).eq('is_active', true).not('image_url', 'is', null).limit(6),
       ]);
       if (cancelled) return;
@@ -74,7 +74,7 @@ export default function BrandPage() {
         .eq('marque_id', brand.id)
         .eq('is_active', true);
       if (filterCategory) q = q.eq('category_id', filterCategory);
-      if (filterSupplier) q = q.eq('supplier_id', filterSupplier);
+      if (filterSupplier) q = q.eq('fournisseur_id', filterSupplier);
       q = q.order('sort_order').order('id').range((page - 1) * PAGE_SIZE, page * PAGE_SIZE - 1);
       const { data, count } = await q;
       if (cancelled) return;

@@ -30,6 +30,7 @@ import Trust from './pages/Trust';
 import BrandPage from './pages/BrandPage';
 import SampleRequest from './pages/SampleRequest';
 import HowItWorks from './pages/HowItWorks';
+import NotFound from './pages/NotFound';
 
 function PublicLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -120,7 +121,7 @@ export default function App() {
           <Route path="settings" element={<Settings />} />
         </Route>
 
-        <Route path="*" element={<Navigate to="/" replace />} />
+        <Route path="*" element={<PublicLayout><NotFound /></PublicLayout>} />
       </Routes>
       </AuthProvider>
     </BrowserRouter>
