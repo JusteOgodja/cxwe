@@ -5,6 +5,7 @@ import { supabase } from '../lib/supabase';
 import CategoryCard from '../components/CategoryCard';
 import type { Category } from '../types';
 import { useTranslation } from 'react-i18next';
+import { useSEO } from '../hooks/useSEO';
 
 const FEATURE_ICONS = [Award, Globe, Truck, Users];
 
@@ -114,6 +115,11 @@ export default function Home() {
   const [loading, setLoading] = useState(true);
   const [platformStats, setPlatformStats] = useState<PlatformStats>({ products: null, brands: null, categories: null });
   const { t } = useTranslation();
+
+  useSEO({
+    title: 'Catalogue export produits alimentaires marocains',
+    description: 'Plus de 33 catégories de produits alimentaires marocains à l\'export — huile d\'argan, dattes, épices, fruits de mer, thé et plus. Proforma sous 24h.',
+  });
 
   useEffect(() => {
     supabase

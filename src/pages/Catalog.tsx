@@ -6,12 +6,18 @@ import { productImage } from '../lib/img';
 import CategoryCard from '../components/CategoryCard';
 import BrandCard from '../components/BrandCard';
 import type { Category, Brand } from '../types';
+import { useSEO } from '../hooks/useSEO';
 
 const BRANDS_PER_PAGE = 24;
 
 interface ProductHit { id: string; name: string; image_url: string; brand: { name: string }[] | { name: string } | null; }
 
 export default function Catalog() {
+  useSEO({
+    title: 'Catalogue Export Maroc — Produits alimentaires',
+    description: 'Parcourez le catalogue de produits alimentaires marocains pour l\'export. Filtrez par catégorie ou marque.',
+  });
+
   const [view, setView] = useState<'categories' | 'brands'>('categories');
   const [categories, setCategories] = useState<Category[]>([]);
   const [brands, setBrands] = useState<Brand[]>([]);

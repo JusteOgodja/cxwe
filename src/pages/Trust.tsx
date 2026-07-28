@@ -6,6 +6,7 @@ import {
   ClipboardCheck, Sparkles,
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import { useSEO } from '../hooks/useSEO';
 import { supabase } from '../lib/supabase';
 
 const PROC_ICONS = [Building2, Boxes, ClipboardCheck];
@@ -24,6 +25,10 @@ function Section({ children, className = '' }: { children: React.ReactNode; clas
 
 export default function Trust() {
   const { t } = useTranslation();
+  useSEO({
+    title: 'Confiance & Transparence',
+    description: 'Comment Morocco Food Export vérifie ses produits et fournisseurs. Certifications Halal, Bio, HACCP, ISO 22000.',
+  });
   const [stats, setStats] = useState<PlatformStats>({ products: null, brands: null, categories: null });
 
   useEffect(() => {

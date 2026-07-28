@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useSearchParams, Link } from 'react-router-dom';
+import { useSEO } from '../hooks/useSEO';
 import {
   CheckCircle, Send, ArrowLeft, ArrowRight, Search, X, Package,
   Loader2, Building2, Truck, User, MapPin, FileText, Settings2,
@@ -111,6 +112,10 @@ function CheckPill({ label, checked, onChange }: { label: string; checked: boole
 // ─── Main component ───────────────────────────────────────────────────────────
 
 export default function QuoteRequest() {
+  useSEO({
+    title: 'Demande de Proforma',
+    description: 'Renseignez vos informations acheteur et sélectionnez vos produits. Recevez votre proforma sous 24h.',
+  });
   const [searchParams] = useSearchParams();
   const [step, setStep] = useState(1);
   const [submitting, setSubmitting] = useState(false);

@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { supabase } from './lib/supabase';
 import { AuthProvider } from './contexts/AuthContext';
 import Navbar from './components/Navbar';
@@ -31,6 +32,7 @@ import BrandPage from './pages/BrandPage';
 import SampleRequest from './pages/SampleRequest';
 import HowItWorks from './pages/HowItWorks';
 import NotFound from './pages/NotFound';
+import WhatsAppButton from './components/WhatsAppButton';
 
 function PublicLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -38,8 +40,18 @@ function PublicLayout({ children }: { children: React.ReactNode }) {
       <Navbar />
       <main className="flex-1">{children}</main>
       <Footer />
+      <WhatsAppButton />
     </div>
   );
+}
+
+function RTLSync() {
+  const { i18n } = useTranslation();
+  useEffect(() => {
+    document.documentElement.lang = i18n.language;
+    document.documentElement.dir = i18n.language === 'ar' ? 'rtl' : 'ltr';
+  }, [i18n.language]);
+  return null;
 }
 
 export default function App() {
@@ -70,6 +82,7 @@ export default function App() {
   return (
     <BrowserRouter>
       <AuthProvider>
+      <RTLSync />
       <Routes>
         <Route path="/" element={<PublicLayout><Home /></PublicLayout>} />
         <Route path="/catalog" element={<PublicLayout><Catalog /></PublicLayout>} />

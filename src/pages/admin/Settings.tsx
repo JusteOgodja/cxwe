@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Save, RefreshCw, CheckCircle, AlertCircle, Globe, Mail, Phone, MessageSquare, Bell, Info, Image, DollarSign, Linkedin, Instagram, Facebook, Building2, FileText } from 'lucide-react';
+import { Save, RefreshCw, CheckCircle, AlertCircle, Globe, Mail, Phone, MessageSquare, Bell, Info, Image, DollarSign, Linkedin, Instagram, Facebook, Building2, FileText, ShieldCheck } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 
 interface Setting {
@@ -32,6 +32,8 @@ const DEFAULTS: Setting[] = [
   { key: 'legal_siret', value: '', description: "Numéro RC / SIRET / IF" },
   // Maintenance
   { key: 'maintenance_mode', value: 'false', description: "Afficher une page de maintenance aux visiteurs" },
+  // Accès admin
+  { key: 'admin_emails', value: '', description: "Adresses email des administrateurs, séparées par une virgule (ex: admin@example.com,autre@example.com)" },
 ];
 
 const SECTION_ICONS: Record<string, typeof Globe> = {
@@ -52,6 +54,7 @@ const SECTION_ICONS: Record<string, typeof Globe> = {
   legal_address: Building2,
   legal_siret: FileText,
   maintenance_mode: Info,
+  admin_emails: ShieldCheck,
 };
 
 const SECTIONS = [
@@ -61,6 +64,7 @@ const SECTIONS = [
   { title: 'Alertes & notifications', keys: ['alert_new_quote', 'alert_new_buyer'] },
   { title: 'Informations légales', keys: ['legal_company_name', 'legal_address', 'legal_siret'] },
   { title: 'Mode maintenance', keys: ['maintenance_mode'] },
+  { title: 'Accès & Sécurité', keys: ['admin_emails'] },
 ];
 
 export default function Settings() {

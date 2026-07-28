@@ -8,6 +8,7 @@ import {
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { productImage } from '../lib/img';
+import { useSEO } from '../hooks/useSEO';
 import type { Product, PricingTier, ProductImage } from '../types';
 
 const TEMP_COLORS: Record<string, string> = {
@@ -83,6 +84,11 @@ export default function ProductDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const [product, setProduct] = useState<Product | null>(null);
+
+  useSEO({
+    title: product ? product.name : 'Fiche produit',
+    description: product?.description ?? 'Produit alimentaire marocain disponible à l\'export. Demandez une proforma sous 24h.',
+  });
   const [pricingTiers, setPricingTiers] = useState<PricingTier[]>([]);
   const [related, setRelated] = useState<Product[]>([]);
   const [extraImages, setExtraImages] = useState<ProductImage[]>([]);
