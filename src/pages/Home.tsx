@@ -1,6 +1,6 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowRight, Globe, Award, Truck, Users, ChevronDown } from 'lucide-react';
+import { ArrowRight, Globe, Award, Truck, Users, ChevronDown, ChevronLeft, ChevronRight as ChevronRightIcon } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import CategoryCard from '../components/CategoryCard';
 import type { Category } from '../types';
@@ -8,6 +8,101 @@ import { useTranslation } from 'react-i18next';
 
 const FEATURE_ICONS = [Award, Globe, Truck, Users];
 
+const HERO_IMAGES = [
+  '/hero/slide1.jpg',
+  '/hero/slide2.jpg',
+  '/hero/slide3.jpg',
+  '/hero/slide4.jpg',
+  '/hero/slide5.jpg',
+  '/hero/slide6.jpg',
+];
+
+/* ── Hero carousel ─────────────────────────────────────────────────────────── */
+function HeroCarousel({ images }: { images: string[] }) {
+  const [current, setCurrent] = useState(0);
+  const [prev, setPrev] = useState<number | null>(null);
+  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  const advance = (next: number) => {
+    setPrev(current);
+    setCurrent(next);
+  };
+
+  const startTimer = () => {
+    if (timerRef.current) clearInterval(timerRef.current);
+    if (images.length < 2) return;
+    timerRef.current = setInterval(() => {
+      setCurrent(c => {
+        setPrev(c);
+        return (c + 1) % images.length;
+      });
+    }, 4000);
+  };
+
+  useEffect(() => {
+    startTimer();
+    return () => { if (timerRef.current) clearInterval(timerRef.current); };
+  }, [images.length]);
+
+  if (!images.length) {
+    return <div className="absolute inset-0 bg-ma-navy" />;
+  }
+
+  return (
+    <>
+      {/* Slides with crossfade */}
+      {images.map((src, i) => (
+        <div
+          key={src}
+          className="absolute inset-0 bg-center bg-cover transition-opacity duration-1000"
+          style={{
+            backgroundImage: `url(${src})`,
+            opacity: i === current ? 1 : i === prev ? 0 : 0,
+            zIndex: i === current ? 1 : i === prev ? 0 : -1,
+          }}
+        />
+      ))}
+
+      {/* Dot indicators */}
+      {images.length > 1 && (
+        <div className="absolute bottom-20 left-1/2 -translate-x-1/2 flex gap-1.5 z-20">
+          {images.map((_, i) => (
+            <button
+              key={i}
+              onClick={() => { advance(i); startTimer(); }}
+              className={`rounded-full transition-all duration-300 ${
+                i === current ? 'w-6 h-1.5 bg-ma-gold' : 'w-1.5 h-1.5 bg-white/40 hover:bg-white/70'
+              }`}
+              aria-label={`Slide ${i + 1}`}
+            />
+          ))}
+        </div>
+      )}
+
+      {/* Prev / Next arrows (desktop) */}
+      {images.length > 1 && (
+        <>
+          <button
+            onClick={() => { advance((current - 1 + images.length) % images.length); startTimer(); }}
+            className="absolute left-4 top-1/2 -translate-y-1/2 z-20 w-9 h-9 rounded-full bg-black/30 hover:bg-black/50 text-white flex items-center justify-center transition-colors hidden md:flex"
+            aria-label="Précédent"
+          >
+            <ChevronLeft className="w-5 h-5" />
+          </button>
+          <button
+            onClick={() => { advance((current + 1) % images.length); startTimer(); }}
+            className="absolute right-4 top-1/2 -translate-y-1/2 z-20 w-9 h-9 rounded-full bg-black/30 hover:bg-black/50 text-white flex items-center justify-center transition-colors hidden md:flex"
+            aria-label="Suivant"
+          >
+            <ChevronRightIcon className="w-5 h-5" />
+          </button>
+        </>
+      )}
+    </>
+  );
+}
+
+/* ── Main page ──────────────────────────────────────────────────────────────── */
 interface PlatformStats {
   products: number | null;
   brands: number | null;
@@ -31,7 +126,6 @@ export default function Home() {
         setLoading(false);
       });
 
-    // Fetch platform stats in parallel
     Promise.all([
       supabase.from('products').select('*', { count: 'exact', head: true }).eq('is_active', true),
       supabase.from('brands').select('*', { count: 'exact', head: true }).eq('is_active', true),
@@ -66,21 +160,14 @@ export default function Home() {
       {/* ── Hero ─────────────────────────────────────────────────────────────── */}
       <section className="relative min-h-screen flex items-center justify-center overflow-hidden">
 
-        {/* Video background */}
-        <video
-          className="absolute inset-0 w-full h-full object-cover"
-          src="/hero.mp4"
-          autoPlay
-          loop
-          muted
-          playsInline
-        />
+        {/* Carousel background */}
+        <HeroCarousel images={HERO_IMAGES} />
 
-        {/* Navy overlay */}
-        <div className="absolute inset-0 bg-ma-navy/75" />
+        {/* Dark gradient overlay — ensures text readability over any image */}
+        <div className="absolute inset-0 bg-gradient-to-b from-ma-navy/80 via-ma-navy/65 to-ma-navy/80 z-10" />
 
         {/* Hero content */}
-        <div className="relative z-10 text-center px-4 max-w-4xl mx-auto">
+        <div className="relative z-20 text-center px-4 max-w-4xl mx-auto">
 
           {/* Badge */}
           <div className="inline-flex items-center gap-2 bg-ma-red/20 border border-ma-red/40 rounded-full px-5 py-1.5 mb-6 backdrop-blur-sm">
@@ -121,7 +208,7 @@ export default function Home() {
         </div>
 
         {/* Scroll indicator */}
-        <div className="absolute bottom-8 left-1/2 -translate-x-1/2 text-white/40 animate-bounce">
+        <div className="absolute bottom-8 left-1/2 -translate-x-1/2 text-white/40 animate-bounce z-20">
           <ChevronDown className="w-5 h-5" />
         </div>
       </section>
