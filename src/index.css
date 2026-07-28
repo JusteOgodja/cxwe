@@ -11,6 +11,10 @@ html, body {
   -moz-osx-font-smoothing: grayscale;
 }
 
+html[lang="ar"] {
+  font-family: 'Segoe UI', 'Tahoma', 'Arabic Typesetting', system-ui, sans-serif;
+}
+
 @layer base {
   * {
     border-color: #EDE8DE;

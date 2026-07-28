@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import {
   Search, Trash2, Eye, X, Mail, Phone, MapPin, Package,
   Building2, FileText, Settings2, CheckCircle, Anchor, CreditCard,
-  Container, Calendar, RefreshCw, Tag, Layers, Send,
+  Container, Calendar, RefreshCw, Tag, Layers, Send, Download, AlertCircle,
 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import type { QuoteRequest, QuoteStatus } from '../../types';
@@ -48,22 +49,31 @@ function Row({ label, value }: { label: string; value?: string | boolean | null 
 }
 
 export default function Quotes() {
+  const [searchParams] = useSearchParams();
   const [quotes, setQuotes] = useState<QuoteRequest[]>([]);
   const [loading, setLoading] = useState(true);
-  const [search, setSearch] = useState('');
+  const [search, setSearch] = useState(searchParams.get('q') ?? '');
   const [filterStatus, setFilterStatus] = useState('');
+  const [dateFrom, setDateFrom] = useState('');
+  const [dateTo, setDateTo]   = useState('');
   const [selected, setSelected] = useState<QuoteRequest | null>(null);
   const [updatingStatus, setUpdatingStatus] = useState<string | null>(null);
   const [deleting, setDeleting] = useState<string | null>(null);
   const [responding, setResponding] = useState<QuoteRequest | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   const load = async () => {
-    const { data } = await supabase
-      .from('quote_requests')
-      .select('*')
-      .order('created_at', { ascending: false });
-    setQuotes(data || []);
-    setLoading(false);
+    try {
+      const { data } = await supabase
+        .from('quote_requests')
+        .select('*')
+        .order('created_at', { ascending: false });
+      setQuotes(data || []);
+      setLoading(false);
+    } catch {
+      setError('Impossible de charger les devis. Vérifiez votre connexion.');
+      setLoading(false);
+    }
   };
 
   useEffect(() => { load(); }, []);
@@ -72,8 +82,29 @@ export default function Quotes() {
     const matchSearch = !search || [q.company_name, q.contact_name, q.email, q.country]
       .some(f => f?.toLowerCase().includes(search.toLowerCase()));
     const matchStatus = !filterStatus || q.status === filterStatus;
-    return matchSearch && matchStatus;
+    const created = new Date(q.created_at);
+    const matchFrom = !dateFrom || created >= new Date(dateFrom);
+    const matchTo   = !dateTo   || created <= new Date(dateTo + 'T23:59:59');
+    return matchSearch && matchStatus && matchFrom && matchTo;
   });
+
+  const daysSince = (iso: string) =>
+    Math.floor((Date.now() - new Date(iso).getTime()) / 86_400_000);
+
+  const exportCSV = () => {
+    const headers = ['Société', 'Contact', 'Email', 'Pays', 'Statut', 'Produits', 'Incoterm', 'Devise', 'Date'];
+    const rows = filtered.map(q => [
+      q.company_name, q.contact_name, q.email, q.country ?? '',
+      STATUS_LABELS[q.status], (q.products_interested ?? '').replace(/\n/g, ' '),
+      q.incoterm ?? '', q.currency ?? '',
+      new Date(q.created_at).toLocaleDateString('fr-FR'),
+    ]);
+    const csv = [headers, ...rows].map(r => r.map(c => `"${String(c).replace(/"/g, '""')}"`).join(',')).join('\n');
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' }));
+    a.download = `devis_${new Date().toISOString().slice(0, 10)}.csv`;
+    a.click();
+  };
 
   const updateStatus = async (id: string, status: QuoteStatus) => {
     setUpdatingStatus(id);
@@ -97,9 +128,22 @@ export default function Quotes() {
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-2xl font-bold text-stone-800">Demandes de Proforma</h1>
-          <p className="text-stone-500 text-sm mt-1">{quotes.length} demande{quotes.length !== 1 ? 's' : ''} au total</p>
+          <p className="text-stone-500 text-sm mt-1">{quotes.length} demande{quotes.length !== 1 ? 's' : ''} au total · {filtered.length} affichée{filtered.length !== 1 ? 's' : ''}</p>
         </div>
+        <button onClick={exportCSV}
+          className="flex items-center gap-2 bg-amber-500 hover:bg-amber-400 text-white text-sm font-semibold px-4 py-2 rounded-xl transition-colors">
+          <Download className="w-4 h-4" /> Exporter CSV
+        </button>
       </div>
+
+      {error && (
+        <div className="bg-red-50 border border-red-200 rounded-xl p-4 flex items-center gap-3 text-sm text-red-700">
+          <AlertCircle className="w-4 h-4 shrink-0" />
+          <span className="flex-1">{error}</span>
+          <button onClick={() => { setError(null); load(); }}
+            className="text-xs font-semibold underline hover:no-underline whitespace-nowrap">Réessayer</button>
+        </div>
+      )}
 
       {/* Filters */}
       <div className="flex gap-3 mb-4 flex-wrap">
@@ -114,6 +158,18 @@ export default function Quotes() {
           <option value="">Tous les statuts</option>
           {STATUS_OPTIONS.map(s => <option key={s} value={s}>{STATUS_LABELS[s]}</option>)}
         </select>
+        <input type="date" value={dateFrom} onChange={e => setDateFrom(e.target.value)}
+          title="Date de début"
+          className="border border-stone-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-amber-400 bg-white text-stone-600" />
+        <input type="date" value={dateTo} onChange={e => setDateTo(e.target.value)}
+          title="Date de fin"
+          className="border border-stone-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-amber-400 bg-white text-stone-600" />
+        {(search || filterStatus || dateFrom || dateTo) && (
+          <button onClick={() => { setSearch(''); setFilterStatus(''); setDateFrom(''); setDateTo(''); }}
+            className="text-xs text-stone-400 hover:text-stone-600 px-3 py-2.5 border border-stone-200 rounded-xl bg-white transition-colors">
+            Réinitialiser
+          </button>
+        )}
       </div>
 
       {/* Status summary */}
@@ -180,6 +236,11 @@ export default function Quotes() {
                 </div>
               </div>
               <div className="flex items-center gap-2 shrink-0">
+                {q.status === 'new' && daysSince(q.created_at) >= 3 && (
+                  <span className="flex items-center gap-1 text-xs text-red-600 bg-red-50 border border-red-200 px-2 py-0.5 rounded-full font-medium whitespace-nowrap">
+                    <AlertCircle className="w-3 h-3" /> {daysSince(q.created_at)}j
+                  </span>
+                )}
                 <span className="text-stone-400 text-xs hidden sm:block whitespace-nowrap">
                   {new Date(q.created_at).toLocaleDateString('fr-FR')}
                 </span>

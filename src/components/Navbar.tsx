@@ -2,6 +2,13 @@ import { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Menu, X, Handshake, LogIn, LogOut, User } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
+import { useTranslation } from 'react-i18next';
+
+const LANGS = [
+  { code: 'fr', label: 'FR' },
+  { code: 'en', label: 'EN' },
+  { code: 'ar', label: 'ع' },
+];
 
 export default function Navbar() {
   const [open, setOpen] = useState(false);
@@ -9,11 +16,24 @@ export default function Navbar() {
   const location = useLocation();
   const navigate = useNavigate();
   const { session, profile, signOut } = useAuth();
+  const { t, i18n } = useTranslation();
 
   const handleSignOut = async () => {
     await signOut();
     navigate('/');
   };
+
+  const changeLang = (code: string) => {
+    i18n.changeLanguage(code);
+    document.documentElement.lang = code;
+    document.documentElement.dir = code === 'ar' ? 'rtl' : 'ltr';
+  };
+
+  useEffect(() => {
+    const lang = i18n.language?.split('-')[0] || 'fr';
+    document.documentElement.lang = lang;
+    document.documentElement.dir = lang === 'ar' ? 'rtl' : 'ltr';
+  }, [i18n.language]);
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 20);
@@ -27,6 +47,8 @@ export default function Navbar() {
     location.pathname === path
       ? 'text-ma-gold font-semibold'
       : 'text-stone-300 hover:text-white';
+
+  const currentLang = i18n.language?.split('-')[0] || 'fr';
 
   return (
     <header
@@ -63,28 +85,43 @@ export default function Navbar() {
 
           {/* Desktop nav */}
           <nav className="hidden md:flex items-center gap-8">
-            <Link to="/" className={`text-sm transition-colors ${isActive('/')}`}>Accueil</Link>
-            <Link to="/catalog" className={`text-sm transition-colors ${isActive('/catalog')}`}>Catalogue</Link>
-            <Link to="/confiance" className={`text-sm transition-colors ${isActive('/confiance')}`}>Confiance</Link>
-            <Link to="/quote" className={`text-sm transition-colors ${isActive('/quote')}`}>Demander un devis</Link>
-            <Link to="/partner" className={`flex items-center gap-1.5 text-sm transition-colors ${isActive('/partner')}`}>
-              <Handshake className="w-3.5 h-3.5" /> Collaborer
-            </Link>
+            <Link to="/" className={`text-sm transition-colors ${isActive('/')}`}>{t('nav.home')}</Link>
+            <Link to="/catalog" className={`text-sm transition-colors ${isActive('/catalog')}`}>{t('nav.catalog')}</Link>
+            <Link to="/confiance" className={`text-sm transition-colors ${isActive('/confiance')}`}>{t('nav.trust')}</Link>
+            <Link to="/comment-ca-marche" className={`text-sm transition-colors ${isActive('/comment-ca-marche')}`}>{t('nav.howItWorks')}</Link>
+            <Link to="/quote" className={`text-sm transition-colors ${isActive('/quote')}`}>{t('nav.quote')}</Link>
           </nav>
 
-          {/* CTA buttons */}
+          {/* Right side: lang switcher + CTA */}
           <div className="hidden md:flex items-center gap-2.5">
+            {/* Language switcher */}
+            <div className="flex items-center gap-0.5 bg-white/10 rounded-lg p-0.5">
+              {LANGS.map(l => (
+                <button
+                  key={l.code}
+                  onClick={() => changeLang(l.code)}
+                  className={`px-2.5 py-1 rounded-md text-xs font-semibold transition-all ${
+                    currentLang === l.code
+                      ? 'bg-ma-gold text-white'
+                      : 'text-stone-400 hover:text-white'
+                  }`}
+                >
+                  {l.label}
+                </button>
+              ))}
+            </div>
+
             <Link
               to="/partner"
               className="flex items-center gap-1.5 border border-ma-green/40 hover:border-ma-green text-ma-green hover:text-white hover:bg-ma-green text-sm font-medium px-4 py-2 rounded-lg transition-all"
             >
-              <Handshake className="w-3.5 h-3.5" /> Collaborer
+              <Handshake className="w-3.5 h-3.5" /> {t('nav.collaborate')}
             </Link>
             {session ? (
               <div className="flex items-center gap-2">
                 <div className="flex items-center gap-2 text-sm text-stone-300 border border-stone-600 rounded-lg px-3 py-1.5">
                   <User className="w-3.5 h-3.5 text-amber-400" />
-                  <span className="max-w-[120px] truncate">{profile?.company_name ?? profile?.full_name ?? 'Mon compte'}</span>
+                  <span className="max-w-[120px] truncate">{profile?.company_name ?? profile?.full_name ?? t('nav.account')}</span>
                 </div>
                 <button
                   onClick={handleSignOut}
@@ -98,7 +135,7 @@ export default function Navbar() {
                 to="/login"
                 className="flex items-center gap-1.5 bg-amber-500 hover:bg-amber-400 text-white text-sm font-semibold px-4 py-2 rounded-lg transition-colors shadow-sm"
               >
-                <LogIn className="w-3.5 h-3.5" /> Accès catalogue
+                <LogIn className="w-3.5 h-3.5" /> {t('nav.access')}
               </Link>
             )}
           </div>
@@ -118,31 +155,50 @@ export default function Navbar() {
       {open && (
         <div className="md:hidden bg-ma-navy border-t border-white/5 px-4 py-4 space-y-1">
           {[
-            { to: '/', label: 'Accueil' },
-            { to: '/catalog', label: 'Catalogue' },
-            { to: '/confiance', label: 'Confiance & Qualité' },
-            { to: '/quote', label: 'Demander un devis' },
+            { to: '/', label: t('nav.home') },
+            { to: '/catalog', label: t('nav.catalog') },
+            { to: '/confiance', label: t('nav.trust') },
+            { to: '/comment-ca-marche', label: t('nav.howItWorks') },
+            { to: '/quote', label: t('nav.quote') },
           ].map(l => (
             <Link key={l.to} to={l.to} className="block text-stone-300 hover:text-white hover:bg-white/5 py-2.5 px-3 rounded-lg text-sm font-medium transition-colors">
               {l.label}
             </Link>
           ))}
           <Link to="/partner" className="flex items-center gap-1.5 text-ma-green hover:text-white hover:bg-white/5 py-2.5 px-3 rounded-lg text-sm font-medium transition-colors">
-            <Handshake className="w-4 h-4" /> Collaborer avec nous
+            <Handshake className="w-4 h-4" /> {t('nav.collaborate')}
           </Link>
+
+          {/* Language switcher mobile */}
+          <div className="flex items-center gap-2 pt-2 px-3">
+            {LANGS.map(l => (
+              <button
+                key={l.code}
+                onClick={() => changeLang(l.code)}
+                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                  currentLang === l.code
+                    ? 'bg-ma-gold text-white'
+                    : 'bg-white/10 text-stone-400 hover:text-white'
+                }`}
+              >
+                {l.label}
+              </button>
+            ))}
+          </div>
+
           {session ? (
             <button
               onClick={handleSignOut}
               className="flex items-center gap-2 text-stone-300 hover:text-white hover:bg-white/5 py-2.5 px-3 rounded-lg text-sm font-medium transition-colors w-full"
             >
-              <LogOut className="w-4 h-4" /> Se déconnecter
+              <LogOut className="w-4 h-4" /> {t('nav.signout')}
             </button>
           ) : (
             <Link
               to="/login"
               className="flex items-center gap-2 bg-amber-500 hover:bg-amber-400 text-white text-center text-sm font-semibold px-4 py-2.5 rounded-lg mt-2 transition-colors"
             >
-              <LogIn className="w-4 h-4" /> Accès catalogue
+              <LogIn className="w-4 h-4" /> {t('nav.access')}
             </Link>
           )}
         </div>

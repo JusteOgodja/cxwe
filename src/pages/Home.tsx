@@ -4,40 +4,21 @@ import { ArrowRight, Globe, Award, Truck, Users, ChevronDown } from 'lucide-reac
 import { supabase } from '../lib/supabase';
 import CategoryCard from '../components/CategoryCard';
 import type { Category } from '../types';
+import { useTranslation } from 'react-i18next';
 
-const STATS = [
-  { value: '33+', label: 'Catégories produits' },
-  { value: '100+', label: 'Références disponibles' },
-  { value: '50+', label: 'Pays desservis' },
-  { value: '15+', label: "Années d'expérience" },
-];
+const FEATURE_ICONS = [Award, Globe, Truck, Users];
 
-const FEATURES = [
-  {
-    icon: Award,
-    title: 'Qualité Certifiée',
-    description: 'Produits sourcés auprès de producteurs marocains certifiés, conformes aux normes internationales.',
-  },
-  {
-    icon: Globe,
-    title: 'Export Mondial',
-    description: 'Nous gérons la logistique et la documentation pour une livraison fluide partout dans le monde.',
-  },
-  {
-    icon: Truck,
-    title: 'Conditionnement Sur Mesure',
-    description: 'Tailles, emballages et étiquetages personnalisés selon vos marchés cibles.',
-  },
-  {
-    icon: Users,
-    title: 'Suivi Dédié',
-    description: 'Un interlocuteur dédié et des proformas générées sous 24 h pour chaque demande.',
-  },
-];
+interface PlatformStats {
+  products: number | null;
+  brands: number | null;
+  categories: number | null;
+}
 
 export default function Home() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
+  const [platformStats, setPlatformStats] = useState<PlatformStats>({ products: null, brands: null, categories: null });
+  const { t } = useTranslation();
 
   useEffect(() => {
     supabase
@@ -49,7 +30,35 @@ export default function Home() {
         setCategories(data || []);
         setLoading(false);
       });
+
+    // Fetch platform stats in parallel
+    Promise.all([
+      supabase.from('products').select('*', { count: 'exact', head: true }).eq('is_active', true),
+      supabase.from('brands').select('*', { count: 'exact', head: true }).eq('is_active', true),
+      supabase.from('categories').select('*', { count: 'exact', head: true }).eq('is_active', true),
+    ]).then(([products, brands, cats]) => {
+      setPlatformStats({
+        products: products.count,
+        brands: brands.count,
+        categories: cats.count,
+      });
+    });
   }, []);
+
+  const formatCount = (n: number | null, suffix = '+') =>
+    n == null ? '…' : `${n.toLocaleString()}${suffix}`;
+
+  const STATS = [
+    { value: formatCount(platformStats.products), label: t('home.stat1.label') },
+    { value: formatCount(platformStats.brands), label: t('home.stat2.label') },
+    { value: formatCount(platformStats.categories), label: t('home.stat3.label') },
+    { value: t('home.stat4.value'), label: t('home.stat4.label') },
+  ];
+
+  const FEATURES = [1, 2, 3, 4].map(n => ({
+    title: t(`home.feat${n}.title`),
+    description: t(`home.feat${n}.description`),
+  }));
 
   return (
     <div className="min-h-screen bg-stone-50">
@@ -77,20 +86,19 @@ export default function Home() {
           <div className="inline-flex items-center gap-2 bg-ma-red/20 border border-ma-red/40 rounded-full px-5 py-1.5 mb-6 backdrop-blur-sm">
             <span className="w-1.5 h-1.5 rounded-full bg-ma-red animate-pulse" />
             <span className="text-red-200 text-xs font-semibold tracking-widest uppercase">
-              Exportateur Certifié — Maroc
+              {t('home.badge')}
             </span>
             <span className="w-1.5 h-1.5 rounded-full bg-ma-red animate-pulse" />
           </div>
 
           {/* Heading */}
           <h1 className="text-4xl sm:text-5xl lg:text-[3.75rem] font-bold text-white leading-tight mb-4 tracking-tight">
-            Catalogue Export
-            <span className="block mt-1 text-ma-red">Produits Marocains</span>
+            {t('home.heading1')}
+            <span className="block mt-1 text-ma-red">{t('home.heading2')}</span>
           </h1>
 
           <p className="text-blue-100 text-sm sm:text-base lg:text-lg max-w-2xl mx-auto mb-10 leading-relaxed px-2">
-            33+ catégories de produits alimentaires authentiques — huiles d'olive, argan,
-            dattes, thés, fruits de mer surgelés et bien plus. Proforma sous 24 h.
+            {t('home.sub')}
           </p>
 
           {/* CTAs */}
@@ -100,14 +108,14 @@ export default function Home() {
               className="group relative overflow-hidden bg-ma-red hover:bg-[#9B1E24] text-white font-bold px-9 py-4 rounded-xl transition-all duration-200 flex items-center justify-center gap-2 shadow-lg hover:shadow-ma-red/30"
             >
               <span className="absolute inset-0 -translate-x-full group-hover:translate-x-full transition-transform duration-700 bg-gradient-to-r from-transparent via-white/15 to-transparent" />
-              <span className="relative">Explorer le Catalogue</span>
+              <span className="relative">{t('home.cta1')}</span>
               <ArrowRight className="w-4 h-4 relative group-hover:translate-x-1 transition-transform" />
             </Link>
             <Link
               to="/quote"
               className="bg-white/10 hover:bg-white/20 text-white font-semibold px-9 py-4 rounded-xl transition-all duration-200 backdrop-blur-sm border border-white/30 hover:border-white/50"
             >
-              Demander une Proforma
+              {t('home.cta2')}
             </Link>
           </div>
         </div>
@@ -134,10 +142,9 @@ export default function Home() {
       <section className="py-20 px-4 max-w-7xl mx-auto">
         <div className="text-center mb-12">
           <div className="w-12 h-1 bg-ma-red mx-auto mb-4 rounded-full" />
-          <h2 className="text-3xl font-bold text-stone-800 mb-3">Catégories de Produits</h2>
+          <h2 className="text-3xl font-bold text-stone-800 mb-3">{t('home.categoriesTitle')}</h2>
           <p className="text-stone-500 max-w-xl mx-auto text-sm leading-relaxed">
-            Parcourez notre gamme complète de produits alimentaires marocains à l'export.
-            Contactez-nous pour les tailles, conditionnements et tarifs.
+            {t('home.categoriesSub')}
           </p>
         </div>
 
@@ -160,7 +167,7 @@ export default function Home() {
             to="/catalog"
             className="inline-flex items-center gap-2 text-ma-green hover:text-[#004D28] font-semibold text-sm transition-colors"
           >
-            Voir le catalogue complet
+            {t('home.viewAll')}
             <ArrowRight className="w-4 h-4" />
           </Link>
         </div>
@@ -171,21 +178,24 @@ export default function Home() {
         <div className="max-w-6xl mx-auto px-4">
           <div className="text-center mb-12">
             <div className="w-12 h-1 bg-ma-green mx-auto mb-4 rounded-full" />
-            <h2 className="text-3xl font-bold text-stone-800 mb-3">Pourquoi Nous Choisir</h2>
+            <h2 className="text-3xl font-bold text-stone-800 mb-3">{t('home.whyTitle')}</h2>
             <p className="text-stone-500 text-sm max-w-md mx-auto">
-              Notre expertise en export alimentaire marocain au service de vos marchés internationaux.
+              {t('home.whySub')}
             </p>
           </div>
           <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-8">
-            {FEATURES.map(f => (
-              <div key={f.title} className="text-center group">
-                <div className="w-14 h-14 bg-red-50 rounded-2xl flex items-center justify-center mx-auto mb-4 group-hover:bg-red-100 transition-colors">
-                  <f.icon className="w-7 h-7 text-ma-red" />
+            {FEATURES.map((f, i) => {
+              const Icon = FEATURE_ICONS[i];
+              return (
+                <div key={f.title} className="text-center group">
+                  <div className="w-14 h-14 bg-red-50 rounded-2xl flex items-center justify-center mx-auto mb-4 group-hover:bg-red-100 transition-colors">
+                    <Icon className="w-7 h-7 text-ma-red" />
+                  </div>
+                  <h3 className="font-semibold text-stone-800 mb-2 text-sm">{f.title}</h3>
+                  <p className="text-stone-500 text-xs leading-relaxed">{f.description}</p>
                 </div>
-                <h3 className="font-semibold text-stone-800 mb-2 text-sm">{f.title}</h3>
-                <p className="text-stone-500 text-xs leading-relaxed">{f.description}</p>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       </section>
@@ -194,16 +204,15 @@ export default function Home() {
       <section className="py-20 px-4 bg-ma-navy">
         <div className="max-w-2xl mx-auto text-center">
           <div className="w-12 h-1 bg-ma-red mx-auto mb-6 rounded-full" />
-          <h2 className="text-3xl font-bold text-white mb-4">Prêt à Passer Commande ?</h2>
+          <h2 className="text-3xl font-bold text-white mb-4">{t('home.ctaTitle')}</h2>
           <p className="text-blue-200 mb-8 text-sm leading-relaxed max-w-lg mx-auto">
-            Remplissez notre formulaire de demande de devis — notre équipe vous répond sous 24 h
-            avec la proforma, les disponibilités et les options de transport.
+            {t('home.ctaSub')}
           </p>
           <Link
             to="/quote"
             className="inline-flex items-center gap-2 bg-ma-red hover:bg-[#9B1E24] text-white font-bold px-10 py-4 rounded-xl transition-all duration-200 text-sm shadow-lg"
           >
-            Demander une Proforma
+            {t('home.ctaBtn')}
             <ArrowRight className="w-4 h-4" />
           </Link>
         </div>

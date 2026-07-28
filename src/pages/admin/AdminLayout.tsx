@@ -1,8 +1,9 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link, useLocation, Navigate, Outlet } from 'react-router-dom';
 import {
   Globe, LayoutDashboard, Tag, Package, MessageSquare,
-  LogOut, Menu, ChevronRight, Building2, Truck, Handshake,
+  LogOut, Menu, ChevronRight, Building2, Truck, Handshake, Users,
+  AlertTriangle, Settings, BarChart2,
 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 
@@ -19,11 +20,30 @@ const NAV = [
   { label: 'Fournisseurs', to: '/admin/suppliers', icon: Truck },
   { label: 'Devis', to: '/admin/quotes', icon: MessageSquare },
   { label: 'Partenariats', to: '/admin/partners', icon: Handshake },
+  { label: 'Acheteurs', to: '/admin/buyers', icon: Users },
+  { label: 'Qualité données', to: '/admin/data-quality', icon: AlertTriangle },
+  { label: 'Statistiques', to: '/admin/analytics', icon: BarChart2 },
+  { label: 'Paramètres', to: '/admin/settings', icon: Settings },
 ];
 
 export default function AdminLayout({ isLoggedIn, onLogout }: Props) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [newQuotes, setNewQuotes] = useState(0);
   const location = useLocation();
+
+  useEffect(() => {
+    const fetchBadge = async () => {
+      const { count } = await supabase
+        .from('quote_requests')
+        .select('id', { count: 'exact', head: true })
+        .eq('status', 'new');
+      setNewQuotes(count ?? 0);
+    };
+    fetchBadge();
+    // Refresh badge every 60s
+    const timer = setInterval(fetchBadge, 60_000);
+    return () => clearInterval(timer);
+  }, []);
 
   if (!isLoggedIn) return <Navigate to="/admin" replace />;
 
@@ -51,22 +71,30 @@ export default function AdminLayout({ isLoggedIn, onLogout }: Props) {
 
       {/* Navigation */}
       <nav className="flex-1 p-3 space-y-1">
-        {NAV.map(item => (
-          <Link
-            key={item.to}
-            to={item.to}
-            onClick={() => setSidebarOpen(false)}
-            className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all ${
-              isActive(item.to)
-                ? 'bg-amber-500 text-white shadow-sm'
-                : 'text-stone-400 hover:text-white hover:bg-stone-700'
-            }`}
-          >
-            <item.icon className="w-4 h-4 shrink-0" />
-            {item.label}
-            {isActive(item.to) && <ChevronRight className="w-3 h-3 ml-auto" />}
-          </Link>
-        ))}
+        {NAV.map(item => {
+          const badge = item.to === '/admin/quotes' && newQuotes > 0 ? newQuotes : 0;
+          return (
+            <Link
+              key={item.to}
+              to={item.to}
+              onClick={() => setSidebarOpen(false)}
+              className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all ${
+                isActive(item.to)
+                  ? 'bg-amber-500 text-white shadow-sm'
+                  : 'text-stone-400 hover:text-white hover:bg-stone-700'
+              }`}
+            >
+              <item.icon className="w-4 h-4 shrink-0" />
+              {item.label}
+              {badge > 0 && (
+                <span className="ml-auto bg-red-500 text-white text-xs font-bold rounded-full min-w-[18px] h-[18px] flex items-center justify-center px-1 leading-none">
+                  {badge > 99 ? '99+' : badge}
+                </span>
+              )}
+              {isActive(item.to) && badge === 0 && <ChevronRight className="w-3 h-3 ml-auto" />}
+            </Link>
+          );
+        })}
       </nav>
 
       {/* Footer */}

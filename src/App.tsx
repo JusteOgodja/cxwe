@@ -21,9 +21,15 @@ import Brands from './pages/admin/Brands';
 import Suppliers from './pages/admin/Suppliers';
 import Quotes from './pages/admin/Quotes';
 import Partners from './pages/admin/Partners';
+import Buyers from './pages/admin/Buyers';
+import DataQuality from './pages/admin/DataQuality';
+import Analytics from './pages/admin/Analytics';
+import Settings from './pages/admin/Settings';
 import Partner from './pages/Partner';
 import Trust from './pages/Trust';
 import BrandPage from './pages/BrandPage';
+import SampleRequest from './pages/SampleRequest';
+import HowItWorks from './pages/HowItWorks';
 
 function PublicLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -80,6 +86,11 @@ export default function App() {
         />
         <Route path="/partner" element={<PublicLayout><Partner /></PublicLayout>} />
         <Route path="/confiance" element={<PublicLayout><Trust /></PublicLayout>} />
+        <Route path="/comment-ca-marche" element={<PublicLayout><HowItWorks /></PublicLayout>} />
+        <Route
+          path="/sample"
+          element={<PublicLayout><ProtectedRoute><SampleRequest /></ProtectedRoute></PublicLayout>}
+        />
         <Route
           path="/brand/:slug"
           element={<PublicLayout><ProtectedRoute><BrandPage /></ProtectedRoute></PublicLayout>}
@@ -100,6 +111,10 @@ export default function App() {
           <Route path="suppliers" element={<Suppliers />} />
           <Route path="quotes" element={<Quotes />} />
           <Route path="partners" element={<Partners />} />
+          <Route path="buyers" element={<Buyers />} />
+          <Route path="data-quality" element={<DataQuality />} />
+          <Route path="analytics" element={<Analytics />} />
+          <Route path="settings" element={<Settings />} />
         </Route>
 
         <Route path="*" element={<Navigate to="/" replace />} />

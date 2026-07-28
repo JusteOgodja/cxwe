@@ -36,9 +36,16 @@ export default function Catalog() {
       const { data: cats } = await supabase.from('categories').select('*').eq('is_active', true).order('sort_order');
       setCategories(cats || []);
       // brands can exceed the 1000-row cap → fetch all pages
+      // only brands with at least 1 active product
       const all: Brand[] = [];
       for (let from = 0; ; from += 1000) {
-        const { data } = await supabase.from('brands').select('*').eq('is_active', true).order('name').range(from, from + 999);
+        const { data } = await supabase
+          .from('brands')
+          .select('*, products!inner(id)')
+          .eq('is_active', true)
+          .eq('products.is_active', true)
+          .order('name')
+          .range(from, from + 999);
         if (!data || !data.length) break;
         all.push(...(data as Brand[]));
         if (data.length < 1000) break;

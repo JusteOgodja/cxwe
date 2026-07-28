@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Package, MessageSquare, Building2, X } from 'lucide-react';
+import { ArrowLeft, Package, MessageSquare, Building2, X, SlidersHorizontal, ChevronDown } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import ProductCard from '../components/ProductCard';
 import type { Category, Product } from '../types';
@@ -10,12 +10,28 @@ const SELECT = '*, category:categories(name,slug), brand:brands(name,slug), supp
 
 interface BrandOpt { id: string; name: string; slug: string; }
 
+const DLUO_OPTIONS = [
+  { label: 'Tous', value: '' },
+  { label: '< 6 mois', value: 'lt6' },
+  { label: '6–12 mois', value: '6to12' },
+  { label: '12–24 mois', value: '12to24' },
+  { label: '> 24 mois', value: 'gt24' },
+];
+
+const CERT_OPTIONS = ['Halal', 'Bio / Organique', 'HACCP', 'ISO 22000', 'Casher', 'IFS Food', 'BRC', 'GlobalGAP', 'Fairtrade', 'Sans gluten'];
+
 export default function CategoryPage() {
   const { slug } = useParams<{ slug: string }>();
   const navigate = useNavigate();
   const [category, setCategory] = useState<Category | null>(null);
   const [brandOptions, setBrandOptions] = useState<BrandOpt[]>([]);
-  const [filterBrand, setFilterBrand] = useState('');   // brand id ('' = toutes)
+  const [origineOptions, setOrigineOptions] = useState<string[]>([]);
+  const [filterBrand, setFilterBrand] = useState('');
+  const [filterOrigine, setFilterOrigine] = useState('');
+  const [filterCert, setFilterCert] = useState('');
+  const [filterDluo, setFilterDluo] = useState('');
+  const [filterMoqMax, setFilterMoqMax] = useState('');
+  const [showFilters, setShowFilters] = useState(false);
   const [page, setPage] = useState(1);
   const [products, setProducts] = useState<Product[]>([]);
   const [total, setTotal] = useState(0);
@@ -33,9 +49,18 @@ export default function CategoryPage() {
       if (cancelled) return;
       if (!cat) { navigate('/catalog', { replace: true }); return; }
       setCategory(cat);
-      setFilterBrand('');
+      setFilterBrand(''); setFilterOrigine(''); setFilterCert(''); setFilterDluo(''); setFilterMoqMax('');
       setPage(1);
       setLoading(false);
+
+      // Distinct pays_origine for this category
+      const { data: origines } = await supabase.from('products')
+        .select('pays_origine').eq('category_id', cat.id).eq('is_active', true)
+        .not('pays_origine', 'is', null);
+      if (origines && !cancelled) {
+        const uniq = [...new Set(origines.map(r => r.pays_origine as string).filter(Boolean))].sort();
+        setOrigineOptions(uniq);
+      }
 
       // Distinct brand ids present in this category (paginated, marque_id only = light)
       const ids = new Set<string>();
@@ -60,7 +85,7 @@ export default function CategoryPage() {
     return () => { cancelled = true; };
   }, [slug, navigate]);
 
-  // 2) Load one page of products (server-side) on category / brand / page change
+  // 2) Load one page of products (server-side) on filter/page change
   useEffect(() => {
     if (!category) return;
     let cancelled = false;
@@ -70,6 +95,13 @@ export default function CategoryPage() {
         .select(SELECT, { count: 'exact' })
         .eq('category_id', category.id).eq('is_active', true);
       if (filterBrand) q = q.eq('marque_id', filterBrand);
+      if (filterOrigine) q = q.eq('pays_origine', filterOrigine);
+      if (filterCert) q = q.contains('certifications', [filterCert]);
+      if (filterMoqMax) q = q.lte('commande_min', parseInt(filterMoqMax));
+      if (filterDluo === 'lt6') q = q.lt('dluo', 6);
+      else if (filterDluo === '6to12') q = q.gte('dluo', 6).lte('dluo', 12);
+      else if (filterDluo === '12to24') q = q.gte('dluo', 12).lte('dluo', 24);
+      else if (filterDluo === 'gt24') q = q.gt('dluo', 24);
       q = q.order('sort_order').order('id').range((page - 1) * PAGE_SIZE, page * PAGE_SIZE - 1);
       const { data, count } = await q;
       if (cancelled) return;
@@ -78,13 +110,15 @@ export default function CategoryPage() {
       setGridLoading(false);
     })();
     return () => { cancelled = true; };
-  }, [category, filterBrand, page]);
+  }, [category, filterBrand, filterOrigine, filterCert, filterDluo, filterMoqMax, page]);
 
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
   const currentPage = Math.min(page, totalPages);
-  const hasFilters = !!filterBrand;
+  const hasFilters = !!(filterBrand || filterOrigine || filterCert || filterDluo || filterMoqMax);
+  const activeFilterCount = [filterBrand, filterOrigine, filterCert, filterDluo, filterMoqMax].filter(Boolean).length;
 
   const changeBrand = (id: string) => { setFilterBrand(id); setPage(1); };
+  const resetFilters = () => { setFilterBrand(''); setFilterOrigine(''); setFilterCert(''); setFilterDluo(''); setFilterMoqMax(''); setPage(1); };
   const goTo = (p: number) => {
     setPage(Math.min(Math.max(1, p), totalPages));
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -126,26 +160,85 @@ export default function CategoryPage() {
       <div className="max-w-6xl mx-auto px-4 py-10">
 
         {/* ── Filters bar ─────────────────────────────────────────────────── */}
-        {brandOptions.length > 0 && (
-          <div className="mb-6 flex flex-wrap items-center gap-3">
-            <label className="inline-flex items-center gap-2">
-              <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-stone-500 uppercase tracking-wide shrink-0">
-                <Building2 className="w-3.5 h-3.5" /> Marque
-              </span>
-              <select value={filterBrand} onChange={e => changeBrand(e.target.value)}
-                className="text-sm bg-white border border-stone-200 rounded-lg px-3 py-2 text-stone-700 focus:outline-none focus:border-ma-green max-w-[220px]">
-                <option value="">Toutes ({brandOptions.length})</option>
-                {brandOptions.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
-              </select>
-            </label>
+        <div className="mb-6">
+          <div className="flex items-center gap-3 flex-wrap">
+            <button onClick={() => setShowFilters(f => !f)}
+              className={`inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold border transition-all ${showFilters || activeFilterCount > 0 ? 'bg-ma-navy text-white border-ma-navy' : 'bg-white text-stone-700 border-stone-200 hover:border-ma-navy'}`}>
+              <SlidersHorizontal className="w-4 h-4" />
+              Filtres {activeFilterCount > 0 && <span className="bg-white text-ma-navy text-xs font-bold w-5 h-5 rounded-full flex items-center justify-center">{activeFilterCount}</span>}
+              <ChevronDown className={`w-3.5 h-3.5 transition-transform ${showFilters ? 'rotate-180' : ''}`} />
+            </button>
             {hasFilters && (
-              <button onClick={() => changeBrand('')}
+              <button onClick={resetFilters}
                 className="inline-flex items-center gap-1 text-xs text-red-500 hover:text-red-700 font-medium transition-colors">
-                <X className="w-3 h-3" /> Réinitialiser
+                <X className="w-3 h-3" /> Réinitialiser tous les filtres
               </button>
             )}
           </div>
-        )}
+
+          {showFilters && (
+            <div className="mt-3 bg-white border border-stone-200 rounded-2xl p-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              {/* Marque */}
+              {brandOptions.length > 0 && (
+                <label className="flex flex-col gap-1">
+                  <span className="text-xs font-semibold text-stone-500 uppercase tracking-wide flex items-center gap-1.5">
+                    <Building2 className="w-3 h-3" /> Marque
+                  </span>
+                  <select value={filterBrand} onChange={e => { setFilterBrand(e.target.value); setPage(1); }}
+                    className="text-sm bg-stone-50 border border-stone-200 rounded-xl px-3 py-2 focus:outline-none focus:border-ma-green">
+                    <option value="">Toutes</option>
+                    {brandOptions.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
+                  </select>
+                </label>
+              )}
+
+              {/* Pays d'origine */}
+              {origineOptions.length > 1 && (
+                <label className="flex flex-col gap-1">
+                  <span className="text-xs font-semibold text-stone-500 uppercase tracking-wide flex items-center gap-1.5">
+                    <span>🌍</span> Pays d'origine
+                  </span>
+                  <select value={filterOrigine} onChange={e => { setFilterOrigine(e.target.value); setPage(1); }}
+                    className="text-sm bg-stone-50 border border-stone-200 rounded-xl px-3 py-2 focus:outline-none focus:border-ma-green">
+                    <option value="">Tous</option>
+                    {origineOptions.map(o => <option key={o} value={o}>{o}</option>)}
+                  </select>
+                </label>
+              )}
+
+              {/* Certification */}
+              <label className="flex flex-col gap-1">
+                <span className="text-xs font-semibold text-stone-500 uppercase tracking-wide flex items-center gap-1.5">
+                  <span>🏅</span> Certification
+                </span>
+                <select value={filterCert} onChange={e => { setFilterCert(e.target.value); setPage(1); }}
+                  className="text-sm bg-stone-50 border border-stone-200 rounded-xl px-3 py-2 focus:outline-none focus:border-ma-green">
+                  <option value="">Toutes</option>
+                  {CERT_OPTIONS.map(c => <option key={c} value={c}>{c}</option>)}
+                </select>
+              </label>
+
+              {/* Shelf life */}
+              <label className="flex flex-col gap-1">
+                <span className="text-xs font-semibold text-stone-500 uppercase tracking-wide flex items-center gap-1.5">
+                  <span>📅</span> Shelf life
+                </span>
+                <select value={filterDluo} onChange={e => { setFilterDluo(e.target.value); setPage(1); }}
+                  className="text-sm bg-stone-50 border border-stone-200 rounded-xl px-3 py-2 focus:outline-none focus:border-ma-green">
+                  {DLUO_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+                </select>
+              </label>
+
+              {/* MOQ max */}
+              <label className="flex flex-col gap-1">
+                <span className="text-xs font-semibold text-stone-500 uppercase tracking-wide">MOQ max (unités)</span>
+                <input type="number" min="1" placeholder="Ex : 500"
+                  value={filterMoqMax} onChange={e => { setFilterMoqMax(e.target.value); setPage(1); }}
+                  className="text-sm bg-stone-50 border border-stone-200 rounded-xl px-3 py-2 focus:outline-none focus:border-ma-green" />
+              </label>
+            </div>
+          )}
+        </div>
 
         {/* ── Products grid ────────────────────────────────────────────────── */}
         {total === 0 && !gridLoading ? (

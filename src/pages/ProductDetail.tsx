@@ -3,11 +3,12 @@ import { useParams, Link, useNavigate } from 'react-router-dom';
 import {
   ArrowLeft, Package, CheckCircle, MessageSquare, Tag,
   ChevronLeft, ChevronRight, Thermometer, MapPin, Award,
-  Truck, Box, Layers, AlertTriangle, Info, Scale,
+  Truck, Box, Layers, AlertTriangle, Info, Scale, FileText,
+  FlaskConical, Euro, Calendar,
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { productImage } from '../lib/img';
-import type { Product, PricingTier } from '../types';
+import type { Product, PricingTier, ProductImage } from '../types';
 
 const TEMP_COLORS: Record<string, string> = {
   'Ambiante': 'bg-stone-100 text-stone-700',
@@ -15,6 +16,25 @@ const TEMP_COLORS: Record<string, string> = {
   'Frais': 'bg-cyan-100 text-cyan-700',
   'Surgelé': 'bg-indigo-100 text-indigo-700',
 };
+
+const NUTRISCORE_COLORS: Record<string, string> = {
+  A: 'bg-green-500', B: 'bg-lime-400', C: 'bg-yellow-400',
+  D: 'bg-orange-400', E: 'bg-red-500',
+};
+
+function NutriScore({ score }: { score: string }) {
+  return (
+    <div className="flex items-center gap-0.5">
+      {['A','B','C','D','E'].map(l => (
+        <span key={l} className={`text-[10px] font-black text-white flex items-center justify-center rounded-sm transition-all ${
+          l === score
+            ? `${NUTRISCORE_COLORS[l]} w-7 h-7`
+            : `${NUTRISCORE_COLORS[l]} opacity-30 w-5 h-5`
+        }`}>{l}</span>
+      ))}
+    </div>
+  );
+}
 
 function Section({ icon: Icon, title, children }: {
   icon: React.ElementType; title: string; children: React.ReactNode;
@@ -65,6 +85,7 @@ export default function ProductDetail() {
   const [product, setProduct] = useState<Product | null>(null);
   const [pricingTiers, setPricingTiers] = useState<PricingTier[]>([]);
   const [related, setRelated] = useState<Product[]>([]);
+  const [extraImages, setExtraImages] = useState<ProductImage[]>([]);
   const [loading, setLoading] = useState(true);
   const [imgIdx, setImgIdx] = useState(0);
 
@@ -80,7 +101,7 @@ export default function ProductDetail() {
       if (!data) { navigate('/catalog', { replace: true }); return; }
       setProduct(data as Product);
 
-      const [tiersRes, relRes] = await Promise.all([
+      const [tiersRes, relRes, imgsRes] = await Promise.all([
         supabase.from('product_pricing_tiers').select('*').eq('product_id', id).order('min_quantity'),
         supabase.from('products')
           .select('*, category:categories(name,slug)')
@@ -89,10 +110,12 @@ export default function ProductDetail() {
           .neq('id', id)
           .order('sort_order')
           .limit(4),
+        supabase.from('product_images').select('*').eq('product_id', id).order('ordre'),
       ]);
 
       setPricingTiers((tiersRes.data || []) as PricingTier[]);
       setRelated((relRes.data || []) as Product[]);
+      setExtraImages((imgsRes.data || []) as ProductImage[]);
       setLoading(false);
     })();
   }, [id, navigate]);
@@ -117,7 +140,10 @@ export default function ProductDetail() {
 
   if (!product) return null;
 
-  const images = product.image_url ? [product.image_url] : [];
+  // Merge main image + gallery images (deduplicated)
+  const images: string[] = [];
+  if (product.image_url) images.push(product.image_url);
+  extraImages.forEach(img => { if (!images.includes(img.url)) images.push(img.url); });
   const categorySlug = product.category?.slug;
   const categoryName = product.category?.name;
 
@@ -176,6 +202,17 @@ export default function ProductDetail() {
                 </>
               )}
             </div>
+            {/* Thumbnail strip */}
+            {images.length > 1 && (
+              <div className="flex gap-2 mt-3 overflow-x-auto pb-1">
+                {images.map((url, i) => (
+                  <button key={i} onClick={() => setImgIdx(i)}
+                    className={`shrink-0 w-16 h-16 rounded-xl overflow-hidden border-2 transition-all ${i === imgIdx ? 'border-ma-red shadow-sm' : 'border-transparent opacity-60 hover:opacity-100'}`}>
+                    <img src={productImage(url, 120)} alt="" className="w-full h-full object-cover" />
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
 
           {/* Infos principales */}
@@ -240,6 +277,28 @@ export default function ProductDetail() {
               </div>
             )}
 
+            {/* Prix indicatif */}
+            {product.prix_indicatif && (
+              <div className="flex items-center gap-2 bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 mb-4">
+                <Euro className="w-4 h-4 text-amber-600 shrink-0" />
+                <div>
+                  <p className="text-[11px] text-amber-700 font-medium">Prix indicatif FOB</p>
+                  <p className="text-lg font-bold text-amber-800">
+                    {Number(product.prix_indicatif).toFixed(2)} {product.devise || 'EUR'} / unité
+                  </p>
+                </div>
+                <p className="text-[10px] text-amber-600 ml-auto leading-tight max-w-[100px] text-right">Prix hors négociation — devis sur demande</p>
+              </div>
+            )}
+
+            {/* Nutriscore */}
+            {product.nutriscore && (
+              <div className="flex items-center gap-3 mb-4">
+                <span className="text-xs text-stone-500 font-medium">Nutri-Score</span>
+                <NutriScore score={product.nutriscore} />
+              </div>
+            )}
+
             {/* Infos rapides */}
             <div className="grid grid-cols-2 gap-3 mb-5 text-xs">
               {product.commande_min > 1 && (
@@ -260,12 +319,17 @@ export default function ProductDetail() {
                   <p className="font-semibold text-stone-800">{product.pays_origine}</p>
                 </div>
               )}
-              {product.duree_conservation > 0 && (
+              {product.dluo ? (
+                <div className="bg-white border border-stone-100 rounded-xl p-3">
+                  <p className="text-stone-400 mb-0.5 flex items-center gap-1"><Calendar className="w-3 h-3" />Shelf life export</p>
+                  <p className="font-semibold text-stone-800">{product.dluo} mois</p>
+                </div>
+              ) : product.duree_conservation > 0 ? (
                 <div className="bg-white border border-stone-100 rounded-xl p-3">
                   <p className="text-stone-400 mb-0.5">Conservation</p>
                   <p className="font-semibold text-stone-800">{product.duree_conservation} j</p>
                 </div>
-              )}
+              ) : null}
             </div>
 
             {/* CTA */}
@@ -278,11 +342,19 @@ export default function ProductDetail() {
                 Demander un devis
               </Link>
               <Link
-                to="/catalog"
-                className="flex items-center justify-center w-full border border-stone-200 text-stone-600 hover:bg-stone-100 text-sm font-medium py-2.5 rounded-xl transition-colors"
+                to={`/sample?product=${encodeURIComponent(product.name)}${categoryName ? `&category=${encodeURIComponent(categoryName)}` : ''}`}
+                className="flex items-center justify-center gap-2 w-full border-2 border-ma-navy text-ma-navy hover:bg-ma-navy hover:text-white text-sm font-semibold py-2.5 rounded-xl transition-colors"
               >
-                Parcourir le catalogue
+                <FlaskConical className="w-4 h-4" />
+                Demander un échantillon
               </Link>
+              {product.fiche_technique_url && (
+                <a href={product.fiche_technique_url} target="_blank" rel="noopener noreferrer"
+                  className="flex items-center justify-center gap-2 w-full border border-stone-200 text-stone-600 hover:bg-stone-50 text-sm font-medium py-2.5 rounded-xl transition-colors">
+                  <FileText className="w-4 h-4" />
+                  Fiche technique (PDF)
+                </a>
+              )}
             </div>
           </div>
         </div>

@@ -20,6 +20,21 @@ export interface Supplier {
   logo_url?: string;
   is_active: boolean;
   created_at: string;
+  is_verified?: boolean;
+  annee_creation?: number;
+  marches_export?: string[];
+  capacite_production?: string;
+  politique_qc?: string;
+  effectif?: string;
+}
+
+export interface ProductImage {
+  id: string;
+  product_id: string;
+  url: string;
+  alt_text?: string;
+  ordre: number;
+  created_at: string;
 }
 
 export interface Dimensions {
@@ -79,6 +94,8 @@ export interface Product {
   // Storage & conservation
   temperature: 'Ambiante' | 'Réfrigéré' | 'Frais' | 'Surgelé';
   duree_conservation: number;
+  dluo?: number;         // shelf life in months (for export)
+  nutriscore?: 'A' | 'B' | 'C' | 'D' | 'E';
 
   // Logistics
   commande_min: number;
@@ -90,7 +107,9 @@ export interface Product {
 
   // Pricing
   devise: string;
+  prix_indicatif?: number;
   pricing_tiers?: PricingTier[];
+  fiche_technique_url?: string;
 
   // Commerce
   incoterms_dispo?: string[];

@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef } from 'react';
-import { Plus, Pencil, Trash2, X, Save, Search, Minus, Upload, Download, FileJson, AlertCircle } from 'lucide-react';
+import { Plus, Pencil, Trash2, X, Save, Search, Minus, Upload, Download, FileJson, AlertCircle, CheckSquare } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import type { Product, Category, Brand, Supplier } from '../../types';
 
@@ -160,6 +160,8 @@ function CheckGroup({ title, options, selected, onChange }: {
 
 // ─── Main component ───────────────────────────────────────────────────────────
 
+const PAGE_SIZE = 100;
+
 export default function Products() {
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
@@ -168,6 +170,8 @@ export default function Products() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [filterCat, setFilterCat] = useState('');
+  const [page, setPage] = useState(0);
+  const [totalCount, setTotalCount] = useState(0);
 
   const [modal, setModal] = useState<'add' | 'edit' | null>(null);
   const [editing, setEditing] = useState<Product | null>(null);
@@ -179,6 +183,8 @@ export default function Products() {
   const [pricingTiers, setPricingTiers] = useState<PriceTierRow[]>([]);
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState<string | null>(null);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [bulkLoading, setBulkLoading] = useState(false);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [importModal, setImportModal] = useState(false);
@@ -186,23 +192,38 @@ export default function Products() {
   const [importErrors, setImportErrors] = useState<string[]>([]);
   const [importing, setImporting] = useState(false);
 
-  const load = async () => {
+  const load = async (p = page, s = search, cat = filterCat) => {
+    setLoading(true);
+    const offset = p * PAGE_SIZE;
+
     const [prodRes, catRes, brandRes, supRes] = await Promise.all([
-      supabase.from('products')
-        .select('*, category:categories(name,slug), brand:brands(name,slug), supplier:suppliers(name,slug)')
-        .order('sort_order'),
+      supabase.rpc('search_products', {
+        p_query:    s || '',
+        p_category: cat || null,
+        p_brand:    null,
+        p_active:   null,
+        p_limit:    PAGE_SIZE,
+        p_offset:   offset,
+      }),
       supabase.from('categories').select('id, name').order('sort_order'),
       supabase.from('brands').select('id, name, slug').order('name'),
       supabase.from('suppliers').select('id, name, slug').order('name'),
     ]);
-    setProducts((prodRes.data || []) as Product[]);
+
+    const rows = (prodRes.data || []) as (Product & { total_count: number })[];
+    setProducts(rows);
+    setTotalCount(rows[0]?.total_count ?? 0);
     setCategories((catRes.data || []) as Category[]);
     setBrands((brandRes.data || []) as Brand[]);
     setSuppliers((supRes.data || []) as Supplier[]);
     setLoading(false);
   };
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => { load(0, search, filterCat); }, []);
+
+  const handleSearch = (s: string) => { setSearch(s); setPage(0); load(0, s, filterCat); };
+  const handleCat = (cat: string) => { setFilterCat(cat); setPage(0); load(0, search, cat); };
+  const handlePage = (p: number) => { setPage(p); load(p, search, filterCat); };
 
   const fromDim = (d: any): DimState => d ? {
     length: String(d.length ?? ''), width: String(d.width ?? ''), height: String(d.height ?? ''),
@@ -344,7 +365,7 @@ export default function Products() {
 
     setSaving(false);
     setModal(null);
-    load();
+    load(page, search, filterCat);
   };
 
   const handleDelete = async (id: string) => {
@@ -352,7 +373,7 @@ export default function Products() {
     setDeleting(id);
     await supabase.from('products').delete().eq('id', id);
     setDeleting(null);
-    load();
+    load(page, search, filterCat);
   };
 
   const handleExportTemplate = () => downloadJSON(IMPORT_TEMPLATE, 'template_produits.json');
@@ -466,7 +487,8 @@ export default function Products() {
     await supabase.from('products').insert(toInsert);
     setImporting(false);
     closeImportModal();
-    load();
+    load(0, search, filterCat);
+    setPage(0);
   };
 
   const setF = (field: keyof FormState) =>
@@ -476,11 +498,26 @@ export default function Products() {
   const setCheck = (field: keyof FormState) => (e: React.ChangeEvent<HTMLInputElement>) =>
     setForm(prev => ({ ...prev, [field]: e.target.checked }));
 
-  const filtered = products.filter(p => {
-    const matchSearch = !search || p.name.toLowerCase().includes(search.toLowerCase());
-    const matchCat = !filterCat || p.category_id === filterCat;
-    return matchSearch && matchCat;
-  });
+  const filtered = products; // filtering is now server-side
+  const totalPages = Math.ceil(totalCount / PAGE_SIZE);
+
+  const toggleSelect = (id: string) =>
+    setSelectedIds(prev => { const s = new Set(prev); s.has(id) ? s.delete(id) : s.add(id); return s; });
+  const toggleSelectAll = () =>
+    setSelectedIds(prev => prev.size === filtered.length ? new Set() : new Set(filtered.map(p => p.id)));
+
+  const bulkSetActive = async (active: boolean) => {
+    if (selectedIds.size === 0) return;
+    setBulkLoading(true);
+    await supabase.from('products').update({ is_active: active }).in('id', [...selectedIds]);
+    setSelectedIds(new Set());
+    setBulkLoading(false);
+    load(page, search, filterCat);
+  };
+
+  const hasIssue = (p: Product) =>
+    !p.image_url || !p.ean || !p.description || !p.marque_id || !p.category_id ||
+    !(p as any).hs_code || !(p as any).pays_origine;
 
   const TABS: { id: Tab; label: string }[] = [
     { id: 'infos', label: 'Informations' },
@@ -496,7 +533,7 @@ export default function Products() {
       <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
         <div>
           <h1 className="text-2xl font-bold text-stone-800">Produits</h1>
-          <p className="text-stone-500 text-sm mt-1">{products.length} produit{products.length !== 1 ? 's' : ''}</p>
+          <p className="text-stone-500 text-sm mt-1">{totalCount} produit{totalCount !== 1 ? 's' : ''} · page {page + 1}/{totalPages || 1}</p>
         </div>
         <div className="flex items-center gap-2 flex-wrap">
           <button onClick={handleExportTemplate} title="Télécharger le modèle JSON vide"
@@ -519,14 +556,35 @@ export default function Products() {
         </div>
       </div>
 
+      {/* Bulk actions bar */}
+      {selectedIds.size > 0 && (
+        <div className="flex items-center gap-3 bg-amber-50 border border-amber-200 rounded-xl px-4 py-2.5 mb-3">
+          <span className="text-sm font-semibold text-amber-700">{selectedIds.size} produit{selectedIds.size > 1 ? 's' : ''} sélectionné{selectedIds.size > 1 ? 's' : ''}</span>
+          <div className="flex gap-2 ml-auto">
+            <button onClick={() => bulkSetActive(true)} disabled={bulkLoading}
+              className="flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 bg-emerald-500 hover:bg-emerald-600 text-white rounded-lg transition-colors disabled:opacity-50">
+              Activer
+            </button>
+            <button onClick={() => bulkSetActive(false)} disabled={bulkLoading}
+              className="flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 bg-stone-500 hover:bg-stone-600 text-white rounded-lg transition-colors disabled:opacity-50">
+              Désactiver
+            </button>
+            <button onClick={() => setSelectedIds(new Set())}
+              className="text-xs text-stone-500 hover:text-stone-700 px-2 py-1.5 transition-colors">
+              Annuler
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Filters */}
       <div className="flex gap-3 mb-4 flex-wrap">
         <div className="relative flex-1 min-w-40">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-stone-400" />
-          <input type="text" placeholder="Rechercher..." value={search} onChange={e => setSearch(e.target.value)}
+          <input type="text" placeholder="Rechercher..." value={search} onChange={e => handleSearch(e.target.value)}
             className="w-full pl-9 pr-4 py-2.5 border border-stone-200 rounded-xl text-sm focus:outline-none focus:border-amber-400 bg-white" />
         </div>
-        <select value={filterCat} onChange={e => setFilterCat(e.target.value)}
+        <select value={filterCat} onChange={e => handleCat(e.target.value)}
           className="border border-stone-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-amber-400 bg-white min-w-36">
           <option value="">Toutes catégories</option>
           {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
@@ -547,7 +605,13 @@ export default function Products() {
             <table className="min-w-max w-full text-sm">
               <thead>
                 <tr className="border-b border-stone-100 bg-stone-50">
-                  <th className="sticky left-0 z-10 bg-stone-50 text-left px-3 py-3 text-xs font-semibold text-stone-500 uppercase tracking-wide">Image</th>
+                  <th className="sticky left-0 z-10 bg-stone-50 px-3 py-3">
+                    <input type="checkbox"
+                      checked={selectedIds.size === filtered.length && filtered.length > 0}
+                      onChange={toggleSelectAll}
+                      className="rounded border-stone-300 accent-amber-500" />
+                  </th>
+                  <th className="text-left px-3 py-3 text-xs font-semibold text-stone-500 uppercase tracking-wide">Image</th>
                   <th className="text-left px-3 py-3 text-xs font-semibold text-stone-500 uppercase tracking-wide min-w-[200px]">Produit</th>
                   <th className="text-left px-3 py-3 text-xs font-semibold text-stone-500 uppercase tracking-wide">Catégorie</th>
                   <th className="text-left px-3 py-3 text-xs font-semibold text-stone-500 uppercase tracking-wide">Marque</th>
@@ -575,14 +639,20 @@ export default function Products() {
                   <th className="text-left px-3 py-3 text-xs font-semibold text-stone-500 uppercase tracking-wide">Créé le</th>
                   <th className="text-left px-3 py-3 text-xs font-semibold text-stone-500 uppercase tracking-wide">Statut</th>
                   <th className="text-left px-3 py-3 text-xs font-semibold text-stone-500 uppercase tracking-wide">Flags</th>
+                  <th className="text-left px-3 py-3 text-xs font-semibold text-stone-500 uppercase tracking-wide">Qualité</th>
                   <th className="px-3 py-3" />
                 </tr>
               </thead>
               <tbody className="divide-y divide-stone-50">
                 {filtered.map(p => (
-                  <tr key={p.id} className="hover:bg-stone-50 transition-colors">
+                  <tr key={p.id} className={`hover:bg-stone-50 transition-colors ${selectedIds.has(p.id) ? 'bg-amber-50' : ''}`}>
+                    {/* Checkbox */}
+                    <td className="sticky left-0 z-10 bg-inherit px-3 py-2">
+                      <input type="checkbox" checked={selectedIds.has(p.id)} onChange={() => toggleSelect(p.id)}
+                        className="rounded border-stone-300 accent-amber-500" />
+                    </td>
                     {/* Image */}
-                    <td className="sticky left-0 z-10 bg-white px-3 py-2">
+                    <td className="px-3 py-2">
                       {p.image_url
                         ? <a href={p.image_url} target="_blank" rel="noopener noreferrer">
                             <img src={p.image_url} alt={p.name} className="w-10 h-10 object-cover rounded-lg border border-stone-100 hover:opacity-80 transition-opacity" />
@@ -709,6 +779,15 @@ export default function Products() {
                         {!p.is_new && !p.is_promo && !p.est_sponsored && <span className="text-stone-300 text-xs">—</span>}
                       </div>
                     </td>
+                    {/* Qualité */}
+                    <td className="px-3 py-2">
+                      {hasIssue(p)
+                        ? <a href="/admin/data-quality" title="Voir dans Qualité données"
+                            className="flex items-center gap-1 text-[10px] text-amber-600 bg-amber-50 border border-amber-200 px-1.5 py-0.5 rounded-full font-semibold whitespace-nowrap hover:bg-amber-100 transition-colors">
+                            <AlertCircle className="w-3 h-3" /> Anomalie
+                          </a>
+                        : <span className="text-[10px] text-emerald-600 bg-emerald-50 border border-emerald-200 px-1.5 py-0.5 rounded-full font-medium">✓</span>}
+                    </td>
                     <td className="px-3 py-2">
                       <div className="flex items-center gap-2 justify-end">
                         <button onClick={() => openEdit(p)}
@@ -726,6 +805,43 @@ export default function Products() {
               </tbody>
             </table>
           )}
+        </div>
+      )}
+
+      {/* Pagination */}
+      {totalPages > 1 && (
+        <div className="flex items-center justify-between mt-4">
+          <p className="text-sm text-stone-500">
+            {page * PAGE_SIZE + 1}–{Math.min((page + 1) * PAGE_SIZE, totalCount)} sur {totalCount} produits
+          </p>
+          <div className="flex items-center gap-1">
+            <button
+              onClick={() => handlePage(page - 1)}
+              disabled={page === 0}
+              className="px-3 py-1.5 rounded-lg border border-stone-200 text-sm text-stone-600 hover:bg-stone-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+            >
+              ← Précédent
+            </button>
+            {Array.from({ length: Math.min(totalPages, 7) }, (_, i) => {
+              const p = totalPages <= 7 ? i : page < 4 ? i : page > totalPages - 4 ? totalPages - 7 + i : page - 3 + i;
+              return (
+                <button
+                  key={p}
+                  onClick={() => handlePage(p)}
+                  className={`px-3 py-1.5 rounded-lg border text-sm transition-colors ${p === page ? 'bg-amber-500 border-amber-500 text-white font-semibold' : 'border-stone-200 text-stone-600 hover:bg-stone-50'}`}
+                >
+                  {p + 1}
+                </button>
+              );
+            })}
+            <button
+              onClick={() => handlePage(page + 1)}
+              disabled={page >= totalPages - 1}
+              className="px-3 py-1.5 rounded-lg border border-stone-200 text-sm text-stone-600 hover:bg-stone-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+            >
+              Suivant →
+            </button>
+          </div>
         </div>
       )}
 

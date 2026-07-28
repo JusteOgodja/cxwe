@@ -6,77 +6,92 @@ import ProductCard from '../components/ProductCard';
 import { productImage } from '../lib/img';
 import type { Brand, Product } from '../types';
 
+const PAGE_SIZE = 24;
+const SELECT = '*, category:categories(name,slug), brand:brands(name,slug), supplier:suppliers(name,slug)';
+
+interface FilterOpt { id: string; name: string; }
+
 export default function BrandPage() {
   const { slug } = useParams<{ slug: string }>();
   const navigate = useNavigate();
   const [brand, setBrand] = useState<Brand | null>(null);
   const [products, setProducts] = useState<Product[]>([]);
+  const [total, setTotal] = useState(0);
+  const [heroImages, setHeroImages] = useState<string[]>([]);
+  const [categoryOpts, setCategoryOpts] = useState<FilterOpt[]>([]);
+  const [supplierOpts, setSupplierOpts] = useState<FilterOpt[]>([]);
   const [loading, setLoading] = useState(true);
+  const [gridLoading, setGridLoading] = useState(false);
   const [quoteProduct, setQuoteProduct] = useState<Product | null>(null);
   const [filterCategory, setFilterCategory] = useState('');
   const [filterSupplier, setFilterSupplier] = useState('');
-
-  // Pagination
-  const PAGE_SIZE = 24;
   const [page, setPage] = useState(1);
 
+  // Load brand + lightweight metadata (hero images, filter options)
   useEffect(() => {
     if (!slug) return;
+    let cancelled = false;
     (async () => {
-      const { data: br } = await supabase
-        .from('brands')
-        .select('*')
-        .eq('slug', slug)
-        .maybeSingle();
+      setLoading(true);
+      const { data: br } = await supabase.from('brands').select('*').eq('slug', slug).maybeSingle();
+      if (cancelled) return;
       if (!br) { navigate('/catalog', { replace: true }); return; }
       setBrand(br);
+      setFilterCategory('');
+      setFilterSupplier('');
+      setPage(1);
 
-      const { data: prods } = await supabase
-        .from('products')
-        .select('*, category:categories(name,slug), brand:brands(name,slug), supplier:suppliers(name,slug)')
-        .eq('marque_id', br.id)
-        .eq('is_active', true)
-        .order('sort_order');
-      setProducts((prods || []) as Product[]);
+      // Fetch filter options and hero images in parallel
+      const [catRes, supRes, imgRes] = await Promise.all([
+        supabase.from('products').select('category:categories!inner(id,name)').eq('marque_id', br.id).eq('is_active', true),
+        supabase.from('products').select('supplier:suppliers!inner(id,name)').eq('marque_id', br.id).eq('is_active', true).not('supplier_id', 'is', null),
+        supabase.from('products').select('image_url').eq('marque_id', br.id).eq('is_active', true).not('image_url', 'is', null).limit(6),
+      ]);
+      if (cancelled) return;
+
+      const catMap = new Map<string, string>();
+      (catRes.data || []).forEach((r: any) => { if (r.category?.id) catMap.set(r.category.id, r.category.name); });
+      setCategoryOpts([...catMap.entries()].map(([id, name]) => ({ id, name })).sort((a, b) => a.name.localeCompare(b.name)));
+
+      const supMap = new Map<string, string>();
+      (supRes.data || []).forEach((r: any) => { if (r.supplier?.id) supMap.set(r.supplier.id, r.supplier.name); });
+      setSupplierOpts([...supMap.entries()].map(([id, name]) => ({ id, name })).sort((a, b) => a.name.localeCompare(b.name)));
+
+      setHeroImages((imgRes.data || []).map((r: any) => r.image_url).filter(Boolean));
       setLoading(false);
     })();
+    return () => { cancelled = true; };
   }, [slug, navigate]);
 
-  const categoryNames = useMemo(() => {
-    const map = new Map<string, string>();
-    products.forEach(p => { if (p.category?.name) map.set(p.category.name, p.category.name); });
-    return [...map.keys()].sort();
-  }, [products]);
+  // Load paginated products when brand/filters/page change
+  useEffect(() => {
+    if (!brand) return;
+    let cancelled = false;
+    (async () => {
+      setGridLoading(true);
+      let q = supabase.from('products')
+        .select(SELECT, { count: 'exact' })
+        .eq('marque_id', brand.id)
+        .eq('is_active', true);
+      if (filterCategory) q = q.eq('category_id', filterCategory);
+      if (filterSupplier) q = q.eq('supplier_id', filterSupplier);
+      q = q.order('sort_order').order('id').range((page - 1) * PAGE_SIZE, page * PAGE_SIZE - 1);
+      const { data, count } = await q;
+      if (cancelled) return;
+      setProducts((data || []) as Product[]);
+      setTotal(count || 0);
+      setGridLoading(false);
+    })();
+    return () => { cancelled = true; };
+  }, [brand, filterCategory, filterSupplier, page]);
 
-  const supplierNames = useMemo(() => {
-    const map = new Map<string, string>();
-    products.forEach(p => { if (p.supplier?.name) map.set(p.supplier.name, p.supplier.name); });
-    return [...map.keys()].sort();
-  }, [products]);
+  const hasFilters = !!(filterCategory || filterSupplier);
+  const hasFilterOptions = categoryOpts.length > 0 || supplierOpts.length > 0;
 
-  const heroImages = useMemo(
-    () => products.map(p => p.image_url).filter(Boolean).slice(0, 6) as string[],
-    [products]
-  );
+  const changeFilter = (cat: string, sup: string) => { setFilterCategory(cat); setFilterSupplier(sup); setPage(1); };
 
-  const filtered = useMemo(() => products.filter(p => {
-    if (filterCategory && p.category?.name !== filterCategory) return false;
-    if (filterSupplier && p.supplier?.name !== filterSupplier) return false;
-    return true;
-  }), [products, filterCategory, filterSupplier]);
-
-  const hasFilters = filterCategory || filterSupplier;
-  const hasFilterOptions = categoryNames.length > 0 || supplierNames.length > 0;
-
-  // Reset to first page when filters or brand change
-  useEffect(() => { setPage(1); }, [filterCategory, filterSupplier, slug]);
-
-  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
   const currentPage = Math.min(page, totalPages);
-  const pageItems = useMemo(
-    () => filtered.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE),
-    [filtered, currentPage],
-  );
   const goTo = (p: number) => {
     setPage(Math.min(Math.max(1, p), totalPages));
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -184,21 +199,21 @@ export default function BrandPage() {
             <div className="flex items-center gap-5 mt-7 pt-6 border-t border-white/10">
               <div className="flex items-center gap-2 text-stone-300 text-sm">
                 <Package className="w-4 h-4 text-stone-500" />
-                <span className="font-semibold text-white">{products.length}</span>
-                <span>produit{products.length !== 1 ? 's' : ''}</span>
+                <span className="font-semibold text-white">{total}</span>
+                <span>produit{total !== 1 ? 's' : ''}</span>
               </div>
-              {categoryNames.length > 0 && (
+              {categoryOpts.length > 0 && (
                 <div className="flex items-center gap-2 text-stone-300 text-sm">
                   <Layers className="w-4 h-4 text-stone-500" />
-                  <span className="font-semibold text-white">{categoryNames.length}</span>
-                  <span>catégorie{categoryNames.length !== 1 ? 's' : ''}</span>
+                  <span className="font-semibold text-white">{categoryOpts.length}</span>
+                  <span>catégorie{categoryOpts.length !== 1 ? 's' : ''}</span>
                 </div>
               )}
-              {supplierNames.length > 0 && (
+              {supplierOpts.length > 0 && (
                 <div className="flex items-center gap-2 text-stone-300 text-sm">
                   <Truck className="w-4 h-4 text-stone-500" />
-                  <span className="font-semibold text-white">{supplierNames.length}</span>
-                  <span>grossiste{supplierNames.length !== 1 ? 's' : ''}</span>
+                  <span className="font-semibold text-white">{supplierOpts.length}</span>
+                  <span>grossiste{supplierOpts.length !== 1 ? 's' : ''}</span>
                 </div>
               )}
             </div>
@@ -213,28 +228,28 @@ export default function BrandPage() {
         {hasFilterOptions && (
           <div className="mb-6 space-y-3">
             <div className="flex flex-wrap items-center gap-3">
-              {supplierNames.length > 0 && (
+              {supplierOpts.length > 0 && (
                 <label className="inline-flex items-center gap-2">
                   <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-stone-500 uppercase tracking-wide shrink-0">
                     <Truck className="w-3.5 h-3.5" /> Grossiste
                   </span>
-                  <select value={filterSupplier} onChange={e => setFilterSupplier(e.target.value)}
+                  <select value={filterSupplier} onChange={e => changeFilter(filterCategory, e.target.value)}
                     className="text-sm bg-white border border-stone-200 rounded-lg px-3 py-2 text-stone-700 focus:outline-none focus:border-stone-400 max-w-[220px]">
-                    <option value="">Tous ({supplierNames.length})</option>
-                    {supplierNames.map(s => <option key={s} value={s}>{s}</option>)}
+                    <option value="">Tous ({supplierOpts.length})</option>
+                    {supplierOpts.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
                   </select>
                 </label>
               )}
 
-              {categoryNames.length > 0 && (
+              {categoryOpts.length > 0 && (
                 <label className="inline-flex items-center gap-2">
                   <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-stone-500 uppercase tracking-wide shrink-0">
                     <Tag className="w-3.5 h-3.5" /> Catégorie
                   </span>
-                  <select value={filterCategory} onChange={e => setFilterCategory(e.target.value)}
+                  <select value={filterCategory} onChange={e => changeFilter(e.target.value, filterSupplier)}
                     className="text-sm bg-white border border-stone-200 rounded-lg px-3 py-2 text-stone-700 focus:outline-none focus:border-ma-red max-w-[220px]">
-                    <option value="">Toutes ({categoryNames.length})</option>
-                    {categoryNames.map(c => <option key={c} value={c}>{c}</option>)}
+                    <option value="">Toutes ({categoryOpts.length})</option>
+                    {categoryOpts.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
                   </select>
                 </label>
               )}
@@ -243,10 +258,10 @@ export default function BrandPage() {
             {hasFilters && (
               <div className="flex items-center gap-2 pt-1">
                 <span className="text-xs text-stone-400">
-                  {filtered.length} produit{filtered.length !== 1 ? 's' : ''} affiché{filtered.length !== 1 ? 's' : ''}
+                  {total} produit{total !== 1 ? 's' : ''} affiché{total !== 1 ? 's' : ''}
                 </span>
                 <button
-                  onClick={() => { setFilterCategory(''); setFilterSupplier(''); }}
+                  onClick={() => changeFilter('', '')}
                   className="inline-flex items-center gap-1 text-xs text-red-500 hover:text-red-700 font-medium transition-colors"
                 >
                   <X className="w-3 h-3" /> Réinitialiser
@@ -257,7 +272,7 @@ export default function BrandPage() {
         )}
 
         {/* Products grid */}
-        {products.length === 0 ? (
+        {!gridLoading && total === 0 && !hasFilters ? (
           <div className="text-center py-20">
             <Package className="w-14 h-14 text-stone-300 mx-auto mb-4" />
             <h3 className="text-stone-500 font-medium mb-2">Aucun produit disponible</h3>
@@ -271,12 +286,12 @@ export default function BrandPage() {
               <MessageSquare className="w-4 h-4" /> Demander un devis
             </Link>
           </div>
-        ) : filtered.length === 0 ? (
+        ) : !gridLoading && total === 0 && hasFilters ? (
           <div className="text-center py-16">
             <Package className="w-10 h-10 text-stone-300 mx-auto mb-3" />
             <p className="text-stone-500 font-medium">Aucun produit pour ces filtres</p>
             <button
-              onClick={() => { setFilterCategory(''); setFilterSupplier(''); }}
+              onClick={() => changeFilter('', '')}
               className="mt-3 text-sm text-ma-red hover:underline"
             >
               Réinitialiser les filtres
@@ -286,11 +301,11 @@ export default function BrandPage() {
           <>
             {!hasFilters && (
               <p className="text-stone-500 text-sm mb-6">
-                {products.length} produit{products.length !== 1 ? 's' : ''} — {brand.name}
+                {total} produit{total !== 1 ? 's' : ''} — {brand.name}
               </p>
             )}
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-5">
-              {pageItems.map(product => (
+            <div className={`grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-5 transition-opacity ${gridLoading ? 'opacity-50' : ''}`}>
+              {products.map(product => (
                 <ProductCard
                   key={product.id}
                   product={product}

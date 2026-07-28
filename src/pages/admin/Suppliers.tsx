@@ -55,10 +55,31 @@ export default function Suppliers() {
   const [importErrors, setImportErrors] = useState<string[]>([]);
   const [importing, setImporting] = useState(false);
 
+  const [productCounts, setProductCounts] = useState<Record<string, number>>({});
+  const [error, setError] = useState<string | null>(null);
+
   const load = async () => {
+    try {
     const { data } = await supabase.from('suppliers').select('*').order('name');
     setSuppliers((data || []) as Supplier[]);
+
+    // Count active products per supplier (limit 5000 to bypass PostgREST 1000-row cap)
+    const { data: counts } = await supabase
+      .from('products')
+      .select('supplier_id')
+      .eq('is_active', true)
+      .not('supplier_id', 'is', null)
+      .limit(5000);
+    const map: Record<string, number> = {};
+    (counts || []).forEach((r: any) => {
+      if (r.supplier_id) map[r.supplier_id] = (map[r.supplier_id] || 0) + 1;
+    });
+    setProductCounts(map);
     setLoading(false);
+    } catch {
+      setError('Impossible de charger les fournisseurs. Vérifiez votre connexion.');
+      setLoading(false);
+    }
   };
 
   useEffect(() => { load(); }, []);
@@ -206,6 +227,15 @@ export default function Suppliers() {
         </div>
       </div>
 
+      {error && (
+        <div className="bg-red-50 border border-red-200 rounded-xl p-4 flex items-center gap-3 text-sm text-red-700">
+          <AlertCircle className="w-4 h-4 shrink-0" />
+          <span className="flex-1">{error}</span>
+          <button onClick={() => { setError(null); load(); }}
+            className="text-xs font-semibold underline hover:no-underline whitespace-nowrap">Réessayer</button>
+        </div>
+      )}
+
       {/* Search */}
       <div className="relative max-w-sm mb-4">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-stone-400" />
@@ -230,6 +260,7 @@ export default function Suppliers() {
                   <th className="text-left px-5 py-3 text-xs font-semibold text-stone-500 uppercase tracking-wide">Fournisseur</th>
                   <th className="text-left px-5 py-3 text-xs font-semibold text-stone-500 uppercase tracking-wide hidden md:table-cell">Contact</th>
                   <th className="text-left px-5 py-3 text-xs font-semibold text-stone-500 uppercase tracking-wide hidden sm:table-cell">Pays</th>
+                  <th className="text-left px-5 py-3 text-xs font-semibold text-stone-500 uppercase tracking-wide hidden lg:table-cell">Produits</th>
                   <th className="text-left px-5 py-3 text-xs font-semibold text-stone-500 uppercase tracking-wide">Statut</th>
                   <th className="px-5 py-3" />
                 </tr>
@@ -270,6 +301,14 @@ export default function Suppliers() {
                       </div>
                     </td>
                     <td className="px-5 py-3 text-stone-600 hidden sm:table-cell text-sm">{s.country || '—'}</td>
+                    <td className="px-5 py-3 hidden lg:table-cell">
+                      <span className={`text-sm font-semibold ${(productCounts[s.id] ?? 0) > 0 ? 'text-stone-700' : 'text-stone-300'}`}>
+                        {productCounts[s.id] ?? 0}
+                      </span>
+                      {(productCounts[s.id] ?? 0) === 0 && (
+                        <span className="ml-1 text-xs text-stone-400">aucun</span>
+                      )}
+                    </td>
                     <td className="px-5 py-3">
                       <button onClick={() => toggleActive(s)}>
                         {s.is_active
