@@ -48,8 +48,29 @@ export default function SignUp() {
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [emailSent, setEmailSent] = useState(false);
 
   if (session) return <Navigate to="/catalog" replace />;
+
+  if (emailSent) return (
+    <div className="min-h-screen bg-stone-900 flex items-center justify-center px-4">
+      <div className="bg-stone-800/60 border border-stone-700 rounded-2xl p-10 max-w-md text-center shadow-xl">
+        <div className="w-16 h-16 bg-amber-500/15 rounded-full flex items-center justify-center mx-auto mb-5">
+          <svg className="w-8 h-8 text-amber-400" fill="none" stroke="currentColor" strokeWidth={1.5} viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25H4.5a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5H4.5a2.25 2.25 0 00-2.25 2.25m19.5 0-10.5 6.75L3.75 6.75" />
+          </svg>
+        </div>
+        <h2 className="text-xl font-bold text-white mb-2">Confirmez votre email</h2>
+        <p className="text-stone-400 text-sm leading-relaxed">
+          Un lien de confirmation a été envoyé à <span className="text-amber-400 font-medium">{form.email}</span>.<br />
+          Cliquez sur le lien pour activer votre accès au catalogue.
+        </p>
+        <Link to="/" className="inline-block mt-6 text-sm text-stone-400 hover:text-white transition-colors">
+          ← Retour à l'accueil
+        </Link>
+      </div>
+    </div>
+  );
 
   const set = (k: string) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) =>
     setForm(f => ({ ...f, [k]: e.target.value }));
@@ -83,7 +104,14 @@ export default function SignUp() {
     });
 
     if (profileErr) {
-      setError('Compte créé, mais erreur lors de l\'enregistrement du profil. Contactez-nous.');
+      setError("Compte créé, mais erreur lors de l'enregistrement du profil. Contactez-nous.");
+      setLoading(false);
+      return;
+    }
+
+    // If Supabase email confirmation is enabled, data.session will be null
+    if (!data.session) {
+      setEmailSent(true);
       setLoading(false);
       return;
     }

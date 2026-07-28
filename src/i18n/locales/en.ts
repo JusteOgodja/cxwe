@@ -17,6 +17,7 @@ const en = {
     sub: '33+ categories of authentic Moroccan food products — olive oil, argan, dates, teas, frozen seafood and more. Proforma within 24 h.',
     cta1: 'Browse the Catalog',
     cta2: 'Request a Proforma',
+    statsTitle: 'Product Categories',
     stat1: { label: 'Active products' },
     stat2: { label: 'Listed brands' },
     stat3: { label: 'Categories' },
