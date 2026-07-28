@@ -14,19 +14,31 @@ export default function AdminLogin({ onLogin, isLoggedIn }: Props) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
+  const ADMIN_EMAILS = (import.meta.env.VITE_ADMIN_EMAILS ?? '')
+    .split(',')
+    .map((e: string) => e.trim().toLowerCase())
+    .filter(Boolean);
+
   if (isLoggedIn) return <Navigate to="/admin/dashboard" replace />;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
     setLoading(true);
-    const { error: err } = await supabase.auth.signInWithPassword({ email, password });
+    const { data, error: err } = await supabase.auth.signInWithPassword({ email, password });
     if (err) {
-      setError('Invalid credentials. Please try again.');
+      setError('Identifiants invalides. Veuillez réessayer.');
       setLoading(false);
-    } else {
-      onLogin();
+      return;
     }
+    const userEmail = (data.user?.email ?? '').toLowerCase();
+    if (ADMIN_EMAILS.length > 0 && !ADMIN_EMAILS.includes(userEmail)) {
+      await supabase.auth.signOut();
+      setError('Accès refusé. Ce compte ne dispose pas des droits administrateur.');
+      setLoading(false);
+      return;
+    }
+    onLogin();
   };
 
   return (

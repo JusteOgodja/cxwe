@@ -51,9 +51,11 @@ export default function App() {
       setAuthChecked(true);
     });
 
-    supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setIsLoggedIn(!!session);
     });
+
+    return () => subscription.unsubscribe();
   }, []);
 
   if (!authChecked) {
@@ -97,13 +99,14 @@ export default function App() {
         />
 
         <Route
-          path="/admin"
+          path="/admin/login"
           element={<AdminLogin isLoggedIn={isLoggedIn} onLogin={() => setIsLoggedIn(true)} />}
         />
         <Route
           path="/admin"
           element={<AdminLayout isLoggedIn={isLoggedIn} onLogout={() => setIsLoggedIn(false)} />}
         >
+          <Route index element={<Navigate to="/admin/dashboard" replace />} />
           <Route path="dashboard" element={<Dashboard />} />
           <Route path="categories" element={<Categories />} />
           <Route path="products" element={<Products />} />

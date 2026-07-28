@@ -45,7 +45,7 @@ export default function AdminLayout({ isLoggedIn, onLogout }: Props) {
     return () => clearInterval(timer);
   }, []);
 
-  if (!isLoggedIn) return <Navigate to="/admin" replace />;
+  if (!isLoggedIn) return <Navigate to="/admin/login" replace />;
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
