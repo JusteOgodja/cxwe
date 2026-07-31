@@ -8,6 +8,7 @@ const en = {
     access: 'Access Catalog',
     signout: 'Sign out',
     account: 'My account',
+    dashboard: 'Dashboard',
     howItWorks: 'How it works',
   },
   home: {

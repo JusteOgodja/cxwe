@@ -8,6 +8,7 @@ const fr = {
     access: 'Accès catalogue',
     signout: 'Se déconnecter',
     account: 'Mon compte',
+    dashboard: 'Dashboard',
     howItWorks: 'Comment ça marche',
   },
   home: {

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { Menu, X, Handshake, LogIn, LogOut, User } from 'lucide-react';
+import { Menu, X, Handshake, LogIn, LogOut, LayoutDashboard } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useTranslation } from 'react-i18next';
 
@@ -15,8 +15,14 @@ export default function Navbar() {
   const [scrolled, setScrolled] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
-  const { session, profile, signOut } = useAuth();
+  const { session, user, signOut } = useAuth();
   const { t, i18n } = useTranslation();
+
+  const ADMIN_EMAILS = (import.meta.env.VITE_ADMIN_EMAILS ?? '')
+    .split(',')
+    .map((e: string) => e.trim().toLowerCase())
+    .filter(Boolean);
+  const isAdmin = !!user?.email && ADMIN_EMAILS.includes(user.email.toLowerCase());
 
   const handleSignOut = async () => {
     await signOut();
@@ -119,10 +125,14 @@ export default function Navbar() {
             </Link>
             {session ? (
               <div className="flex items-center gap-2">
-                <div className="flex items-center gap-2 text-sm text-stone-300 border border-stone-600 rounded-lg px-3 py-1.5">
-                  <User className="w-3.5 h-3.5 text-amber-400" />
-                  <span className="max-w-[120px] truncate">{profile?.company_name ?? profile?.full_name ?? t('nav.account')}</span>
-                </div>
+                {isAdmin && (
+                  <Link
+                    to="/admin/dashboard"
+                    className="flex items-center gap-1.5 text-sm text-stone-100 border border-ma-gold/50 hover:border-ma-gold hover:bg-ma-gold/10 px-3 py-1.5 rounded-lg transition-all"
+                  >
+                    <LayoutDashboard className="w-3.5 h-3.5 text-ma-gold" /> {t('nav.dashboard')}
+                  </Link>
+                )}
                 <button
                   onClick={handleSignOut}
                   className="flex items-center gap-1.5 text-stone-400 hover:text-white border border-stone-600 hover:border-stone-400 text-sm px-3 py-1.5 rounded-lg transition-all"
@@ -187,12 +197,22 @@ export default function Navbar() {
           </div>
 
           {session ? (
-            <button
-              onClick={handleSignOut}
-              className="flex items-center gap-2 text-stone-300 hover:text-white hover:bg-white/5 py-2.5 px-3 rounded-lg text-sm font-medium transition-colors w-full"
-            >
-              <LogOut className="w-4 h-4" /> {t('nav.signout')}
-            </button>
+            <>
+              {isAdmin && (
+                <Link
+                  to="/admin/dashboard"
+                  className="flex items-center gap-2 text-ma-gold hover:text-white hover:bg-white/5 py-2.5 px-3 rounded-lg text-sm font-medium transition-colors"
+                >
+                  <LayoutDashboard className="w-4 h-4" /> {t('nav.dashboard')}
+                </Link>
+              )}
+              <button
+                onClick={handleSignOut}
+                className="flex items-center gap-2 text-stone-300 hover:text-white hover:bg-white/5 py-2.5 px-3 rounded-lg text-sm font-medium transition-colors w-full"
+              >
+                <LogOut className="w-4 h-4" /> {t('nav.signout')}
+              </button>
+            </>
           ) : (
             <Link
               to="/login"

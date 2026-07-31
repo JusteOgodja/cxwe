@@ -8,6 +8,7 @@ const ar = {
     access: 'الدخول إلى الكتالوج',
     signout: 'تسجيل الخروج',
     account: 'حسابي',
+    dashboard: 'لوحة التحكم',
     howItWorks: 'كيف يعمل',
   },
   home: {
