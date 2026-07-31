@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef, useMemo } from 'react';
 import { Plus, Pencil, Trash2, X, Save, Search, Minus, Upload, Download, FileJson, AlertCircle, CheckSquare } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import type { Product, Category, Brand, Supplier } from '../../types';
@@ -499,6 +499,9 @@ export default function Products() {
     setForm(prev => ({ ...prev, [field]: e.target.checked }));
 
   const filtered = products; // filtering is now server-side
+  // Résolution id -> nom (search_products renvoie category_id/marque_id, pas les objets joints)
+  const catById = useMemo(() => new Map(categories.map(c => [c.id, c.name])), [categories]);
+  const brandById = useMemo(() => new Map(brands.map(b => [b.id, b.name])), [brands]);
   const totalPages = Math.ceil(totalCount / PAGE_SIZE);
 
   const toggleSelect = (id: string) =>
@@ -666,9 +669,9 @@ export default function Products() {
                       {p.description && <div className="text-stone-400 text-[10px] truncate max-w-[180px]">{p.description}</div>}
                     </td>
                     {/* Catégorie */}
-                    <td className="px-3 py-2 text-stone-500 text-xs whitespace-nowrap">{p.category?.name || '—'}</td>
+                    <td className="px-3 py-2 text-stone-500 text-xs whitespace-nowrap">{(p.category_id && catById.get(p.category_id)) || '—'}</td>
                     {/* Marque */}
-                    <td className="px-3 py-2 text-stone-500 text-xs whitespace-nowrap">{p.brand?.name || '—'}</td>
+                    <td className="px-3 py-2 text-stone-500 text-xs whitespace-nowrap">{(p.marque_id && brandById.get(p.marque_id)) || '—'}</td>
                     {/* EAN */}
                     <td className="px-3 py-2 font-mono text-xs text-stone-400">{p.ean || '—'}</td>
                     {/* HS Code */}
