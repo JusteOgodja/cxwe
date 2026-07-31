@@ -47,7 +47,7 @@ const IMPORT_TEMPLATE: Record<string, unknown>[] = [
     commande_min: 100,
     colisage: 12,
     duree_conservation: 730,
-    devise: "EUR",
+    devise: "MAD",
     pays_origine: "Morocco",
     pays_export_autorises: ["France", "Espagne", "Allemagne"],
     incoterms_dispo: ["FOB", "CIF"],
@@ -87,7 +87,7 @@ const EMPTY_FORM = {
   commande_min: '1', colisage: '1',
   cartons_per_layer: '', layers_per_palette: '',
   duree_conservation: '365',
-  devise: 'EUR', pays_origine: 'Morocco', pays_export_text: '',
+  devise: 'MAD', pays_origine: 'Morocco', pays_export_text: '',
   incoterms_dispo: [] as string[],
   certifications: [] as string[],
   regimes: [] as string[],
@@ -270,7 +270,7 @@ export default function Products() {
       cartons_per_layer: String(p.palettisation?.cartons_per_layer ?? ''),
       layers_per_palette: String(p.palettisation?.layers_per_palette ?? ''),
       duree_conservation: String(p.duree_conservation ?? 365),
-      devise: p.devise || 'EUR',
+      devise: p.devise || 'MAD',
       pays_origine: p.pays_origine || 'Morocco',
       pays_export_text: (p.pays_export_autorises || []).join(', '),
       incoterms_dispo: p.incoterms_dispo || [],
@@ -287,7 +287,7 @@ export default function Products() {
     const { data: tiers } = await supabase
       .from('product_pricing_tiers').select('*').eq('product_id', p.id).order('min_quantity');
     setPricingTiers((tiers || []).map(t => ({
-      min_quantity: String(t.min_quantity), price: String(t.price), currency: t.currency || 'EUR',
+      min_quantity: String(t.min_quantity), price: String(t.price), currency: t.currency || 'MAD',
     })));
 
     setEditing(p); setActiveTab('infos'); setModal('edit');
@@ -467,7 +467,7 @@ export default function Products() {
       commande_min: Number(row.commande_min) || 1,
       colisage: Number(row.colisage) || 1,
       duree_conservation: Number(row.duree_conservation) || 365,
-      devise: (row.devise as string) || 'EUR',
+      devise: (row.devise as string) || 'MAD',
       pays_origine: (row.pays_origine as string) || 'Morocco',
       pays_export_autorises: Array.isArray(row.pays_export_autorises) ? row.pays_export_autorises : [],
       incoterms_dispo: Array.isArray(row.incoterms_dispo) ? row.incoterms_dispo : [],
@@ -624,6 +624,7 @@ export default function Products() {
                   <th className="text-left px-3 py-3 text-xs font-semibold text-stone-500 uppercase tracking-wide">MOQ</th>
                   <th className="text-left px-3 py-3 text-xs font-semibold text-stone-500 uppercase tracking-wide">Colisage</th>
                   <th className="text-left px-3 py-3 text-xs font-semibold text-stone-500 uppercase tracking-wide">Poids</th>
+                  <th className="text-left px-3 py-3 text-xs font-semibold text-stone-500 uppercase tracking-wide">Prix marché</th>
                   <th className="text-left px-3 py-3 text-xs font-semibold text-stone-500 uppercase tracking-wide">Prix ancien</th>
                   <th className="text-left px-3 py-3 text-xs font-semibold text-stone-500 uppercase tracking-wide">Remise %</th>
                   <th className="text-left px-3 py-3 text-xs font-semibold text-stone-500 uppercase tracking-wide">Certifications</th>
@@ -691,6 +692,12 @@ export default function Products() {
                     {/* Poids */}
                     <td className="px-3 py-2 text-xs text-stone-400 whitespace-nowrap">
                       {p.poids ? `${p.poids}${p.poids_unite ? ' ' + p.poids_unite : ''}` : '—'}
+                    </td>
+                    {/* Prix marché */}
+                    <td className="px-3 py-2 text-xs text-right whitespace-nowrap">
+                      {p.prix_marche_mad != null
+                        ? <span className="text-stone-700 font-medium">{p.prix_marche_mad} MAD</span>
+                        : '—'}
                     </td>
                     {/* Prix ancien */}
                     <td className="px-3 py-2 text-xs text-stone-400 text-right">
@@ -1259,7 +1266,7 @@ export default function Products() {
                     )}
 
                     <button type="button"
-                      onClick={() => setPricingTiers(t => [...t, { min_quantity: '', price: '', currency: form.devise || 'EUR' }])}
+                      onClick={() => setPricingTiers(t => [...t, { min_quantity: '', price: '', currency: form.devise || 'MAD' }])}
                       className="flex items-center gap-1.5 text-xs text-amber-600 hover:text-amber-700 font-medium border border-amber-200 hover:border-amber-400 px-3 py-2 rounded-lg transition-colors">
                       <Plus className="w-3.5 h-3.5" />
                       Ajouter un palier de prix
