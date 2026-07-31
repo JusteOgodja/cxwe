@@ -2,6 +2,12 @@
   command = "npm run build"
   publish = "dist"
 
+# Les variables VITE_* sont PUBLIQUES par conception (intégrées au bundle frontend).
+# On les exclut du scan de secrets Netlify (sinon faux positif : la valeur de
+# VITE_ADMIN_EMAILS apparaît légitimement dans une migration SQL).
+[build.environment]
+  SECRETS_SCAN_OMIT_KEYS = "VITE_ADMIN_EMAILS,VITE_SUPABASE_ANON_KEY,VITE_SUPABASE_URL"
+
 # Sources autorisées pour le Netlify Image CDN (/.netlify/images)
 # Couvre les sites marocains (.ma) et CDN tiers d'où proviennent les images produit.
 [images]
