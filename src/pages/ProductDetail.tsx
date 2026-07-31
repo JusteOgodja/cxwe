@@ -102,6 +102,7 @@ export default function ProductDetail() {
         .from('products')
         .select('*, category:categories(name,slug), brand:brands(name,slug), supplier:suppliers(name,slug)')
         .eq('id', id)
+        .eq('is_active', true)
         .maybeSingle();
 
       if (!data) { navigate('/catalog', { replace: true }); return; }
