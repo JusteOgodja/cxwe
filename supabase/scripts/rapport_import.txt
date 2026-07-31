@@ -1,0 +1,20 @@
+RAPPORT IMPORT SOURCE FIELDS
+============================
+
+CSV source : PRODUITS_TOUTES_PHASES.csv
+Lignes totales CSV : 303 270
+
+Après déduplification :
+  EANs uniques       : 9,513
+  Noms uniques       : 115,970
+
+SQL générés :
+  update_by_ean.sql  : 9,513 UPDATEs (correspondance EAN exacte)
+  update_by_name_*.sql : 115,970 UPDATEs en 232 fichiers (correspondance nom)
+
+Ordre d'application recommandé :
+  1. update_by_ean.sql          (priorité max — EAN = identifiant univoque)
+  2. update_by_name_001.sql … update_by_name_232.sql
+
+Note : les UPDATEs ont la condition "AND source_site IS NULL"
+       pour éviter d'écraser des valeurs déjà renseignées manuellement.
