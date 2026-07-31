@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { TrendingUp, Users, Package, MessageSquare, Globe, Tag, BarChart2, AlertCircle } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { supabase } from '../../lib/supabase';
 
 interface MonthStat { month: string; count: number; }
@@ -28,6 +29,7 @@ function Card({ title, icon: Icon, children }: { title: string; icon: typeof Tre
 }
 
 export default function Analytics() {
+  const { t } = useTranslation();
   const [quotesByMonth, setQuotesByMonth]   = useState<MonthStat[]>([]);
   const [buyersByMonth, setBuyersByMonth]   = useState<MonthStat[]>([]);
   const [topCountries, setTopCountries]     = useState<CountryStat[]>([]);
@@ -99,7 +101,7 @@ export default function Analytics() {
 
       setLoading(false);
     })().catch(() => {
-      setError('Impossible de charger les statistiques. Vérifiez votre connexion.');
+      setError(t('admin.pages.analytics.loadError'));
       setLoading(false);
     });
   }, [retryCount]);
@@ -107,8 +109,8 @@ export default function Analytics() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-stone-800">Statistiques</h1>
-        <p className="text-stone-500 text-sm mt-1">Vue d'ensemble des 12 derniers mois</p>
+        <h1 className="text-2xl font-bold text-stone-800">{t('admin.pages.analytics.title')}</h1>
+        <p className="text-stone-500 text-sm mt-1">{t('admin.pages.analytics.subtitle')}</p>
       </div>
 
       {error && (
@@ -116,58 +118,58 @@ export default function Analytics() {
           <AlertCircle className="w-4 h-4 shrink-0" />
           <span className="flex-1">{error}</span>
           <button onClick={() => { setError(null); setLoading(true); setRetryCount(c => c + 1); }}
-            className="text-xs font-semibold underline hover:no-underline whitespace-nowrap">Réessayer</button>
+            className="text-xs font-semibold underline hover:no-underline whitespace-nowrap">{t('admin.common.retry')}</button>
         </div>
       )}
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
 
         {/* Quotes by month */}
-        <Card title="Demandes de proforma par mois" icon={MessageSquare}>
-          <MiniBarChart data={quotesByMonth} loading={loading} color="bg-amber-500" />
+        <Card title={t('admin.pages.analytics.quotesByMonth')} icon={MessageSquare}>
+          <MiniBarChart data={quotesByMonth} loading={loading} color="bg-amber-500" noDataMsg={t('admin.pages.analytics.noData')} />
         </Card>
 
         {/* Buyers by month */}
-        <Card title="Inscriptions acheteurs par mois" icon={Users}>
-          <MiniBarChart data={buyersByMonth} loading={loading} color="bg-emerald-500" />
+        <Card title={t('admin.pages.analytics.buyersByMonth')} icon={Users}>
+          <MiniBarChart data={buyersByMonth} loading={loading} color="bg-emerald-500" noDataMsg={t('admin.pages.analytics.noData')} />
         </Card>
 
         {/* Top countries */}
-        <Card title="Top 10 pays — demandes de proforma" icon={Globe}>
+        <Card title={t('admin.pages.analytics.topCountries')} icon={Globe}>
           {loading
             ? <LoadingSkel />
             : topCountries.length === 0
-              ? <Empty />
+              ? <Empty msg={t('admin.pages.analytics.noData')} />
               : <RankList items={topCountries.map(c => ({ label: c.country, count: c.count }))} color="bg-amber-400" />}
         </Card>
 
         {/* Top categories from quotes */}
-        <Card title="Top 10 catégories — demandes de proforma" icon={Tag}>
+        <Card title={t('admin.pages.analytics.topCategoriesQuotes')} icon={Tag}>
           {loading
             ? <LoadingSkel />
             : topCategories.length === 0
-              ? <Empty />
+              ? <Empty msg={t('admin.pages.analytics.noData')} />
               : <RankList items={topCategories.map(c => ({ label: c.name, count: c.count }))} color="bg-sky-400" />}
         </Card>
 
         {/* Products by category */}
-        <Card title="Produits actifs par catégorie (top 10)" icon={Package}>
+        <Card title={t('admin.pages.analytics.topCategoriesCatalog')} icon={Package}>
           {loading
             ? <LoadingSkel />
             : topCatProds.length === 0
-              ? <Empty />
+              ? <Empty msg={t('admin.pages.analytics.noData')} />
               : <RankList items={topCatProds.map(c => ({ label: c.name, count: c.count }))} color="bg-purple-400" />}
         </Card>
 
         {/* Product status */}
-        <Card title="Répartition des produits" icon={BarChart2}>
+        <Card title={t('admin.pages.analytics.productStatus')} icon={BarChart2}>
           {loading
             ? <LoadingSkel />
             : <div className="space-y-3">
                 {[
-                  { label: 'Actifs',    value: productStatus.active,   color: 'bg-emerald-500', textColor: 'text-emerald-600' },
-                  { label: 'Inactifs',  value: productStatus.inactive, color: 'bg-stone-300',   textColor: 'text-stone-500' },
-                  { label: 'Brouillon', value: productStatus.draft,    color: 'bg-blue-400',    textColor: 'text-blue-600' },
+                  { label: t('admin.pages.analytics.statusActive'),   value: productStatus.active,   color: 'bg-emerald-500', textColor: 'text-emerald-600' },
+                  { label: t('admin.pages.analytics.statusInactive'), value: productStatus.inactive, color: 'bg-stone-300',   textColor: 'text-stone-500' },
+                  { label: t('admin.pages.analytics.statusDraft'),    value: productStatus.draft,    color: 'bg-blue-400',    textColor: 'text-blue-600' },
                 ].map(item => {
                   const total = productStatus.active + productStatus.inactive + productStatus.draft || 1;
                   return (
@@ -203,9 +205,9 @@ function buildMonths(map: Record<string, number>): MonthStat[] {
   return months;
 }
 
-function MiniBarChart({ data, loading, color }: { data: MonthStat[]; loading: boolean; color: string }) {
+function MiniBarChart({ data, loading, color, noDataMsg }: { data: MonthStat[]; loading: boolean; color: string; noDataMsg?: string }) {
   if (loading) return <LoadingSkel />;
-  if (data.every(d => d.count === 0)) return <Empty msg="Aucune donnée sur cette période" />;
+  if (data.every(d => d.count === 0)) return <Empty msg={noDataMsg} />;
   const max = Math.max(...data.map(d => d.count), 1);
   return (
     <div className="flex items-end gap-1.5 h-28">
@@ -260,6 +262,6 @@ function LoadingSkel() {
   );
 }
 
-function Empty({ msg = 'Aucune donnée' }: { msg?: string }) {
-  return <p className="text-sm text-stone-400 text-center py-4">{msg}</p>;
+function Empty({ msg }: { msg?: string }) {
+  return <p className="text-sm text-stone-400 text-center py-4">{msg ?? '—'}</p>;
 }

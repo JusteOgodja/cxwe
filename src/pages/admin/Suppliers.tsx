@@ -1,5 +1,6 @@
 import { useEffect, useState, useRef } from 'react';
 import { Plus, Pencil, Trash2, X, Save, Search, ToggleLeft, ToggleRight, Mail, Phone, ExternalLink, Upload, Download, FileJson, AlertCircle } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { supabase } from '../../lib/supabase';
 import type { Supplier } from '../../types';
 
@@ -39,6 +40,7 @@ const SUP_TEMPLATE = [
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export default function Suppliers() {
+  const { t } = useTranslation();
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
@@ -77,7 +79,7 @@ export default function Suppliers() {
     setProductCounts(map);
     setLoading(false);
     } catch {
-      setError('Impossible de charger les fournisseurs. Vérifiez votre connexion.');
+      setError(t('admin.pages.suppliers.noResults'));
       setLoading(false);
     }
   };
@@ -120,7 +122,7 @@ export default function Suppliers() {
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm('Supprimer ce fournisseur ? Les produits associés perdront leur référence fournisseur.')) return;
+    if (!confirm(t('admin.pages.suppliers.confirmDelete'))) return;
     setDeleting(id);
     await supabase.from('suppliers').delete().eq('id', id);
     setDeleting(null);
@@ -203,25 +205,25 @@ export default function Suppliers() {
     <div>
       <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
         <div>
-          <h1 className="text-2xl font-bold text-stone-800">Fournisseurs</h1>
-          <p className="text-stone-500 text-sm mt-1">{suppliers.length} fournisseur{suppliers.length !== 1 ? 's' : ''}</p>
+          <h1 className="text-2xl font-bold text-stone-800">{t('admin.pages.suppliers.title')}</h1>
+          <p className="text-stone-500 text-sm mt-1">{t('admin.pages.suppliers.count', { count: suppliers.length })}</p>
         </div>
         <div className="flex items-center gap-2 flex-wrap">
-          <button onClick={handleExportTemplate} title="Télécharger le modèle JSON"
+          <button onClick={handleExportTemplate}
             className="flex items-center gap-1.5 border border-stone-200 text-stone-600 hover:bg-stone-50 text-sm font-medium px-3 py-2.5 rounded-xl transition-colors">
-            <FileJson className="w-4 h-4" /> Modèle
+            <FileJson className="w-4 h-4" /> {t('admin.pages.suppliers.template')}
           </button>
           <button onClick={handleExport}
             className="flex items-center gap-1.5 border border-stone-200 text-stone-600 hover:bg-stone-50 text-sm font-medium px-3 py-2.5 rounded-xl transition-colors">
-            <Download className="w-4 h-4" /> Exporter ({suppliers.length})
+            <Download className="w-4 h-4" /> {t('admin.pages.suppliers.export')}
           </button>
           <button onClick={() => fileInputRef.current?.click()}
             className="flex items-center gap-1.5 border border-amber-200 text-amber-700 hover:bg-amber-50 text-sm font-medium px-3 py-2.5 rounded-xl transition-colors">
-            <Upload className="w-4 h-4" /> Importer JSON
+            <Upload className="w-4 h-4" /> {t('admin.pages.suppliers.importJson')}
           </button>
           <button onClick={openAdd}
             className="flex items-center gap-2 bg-amber-500 hover:bg-amber-400 text-white text-sm font-semibold px-4 py-2.5 rounded-xl transition-colors">
-            <Plus className="w-4 h-4" /> Ajouter un fournisseur
+            <Plus className="w-4 h-4" /> {t('admin.pages.suppliers.addBtn')}
           </button>
           <input ref={fileInputRef} type="file" accept=".json,application/json" className="hidden" onChange={handleFileChange} />
         </div>
@@ -239,7 +241,7 @@ export default function Suppliers() {
       {/* Search */}
       <div className="relative max-w-sm mb-4">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-stone-400" />
-        <input type="text" placeholder="Nom, pays, contact..." value={search} onChange={e => setSearch(e.target.value)}
+        <input type="text" placeholder={t('admin.pages.suppliers.search')} value={search} onChange={e => setSearch(e.target.value)}
           className="w-full pl-9 pr-4 py-2.5 border border-stone-200 rounded-xl text-sm focus:outline-none focus:border-amber-400 bg-white" />
       </div>
 
@@ -252,16 +254,16 @@ export default function Suppliers() {
       ) : (
         <div className="bg-white rounded-2xl shadow-sm border border-stone-100 overflow-hidden">
           {filtered.length === 0 ? (
-            <div className="text-center py-12 text-stone-400 text-sm">Aucun fournisseur trouvé</div>
+            <div className="text-center py-12 text-stone-400 text-sm">{t('admin.pages.suppliers.noResults')}</div>
           ) : (
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-stone-100 bg-stone-50">
-                  <th className="text-left px-5 py-3 text-xs font-semibold text-stone-500 uppercase tracking-wide">Fournisseur</th>
-                  <th className="text-left px-5 py-3 text-xs font-semibold text-stone-500 uppercase tracking-wide hidden md:table-cell">Contact</th>
-                  <th className="text-left px-5 py-3 text-xs font-semibold text-stone-500 uppercase tracking-wide hidden sm:table-cell">Pays</th>
-                  <th className="text-left px-5 py-3 text-xs font-semibold text-stone-500 uppercase tracking-wide hidden lg:table-cell">Produits</th>
-                  <th className="text-left px-5 py-3 text-xs font-semibold text-stone-500 uppercase tracking-wide">Statut</th>
+                  <th className="text-left px-5 py-3 text-xs font-semibold text-stone-500 uppercase tracking-wide">{t('admin.pages.suppliers.colName')}</th>
+                  <th className="text-left px-5 py-3 text-xs font-semibold text-stone-500 uppercase tracking-wide hidden md:table-cell">{t('admin.pages.suppliers.colContact')}</th>
+                  <th className="text-left px-5 py-3 text-xs font-semibold text-stone-500 uppercase tracking-wide hidden sm:table-cell">{t('admin.pages.suppliers.colCountry')}</th>
+                  <th className="text-left px-5 py-3 text-xs font-semibold text-stone-500 uppercase tracking-wide hidden lg:table-cell">{t('admin.pages.suppliers.colProducts')}</th>
+                  <th className="text-left px-5 py-3 text-xs font-semibold text-stone-500 uppercase tracking-wide">{t('admin.pages.suppliers.colStatus')}</th>
                   <th className="px-5 py-3" />
                 </tr>
               </thead>
@@ -416,7 +418,7 @@ export default function Suppliers() {
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between p-5 border-b border-stone-100 sticky top-0 bg-white rounded-t-2xl">
               <h2 className="font-bold text-stone-800">
-                {modal === 'add' ? 'Nouveau fournisseur' : `Modifier — ${editing?.name}`}
+                {modal === 'add' ? t('admin.pages.suppliers.modalAdd') : t('admin.pages.suppliers.modalEdit')}
               </h2>
               <button onClick={() => setModal(null)} className="text-stone-400 hover:text-stone-600">
                 <X className="w-5 h-5" />
@@ -425,7 +427,7 @@ export default function Suppliers() {
 
             <form onSubmit={handleSave} className="p-5 space-y-4">
               <div>
-                <label className="block text-xs font-medium text-stone-600 mb-1.5">Nom du fournisseur *</label>
+                <label className="block text-xs font-medium text-stone-600 mb-1.5">{t('admin.pages.suppliers.fieldName')}</label>
                 <input required type="text" value={form.name} onChange={handleNameChange}
                   className="w-full border border-stone-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-amber-400 focus:ring-2 focus:ring-amber-100" />
               </div>
@@ -448,12 +450,12 @@ export default function Suppliers() {
 
               <div className="grid sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-medium text-stone-600 mb-1.5">Pays</label>
+                  <label className="block text-xs font-medium text-stone-600 mb-1.5">{t('admin.pages.suppliers.fieldCountry')}</label>
                   <input type="text" value={form.country} onChange={setF('country')} placeholder="Maroc"
                     className="w-full border border-stone-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-amber-400" />
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-stone-600 mb-1.5">Nom du contact</label>
+                  <label className="block text-xs font-medium text-stone-600 mb-1.5">{t('admin.pages.suppliers.fieldContact')}</label>
                   <input type="text" value={form.contact_name} onChange={setF('contact_name')}
                     className="w-full border border-stone-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-amber-400" />
                 </div>
@@ -461,26 +463,26 @@ export default function Suppliers() {
 
               <div className="grid sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-medium text-stone-600 mb-1.5">E-mail</label>
+                  <label className="block text-xs font-medium text-stone-600 mb-1.5">{t('admin.pages.suppliers.fieldEmail')}</label>
                   <input type="email" value={form.email} onChange={setF('email')}
                     className="w-full border border-stone-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-amber-400" />
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-stone-600 mb-1.5">Téléphone</label>
+                  <label className="block text-xs font-medium text-stone-600 mb-1.5">{t('admin.pages.suppliers.fieldPhone')}</label>
                   <input type="tel" value={form.phone} onChange={setF('phone')} placeholder="+212 6..."
                     className="w-full border border-stone-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-amber-400" />
                 </div>
               </div>
 
               <div>
-                <label className="block text-xs font-medium text-stone-600 mb-1.5">Description</label>
+                <label className="block text-xs font-medium text-stone-600 mb-1.5">{t('admin.pages.suppliers.fieldDescription')}</label>
                 <textarea rows={2} value={form.description}
                   onChange={e => setForm(f => ({ ...f, description: e.target.value }))}
                   className="w-full border border-stone-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-amber-400 resize-none" />
               </div>
 
               <div>
-                <label className="block text-xs font-medium text-stone-600 mb-1.5">URL du logo</label>
+                <label className="block text-xs font-medium text-stone-600 mb-1.5">{t('admin.pages.suppliers.fieldLogoUrl')}</label>
                 <input type="url" value={form.logo_url} onChange={setF('logo_url')} placeholder="https://..."
                   className="w-full border border-stone-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-amber-400" />
                 {form.logo_url && (
@@ -500,18 +502,18 @@ export default function Suppliers() {
                 <input type="checkbox" checked={form.is_active}
                   onChange={e => setForm(f => ({ ...f, is_active: e.target.checked }))}
                   className="w-4 h-4 rounded border-stone-300 text-amber-500" />
-                <span className="text-sm text-stone-700">Fournisseur actif</span>
+                <span className="text-sm text-stone-700">{t('admin.pages.suppliers.fieldActive')}</span>
               </label>
 
               <div className="flex gap-3 pt-2">
                 <button type="button" onClick={() => setModal(null)}
                   className="flex-1 border border-stone-200 text-stone-600 text-sm py-2.5 rounded-xl hover:bg-stone-50 transition-colors">
-                  Annuler
+                  {t('admin.common.cancel')}
                 </button>
                 <button type="submit" disabled={saving}
                   className="flex-1 bg-amber-500 hover:bg-amber-400 disabled:opacity-60 text-white text-sm font-semibold py-2.5 rounded-xl flex items-center justify-center gap-2 transition-colors">
                   {saving ? <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <Save className="w-4 h-4" />}
-                  {modal === 'add' ? 'Créer' : 'Enregistrer'}
+                  {modal === 'add' ? t('admin.pages.suppliers.btnCreate') : t('admin.pages.suppliers.btnSave')}
                 </button>
               </div>
             </form>

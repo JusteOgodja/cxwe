@@ -1,5 +1,6 @@
 import { useEffect, useState, useRef } from 'react';
 import { Plus, Pencil, Trash2, X, Save, ToggleLeft, ToggleRight, Upload, Download, FileJson, AlertCircle } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { supabase } from '../../lib/supabase';
 import type { Category } from '../../types';
 
@@ -37,6 +38,7 @@ const CAT_TEMPLATE = [
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export default function Categories() {
+  const { t } = useTranslation();
   type CategoryWithCount = Category & { products: { count: number }[] };
   const [items, setItems] = useState<CategoryWithCount[]>([]);
   const [loading, setLoading] = useState(true);
@@ -91,7 +93,7 @@ export default function Categories() {
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm('Supprimer cette catégorie et tous ses produits ?')) return;
+    if (!confirm(t('admin.pages.categories.confirmDelete'))) return;
     setDeleting(id);
     await supabase.from('categories').delete().eq('id', id);
     setDeleting(null);
@@ -164,25 +166,25 @@ export default function Categories() {
     <div>
       <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
         <div>
-          <h1 className="text-2xl font-bold text-stone-800">Catégories</h1>
-          <p className="text-stone-500 text-sm mt-1">{items.length} catégorie{items.length !== 1 ? 's' : ''}</p>
+          <h1 className="text-2xl font-bold text-stone-800">{t('admin.pages.categories.title')}</h1>
+          <p className="text-stone-500 text-sm mt-1">{t('admin.pages.categories.count', { count: items.length })}</p>
         </div>
         <div className="flex items-center gap-2 flex-wrap">
-          <button onClick={handleExportTemplate} title="Télécharger le modèle JSON"
+          <button onClick={handleExportTemplate}
             className="flex items-center gap-1.5 border border-stone-200 text-stone-600 hover:bg-stone-50 text-sm font-medium px-3 py-2.5 rounded-xl transition-colors">
-            <FileJson className="w-4 h-4" /> Modèle
+            <FileJson className="w-4 h-4" /> {t('admin.pages.categories.template')}
           </button>
           <button onClick={handleExport}
             className="flex items-center gap-1.5 border border-stone-200 text-stone-600 hover:bg-stone-50 text-sm font-medium px-3 py-2.5 rounded-xl transition-colors">
-            <Download className="w-4 h-4" /> Exporter ({items.length})
+            <Download className="w-4 h-4" /> {t('admin.pages.categories.export', { n: items.length })}
           </button>
           <button onClick={() => fileInputRef.current?.click()}
             className="flex items-center gap-1.5 border border-amber-200 text-amber-700 hover:bg-amber-50 text-sm font-medium px-3 py-2.5 rounded-xl transition-colors">
-            <Upload className="w-4 h-4" /> Importer JSON
+            <Upload className="w-4 h-4" /> {t('admin.pages.categories.importJson')}
           </button>
           <button onClick={openAdd}
             className="flex items-center gap-2 bg-amber-500 hover:bg-amber-400 text-white text-sm font-semibold px-4 py-2.5 rounded-xl transition-colors">
-            <Plus className="w-4 h-4" /> Ajouter
+            <Plus className="w-4 h-4" /> {t('admin.pages.categories.addBtn')}
           </button>
           <input ref={fileInputRef} type="file" accept=".json,application/json" className="hidden" onChange={handleFileChange} />
         </div>
@@ -199,14 +201,14 @@ export default function Categories() {
           <table className="min-w-max w-full text-sm">
             <thead>
               <tr className="border-b border-stone-100 bg-stone-50">
-                <th className="text-left px-4 py-3 text-xs font-semibold text-stone-500 uppercase tracking-wide">Image</th>
-                <th className="text-left px-4 py-3 text-xs font-semibold text-stone-500 uppercase tracking-wide min-w-[160px]">Catégorie</th>
-                <th className="text-left px-4 py-3 text-xs font-semibold text-stone-500 uppercase tracking-wide">Slug</th>
-                <th className="text-left px-4 py-3 text-xs font-semibold text-stone-500 uppercase tracking-wide min-w-[200px]">Description</th>
-                <th className="text-left px-4 py-3 text-xs font-semibold text-stone-500 uppercase tracking-wide">Produits</th>
-                <th className="text-left px-4 py-3 text-xs font-semibold text-stone-500 uppercase tracking-wide">Ordre</th>
-                <th className="text-left px-4 py-3 text-xs font-semibold text-stone-500 uppercase tracking-wide">Créé le</th>
-                <th className="text-left px-4 py-3 text-xs font-semibold text-stone-500 uppercase tracking-wide">Statut</th>
+                <th className="text-left px-4 py-3 text-xs font-semibold text-stone-500 uppercase tracking-wide">{t('admin.pages.categories.colImage')}</th>
+                <th className="text-left px-4 py-3 text-xs font-semibold text-stone-500 uppercase tracking-wide min-w-[160px]">{t('admin.pages.categories.colCategory')}</th>
+                <th className="text-left px-4 py-3 text-xs font-semibold text-stone-500 uppercase tracking-wide">{t('admin.pages.categories.colSlug')}</th>
+                <th className="text-left px-4 py-3 text-xs font-semibold text-stone-500 uppercase tracking-wide min-w-[200px]">{t('admin.pages.categories.colDescription')}</th>
+                <th className="text-left px-4 py-3 text-xs font-semibold text-stone-500 uppercase tracking-wide">{t('admin.pages.categories.colProducts')}</th>
+                <th className="text-left px-4 py-3 text-xs font-semibold text-stone-500 uppercase tracking-wide">{t('admin.pages.categories.colOrder')}</th>
+                <th className="text-left px-4 py-3 text-xs font-semibold text-stone-500 uppercase tracking-wide">{t('admin.pages.categories.colCreated')}</th>
+                <th className="text-left px-4 py-3 text-xs font-semibold text-stone-500 uppercase tracking-wide">{t('admin.pages.categories.colStatus')}</th>
                 <th className="px-4 py-3" />
               </tr>
             </thead>
@@ -276,10 +278,10 @@ export default function Categories() {
             <div className="flex items-center justify-between px-6 py-4 border-b border-stone-100 shrink-0">
               <div>
                 <h2 className="font-bold text-stone-800">
-                  Import JSON — {importRows.length} catégorie{importRows.length !== 1 ? 's' : ''} détectée{importRows.length !== 1 ? 's' : ''}
+                  {t('admin.pages.categories.importTitle', { n: importRows.length })}
                 </h2>
                 {importErrors.length > 0 && (
-                  <p className="text-xs text-red-500 mt-0.5">{importErrors.length} erreur{importErrors.length > 1 ? 's' : ''} — entrées invalides ignorées</p>
+                  <p className="text-xs text-red-500 mt-0.5">{t('admin.pages.categories.importErrors', { n: importErrors.length })}</p>
                 )}
               </div>
               <button onClick={closeImportModal} className="text-stone-400 hover:text-stone-600"><X className="w-5 h-5" /></button>
@@ -290,7 +292,7 @@ export default function Categories() {
                 <div className="bg-red-50 border border-red-100 rounded-xl p-4">
                   <div className="flex items-center gap-2 mb-2">
                     <AlertCircle className="w-4 h-4 text-red-500 shrink-0" />
-                    <p className="text-xs font-semibold text-red-600">Erreurs détectées</p>
+                    <p className="text-xs font-semibold text-red-600">{t('admin.pages.categories.importErrorsTitle')}</p>
                   </div>
                   <ul className="space-y-1">
                     {importErrors.map((err, i) => <li key={i} className="text-xs text-red-500">• {err}</li>)}
@@ -300,25 +302,25 @@ export default function Categories() {
               {importRows.length > 0 && (
                 <div>
                   <p className="text-xs font-semibold text-stone-500 mb-2">
-                    Aperçu — {validImportRows.length} valide{validImportRows.length !== 1 ? 's' : ''} sur {importRows.length}
+                    {t('admin.pages.categories.importPreview', { valid: validImportRows.length, total: importRows.length })}
                   </p>
                   <div className="rounded-xl overflow-hidden border border-stone-100">
                     <table className="w-full text-xs">
                       <thead>
                         <tr className="bg-stone-50 border-b border-stone-100">
-                          <th className="text-left px-4 py-2.5 text-stone-400 font-semibold">Nom</th>
-                          <th className="text-left px-4 py-2.5 text-stone-400 font-semibold">Slug</th>
-                          <th className="text-left px-4 py-2.5 text-stone-400 font-semibold">Ordre</th>
+                          <th className="text-left px-4 py-2.5 text-stone-400 font-semibold">{t('admin.pages.categories.colPreviewName')}</th>
+                          <th className="text-left px-4 py-2.5 text-stone-400 font-semibold">{t('admin.pages.categories.colPreviewSlug')}</th>
+                          <th className="text-left px-4 py-2.5 text-stone-400 font-semibold">{t('admin.pages.categories.colPreviewOrder')}</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-stone-50">
                         {importRows.slice(0, 8).map((row, i) => (
                           <tr key={i} className={row.name ? '' : 'bg-red-50/50'}>
                             <td className="px-4 py-2.5 font-medium text-stone-700">
-                              {(row.name as string) || <span className="text-red-400 italic">manquant</span>}
+                              {(row.name as string) || <span className="text-red-400 italic">{t('admin.pages.categories.missingField')}</span>}
                             </td>
                             <td className="px-4 py-2.5 font-mono text-stone-400">
-                              {(row.slug as string) || <span className="text-stone-300 italic">auto</span>}
+                              {(row.slug as string) || <span className="text-stone-300 italic">{t('admin.pages.categories.autoSlug')}</span>}
                             </td>
                             <td className="px-4 py-2.5 text-stone-400">{String(row.sort_order ?? 0)}</td>
                           </tr>
@@ -333,12 +335,12 @@ export default function Categories() {
             <div className="flex gap-3 px-6 py-4 border-t border-stone-100 shrink-0 bg-stone-50 rounded-b-2xl">
               <button onClick={closeImportModal}
                 className="flex-1 border border-stone-200 text-stone-600 text-sm py-2.5 rounded-xl hover:bg-white transition-colors">
-                Annuler
+                {t('admin.common.cancel')}
               </button>
               <button onClick={handleImportConfirm} disabled={importing || validImportRows.length === 0}
                 className="flex-1 bg-amber-500 hover:bg-amber-400 disabled:opacity-60 text-white text-sm font-semibold py-2.5 rounded-xl flex items-center justify-center gap-2 transition-colors">
                 {importing ? <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <Upload className="w-4 h-4" />}
-                Importer {validImportRows.length} catégorie{validImportRows.length !== 1 ? 's' : ''}
+                {t('admin.pages.categories.importBtn', { n: validImportRows.length })}
               </button>
             </div>
           </div>
@@ -350,7 +352,7 @@ export default function Categories() {
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg">
             <div className="flex items-center justify-between p-5 border-b border-stone-100">
-              <h2 className="font-bold text-stone-800">{modal === 'add' ? 'Ajouter une catégorie' : 'Modifier la catégorie'}</h2>
+              <h2 className="font-bold text-stone-800">{modal === 'add' ? t('admin.pages.categories.modalAdd') : t('admin.pages.categories.modalEdit')}</h2>
               <button onClick={() => setModal(null)} className="text-stone-400 hover:text-stone-600">
                 <X className="w-5 h-5" />
               </button>
@@ -358,29 +360,29 @@ export default function Categories() {
             <form onSubmit={handleSave} className="p-5 space-y-4">
               <div className="grid sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-medium text-stone-600 mb-1.5">Nom *</label>
+                  <label className="block text-xs font-medium text-stone-600 mb-1.5">{t('admin.pages.categories.fieldName')}</label>
                   <input required type="text" value={form.name} onChange={set('name')}
                     className="w-full border border-stone-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-amber-400 focus:ring-2 focus:ring-amber-100" />
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-stone-600 mb-1.5">Slug *</label>
+                  <label className="block text-xs font-medium text-stone-600 mb-1.5">{t('admin.pages.categories.fieldSlug')}</label>
                   <input required type="text" value={form.slug} onChange={set('slug')}
                     className="w-full border border-stone-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-amber-400 focus:ring-2 focus:ring-amber-100 font-mono" />
                 </div>
               </div>
               <div>
-                <label className="block text-xs font-medium text-stone-600 mb-1.5">Description</label>
+                <label className="block text-xs font-medium text-stone-600 mb-1.5">{t('admin.pages.categories.fieldDescription')}</label>
                 <textarea rows={2} value={form.description} onChange={set('description')}
                   className="w-full border border-stone-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-amber-400 focus:ring-2 focus:ring-amber-100 resize-none" />
               </div>
               <div>
-                <label className="block text-xs font-medium text-stone-600 mb-1.5">URL de l'image</label>
+                <label className="block text-xs font-medium text-stone-600 mb-1.5">{t('admin.pages.categories.fieldImageUrl')}</label>
                 <input type="url" value={form.image_url} onChange={set('image_url')}
                   className="w-full border border-stone-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-amber-400 focus:ring-2 focus:ring-amber-100" />
               </div>
               <div className="grid sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-medium text-stone-600 mb-1.5">Ordre d'affichage</label>
+                  <label className="block text-xs font-medium text-stone-600 mb-1.5">{t('admin.pages.categories.fieldOrder')}</label>
                   <input type="number" value={form.sort_order} onChange={set('sort_order')}
                     className="w-full border border-stone-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-amber-400 focus:ring-2 focus:ring-amber-100" />
                 </div>
@@ -389,19 +391,19 @@ export default function Categories() {
                     <input type="checkbox" checked={form.is_active}
                       onChange={e => setForm(prev => ({ ...prev, is_active: e.target.checked }))}
                       className="w-4 h-4 text-amber-500 rounded" />
-                    <span className="text-sm text-stone-700">Active</span>
+                    <span className="text-sm text-stone-700">{t('admin.pages.categories.fieldActive')}</span>
                   </label>
                 </div>
               </div>
               <div className="flex gap-3 pt-2">
                 <button type="button" onClick={() => setModal(null)}
                   className="flex-1 border border-stone-200 text-stone-600 text-sm py-2.5 rounded-xl hover:bg-stone-50 transition-colors">
-                  Annuler
+                  {t('admin.common.cancel')}
                 </button>
                 <button type="submit" disabled={saving}
                   className="flex-1 bg-amber-500 hover:bg-amber-400 text-white text-sm font-semibold py-2.5 rounded-xl flex items-center justify-center gap-2 transition-colors">
                   {saving ? <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <Save className="w-4 h-4" />}
-                  {modal === 'add' ? 'Créer' : 'Enregistrer'}
+                  {modal === 'add' ? t('admin.pages.categories.btnCreate') : t('admin.pages.categories.btnSave')}
                 </button>
               </div>
             </form>

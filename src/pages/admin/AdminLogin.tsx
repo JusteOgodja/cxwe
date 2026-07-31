@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Navigate } from 'react-router-dom';
 import { Lock } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { supabase } from '../../lib/supabase';
 
 interface Props {
@@ -9,6 +10,7 @@ interface Props {
 }
 
 export default function AdminLogin({ onLogin, isLoggedIn }: Props) {
+  const { t } = useTranslation();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -27,15 +29,14 @@ export default function AdminLogin({ onLogin, isLoggedIn }: Props) {
     setLoading(true);
     const { data, error: err } = await supabase.auth.signInWithPassword({ email, password });
     if (err) {
-      setError('Identifiants invalides. Veuillez réessayer.');
+      setError(t('admin.login.errorInvalid'));
       setLoading(false);
       return;
     }
     const userEmail = (data.user?.email ?? '').toLowerCase();
-    // Fail-closed: if no admin emails configured OR email not in list → deny
     if (ADMIN_EMAILS.length === 0 || !ADMIN_EMAILS.includes(userEmail)) {
       await supabase.auth.signOut();
-      setError('Accès refusé. Ce compte ne dispose pas des droits administrateur.');
+      setError(t('admin.login.errorForbidden'));
       setLoading(false);
       return;
     }
@@ -51,13 +52,13 @@ export default function AdminLogin({ onLogin, isLoggedIn }: Props) {
             alt="Morocco Food Export"
             className="h-24 w-auto mx-auto mb-4"
           />
-          <h1 className="text-xl font-bold text-stone-800">Espace Admin</h1>
-          <p className="text-stone-500 text-sm mt-1">Morocco Food Export</p>
+          <h1 className="text-xl font-bold text-stone-800">{t('admin.login.title')}</h1>
+          <p className="text-stone-500 text-sm mt-1">{t('admin.login.subtitle')}</p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-xs font-medium text-stone-600 mb-1.5">Email</label>
+            <label className="block text-xs font-medium text-stone-600 mb-1.5">{t('admin.login.emailLabel')}</label>
             <input
               type="email"
               required
@@ -68,7 +69,7 @@ export default function AdminLogin({ onLogin, isLoggedIn }: Props) {
             />
           </div>
           <div>
-            <label className="block text-xs font-medium text-stone-600 mb-1.5">Password</label>
+            <label className="block text-xs font-medium text-stone-600 mb-1.5">{t('admin.login.passwordLabel')}</label>
             <input
               type="password"
               required
@@ -95,7 +96,7 @@ export default function AdminLogin({ onLogin, isLoggedIn }: Props) {
             ) : (
               <Lock className="w-4 h-4" />
             )}
-            {loading ? 'Signing in...' : 'Sign In'}
+            {loading ? t('admin.login.submitting') : t('admin.login.submit')}
           </button>
         </form>
       </div>

@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import {
   Search, Trash2, Eye, X, Mail, Phone, MapPin, Package,
   Building2, FileText, Settings2, CheckCircle, Anchor, CreditCard,
@@ -49,6 +50,7 @@ function Row({ label, value }: { label: string; value?: string | boolean | null 
 }
 
 export default function Quotes() {
+  const { t } = useTranslation();
   const [searchParams] = useSearchParams();
   const [quotes, setQuotes] = useState<QuoteRequest[]>([]);
   const [loading, setLoading] = useState(true);
@@ -71,7 +73,7 @@ export default function Quotes() {
       setQuotes(data || []);
       setLoading(false);
     } catch {
-      setError('Impossible de charger les devis. Vérifiez votre connexion.');
+      setError(t('admin.pages.quotes.loadError'));
       setLoading(false);
     }
   };
@@ -115,7 +117,7 @@ export default function Quotes() {
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm('Supprimer définitivement cette demande de devis ?')) return;
+    if (!confirm(t('admin.pages.quotes.confirmDelete'))) return;
     setDeleting(id);
     await supabase.from('quote_requests').delete().eq('id', id);
     setDeleting(null);
@@ -127,12 +129,12 @@ export default function Quotes() {
     <div>
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-stone-800">Demandes de Proforma</h1>
-          <p className="text-stone-500 text-sm mt-1">{quotes.length} demande{quotes.length !== 1 ? 's' : ''} au total · {filtered.length} affichée{filtered.length !== 1 ? 's' : ''}</p>
+          <h1 className="text-2xl font-bold text-stone-800">{t('admin.pages.quotes.title')}</h1>
+          <p className="text-stone-500 text-sm mt-1">{quotes.length} · {filtered.length}</p>
         </div>
         <button onClick={exportCSV}
           className="flex items-center gap-2 bg-amber-500 hover:bg-amber-400 text-white text-sm font-semibold px-4 py-2 rounded-xl transition-colors">
-          <Download className="w-4 h-4" /> Exporter CSV
+          <Download className="w-4 h-4" /> {t('admin.pages.quotes.exportCsv')}
         </button>
       </div>
 
@@ -167,7 +169,7 @@ export default function Quotes() {
         {(search || filterStatus || dateFrom || dateTo) && (
           <button onClick={() => { setSearch(''); setFilterStatus(''); setDateFrom(''); setDateTo(''); }}
             className="text-xs text-stone-400 hover:text-stone-600 px-3 py-2.5 border border-stone-200 rounded-xl bg-white transition-colors">
-            Réinitialiser
+            {t('admin.common.reset')}
           </button>
         )}
       </div>
@@ -196,7 +198,7 @@ export default function Quotes() {
         </div>
       ) : filtered.length === 0 ? (
         <div className="bg-white rounded-2xl border border-stone-100 text-center py-16 text-stone-400 text-sm">
-          Aucune demande trouvée
+          {t('admin.pages.quotes.noResults')}
         </div>
       ) : (
         <div className="bg-white rounded-2xl shadow-sm border border-stone-100 divide-y divide-stone-50">

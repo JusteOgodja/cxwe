@@ -132,9 +132,31 @@ export interface Product {
   is_promo: boolean;
   est_sponsored: boolean;
 
-  // Sourcing
-  source_platform?: string;
+  // Données produit enrichies
+  poids_brut_kg?: number;
+  tva_pct?: number;
+  description_marketing?: string;
+  fmcg_segment?: string;
+  conditionnement?: string;
+  contenance?: string;
+  image_urls_extra?: string[];
+
+  // Marché marocain
+  prix_marche_mad?: number;
+  disponibilite?: string;
+
+  // Traçabilité scraping
+  source_site?: string;
   source_url?: string;
+  source_phase?: string;
+
+  // Export B2B
+  prix_depart_usine?: number;
+  delai_fabrication?: string;
+  emballage_export?: string;
+
+  // Legacy aliases (gardés pour compatibilité)
+  source_platform?: string;
   poids?: number;
   poids_unite?: string;
   prix_ancien?: number;

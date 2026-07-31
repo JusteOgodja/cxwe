@@ -3,8 +3,9 @@ import { Link, useLocation, Navigate, Outlet } from 'react-router-dom';
 import {
   Globe, LayoutDashboard, Tag, Package, MessageSquare,
   LogOut, Menu, ChevronRight, Building2, Truck, Handshake, Users,
-  AlertTriangle, Settings, BarChart2,
+  AlertTriangle, Settings, BarChart2, Languages,
 } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { supabase } from '../../lib/supabase';
 
 interface Props {
@@ -12,28 +13,35 @@ interface Props {
   onLogout: () => void;
 }
 
-const NAV = [
-  { label: 'Dashboard', to: '/admin/dashboard', icon: LayoutDashboard },
-  { label: 'Catégories', to: '/admin/categories', icon: Tag },
-  { label: 'Produits', to: '/admin/products', icon: Package },
-  { label: 'Marques', to: '/admin/brands', icon: Building2 },
-  { label: 'Fournisseurs', to: '/admin/suppliers', icon: Truck },
-  { label: 'Devis', to: '/admin/quotes', icon: MessageSquare },
-  { label: 'Partenariats', to: '/admin/partners', icon: Handshake },
-  { label: 'Acheteurs', to: '/admin/buyers', icon: Users },
-  { label: 'Qualité données', to: '/admin/data-quality', icon: AlertTriangle },
-  { label: 'Statistiques', to: '/admin/analytics', icon: BarChart2 },
-  { label: 'Paramètres', to: '/admin/settings', icon: Settings },
+const LANGS = [
+  { code: 'fr', label: 'FR' },
+  { code: 'en', label: 'EN' },
+  { code: 'ar', label: 'AR' },
 ];
 
 const ADMIN_EMAILS = (import.meta.env.VITE_ADMIN_EMAILS ?? '')
   .split(',').map((e: string) => e.trim().toLowerCase()).filter(Boolean);
 
 export default function AdminLayout({ isLoggedIn, onLogout }: Props) {
+  const { t, i18n } = useTranslation();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [newQuotes, setNewQuotes] = useState(0);
   const [isAdmin, setIsAdmin] = useState<boolean | null>(null);
   const location = useLocation();
+
+  const NAV = [
+    { key: 'dashboard', to: '/admin/dashboard', icon: LayoutDashboard },
+    { key: 'categories', to: '/admin/categories', icon: Tag },
+    { key: 'products', to: '/admin/products', icon: Package },
+    { key: 'brands', to: '/admin/brands', icon: Building2 },
+    { key: 'suppliers', to: '/admin/suppliers', icon: Truck },
+    { key: 'quotes', to: '/admin/quotes', icon: MessageSquare },
+    { key: 'partners', to: '/admin/partners', icon: Handshake },
+    { key: 'buyers', to: '/admin/buyers', icon: Users },
+    { key: 'dataQuality', to: '/admin/data-quality', icon: AlertTriangle },
+    { key: 'analytics', to: '/admin/analytics', icon: BarChart2 },
+    { key: 'settings', to: '/admin/settings', icon: Settings },
+  ];
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
@@ -80,13 +88,13 @@ export default function AdminLayout({ isLoggedIn, onLogout }: Props) {
           className="h-10 w-auto shrink-0"
         />
         <div className="min-w-0">
-          <div className="text-white font-bold text-xs truncate">Admin Panel</div>
+          <div className="text-white font-bold text-xs truncate">{t('admin.layout.panel')}</div>
           <div className="text-stone-400 text-xs truncate">Morocco Food Export</div>
         </div>
       </div>
 
       {/* Navigation */}
-      <nav className="flex-1 p-3 space-y-1">
+      <nav className="flex-1 p-3 space-y-1 overflow-y-auto">
         {NAV.map(item => {
           const badge = item.to === '/admin/quotes' && newQuotes > 0 ? newQuotes : 0;
           return (
@@ -101,7 +109,7 @@ export default function AdminLayout({ isLoggedIn, onLogout }: Props) {
               }`}
             >
               <item.icon className="w-4 h-4 shrink-0" />
-              {item.label}
+              {t(`admin.nav.${item.key}`)}
               {badge > 0 && (
                 <span className="ml-auto bg-red-500 text-white text-xs font-bold rounded-full min-w-[18px] h-[18px] flex items-center justify-center px-1 leading-none">
                   {badge > 99 ? '99+' : badge}
@@ -113,6 +121,28 @@ export default function AdminLayout({ isLoggedIn, onLogout }: Props) {
         })}
       </nav>
 
+      {/* Language switcher */}
+      <div className="px-3 py-2 border-t border-stone-700">
+        <div className="flex items-center gap-1.5 px-1 py-1">
+          <Languages className="w-3.5 h-3.5 text-stone-500 shrink-0" />
+          <div className="flex gap-1">
+            {LANGS.map(lang => (
+              <button
+                key={lang.code}
+                onClick={() => i18n.changeLanguage(lang.code)}
+                className={`text-xs font-semibold px-2 py-1 rounded-lg transition-colors ${
+                  i18n.language === lang.code
+                    ? 'bg-amber-500 text-white'
+                    : 'text-stone-400 hover:text-white hover:bg-stone-700'
+                }`}
+              >
+                {lang.label}
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+
       {/* Footer */}
       <div className="p-3 border-t border-stone-700 space-y-1">
         <Link
@@ -120,14 +150,14 @@ export default function AdminLayout({ isLoggedIn, onLogout }: Props) {
           className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-stone-400 hover:text-white hover:bg-stone-700 transition-all"
         >
           <Globe className="w-4 h-4 shrink-0" />
-          View Site
+          {t('admin.layout.viewSite')}
         </Link>
         <button
           onClick={handleLogout}
           className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-stone-400 hover:text-red-400 hover:bg-stone-700 transition-all"
         >
           <LogOut className="w-4 h-4 shrink-0" />
-          Sign Out
+          {t('admin.layout.signOut')}
         </button>
       </div>
     </div>
@@ -160,7 +190,7 @@ export default function AdminLayout({ isLoggedIn, onLogout }: Props) {
           <button onClick={() => setSidebarOpen(true)} className="text-stone-600">
             <Menu className="w-5 h-5" />
           </button>
-          <span className="font-semibold text-stone-800 text-sm">Admin Panel</span>
+          <span className="font-semibold text-stone-800 text-sm">{t('admin.layout.panel')}</span>
         </div>
 
         <main className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8">
@@ -170,4 +200,3 @@ export default function AdminLayout({ isLoggedIn, onLogout }: Props) {
     </div>
   );
 }
-

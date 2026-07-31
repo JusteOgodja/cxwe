@@ -1,5 +1,6 @@
 import { useEffect, useState, useCallback } from 'react';
 import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import {
   AlertTriangle, AlertCircle, CheckCircle, Image, Hash, Tag, Building2,
   RefreshCw, X, Save, ChevronRight, ExternalLink, FileText,
@@ -444,6 +445,7 @@ const MAX_WEIGHT = Object.values(SCORE_WEIGHTS).reduce((a, b) => a + b, 0); // p
 // ─── Main component ───────────────────────────────────────────────────────────
 
 export default function DataQuality() {
+  const { t } = useTranslation();
   const [stats, setStats] = useState<QualityStats | null>(null);
   const [problems, setProblems] = useState<ProblemProduct[]>([]);
   const [brands, setBrands] = useState<SelectOpt[]>([]);
@@ -478,7 +480,7 @@ export default function DataQuality() {
     setLoading(false);
     setRefreshing(false);
     } catch {
-      setError('Impossible de charger les données qualité. Vérifiez votre connexion.');
+      setError(t('admin.pages.dataQuality.loadError'));
       setLoading(false);
       setRefreshing(false);
     }
@@ -542,17 +544,17 @@ export default function DataQuality() {
       {/* Header */}
       <div className="flex items-start justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-stone-800">Qualité des données</h1>
+          <h1 className="text-2xl font-bold text-stone-800">{t('admin.pages.dataQuality.title')}</h1>
           <p className="text-stone-500 text-sm mt-1">
             {stats
-              ? `${problems.length} produit${problems.length !== 1 ? 's' : ''} actif${problems.length !== 1 ? 's' : ''} avec au moins 1 problème · ${stats.active.toLocaleString('fr-FR')} produits actifs au total`
-              : 'Chargement…'}
+              ? t('admin.pages.dataQuality.subtitle', { count: problems.length, total: stats.active.toLocaleString('fr-FR') })
+              : t('admin.common.loading')}
           </p>
         </div>
         <button onClick={load} disabled={refreshing}
           className="flex items-center gap-2 text-sm text-stone-600 border border-stone-200 rounded-xl px-4 py-2 hover:bg-stone-50 transition-colors disabled:opacity-50 shrink-0">
           <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} />
-          Actualiser
+          {t('admin.pages.dataQuality.refresh')}
         </button>
       </div>
 
@@ -561,7 +563,7 @@ export default function DataQuality() {
           <AlertCircle className="w-4 h-4 shrink-0" />
           <span className="flex-1">{error}</span>
           <button onClick={() => { setError(null); load(); }}
-            className="text-xs font-semibold underline hover:no-underline whitespace-nowrap">Réessayer</button>
+            className="text-xs font-semibold underline hover:no-underline whitespace-nowrap">{t('admin.common.retry')}</button>
         </div>
       )}
 
@@ -632,7 +634,7 @@ export default function DataQuality() {
             className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-colors ${
               activeFilter === 'all' ? 'bg-stone-800 text-white' : 'text-stone-500 hover:bg-stone-100'
             }`}>
-            Tous
+            {t('admin.pages.dataQuality.filterAll')}
             <span className={`text-xs px-1.5 py-0.5 rounded-full font-bold ${activeFilter === 'all' ? 'bg-white/20 text-white' : 'bg-stone-200 text-stone-500'}`}>
               {stats ? stats.products_with_issues.toLocaleString('fr-FR') : problems.length}
             </span>
@@ -671,8 +673,8 @@ export default function DataQuality() {
         ) : filtered.length === 0 ? (
           <div className="p-12 text-center">
             <CheckCircle className="w-10 h-10 text-emerald-500 mx-auto mb-3" />
-            <p className="text-stone-700 font-semibold">Aucun problème dans ce filtre</p>
-            <p className="text-stone-400 text-sm mt-1">Tous les produits actifs sont complets pour ce critère.</p>
+            <p className="text-stone-700 font-semibold">{t('admin.pages.dataQuality.noIssues')}</p>
+            <p className="text-stone-400 text-sm mt-1">{t('admin.pages.dataQuality.noIssuesDesc')}</p>
           </div>
         ) : (
           <div className="divide-y divide-stone-50">

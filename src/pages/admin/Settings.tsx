@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Save, RefreshCw, CheckCircle, AlertCircle, Globe, Mail, Phone, MessageSquare, Bell, Info, Image, DollarSign, Linkedin, Instagram, Facebook, Building2, FileText, ShieldCheck } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { supabase } from '../../lib/supabase';
 
 interface Setting {
@@ -68,6 +69,7 @@ const SECTIONS = [
 ];
 
 export default function Settings() {
+  const { t } = useTranslation();
   const [settings, setSettings] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -134,7 +136,7 @@ export default function Settings() {
           ) : (
             <input
               id={key}
-              type={key.includes('email') ? 'email' : key.includes('phone') || key.includes('whatsapp') ? 'tel' : 'text'}
+              type={key !== 'admin_emails' && key.includes('email') ? 'email' : key.includes('phone') || key.includes('whatsapp') ? 'tel' : 'text'}
               value={value}
               onChange={e => handleChange(key, e.target.value)}
               placeholder={key === 'contact_email' ? 'contact@example.com' : key === 'contact_whatsapp' ? '+212 6 00 00 00 00' : ''}
@@ -150,8 +152,8 @@ export default function Settings() {
     <div className="space-y-6 max-w-2xl">
       <div className="flex items-start justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-stone-800">Paramètres</h1>
-          <p className="text-stone-500 text-sm mt-1">Configuration générale de la plateforme</p>
+          <h1 className="text-2xl font-bold text-stone-800">{t('admin.pages.settings.title')}</h1>
+          <p className="text-stone-500 text-sm mt-1">{t('admin.pages.settings.subtitle')}</p>
         </div>
         <button
           onClick={handleSave}
@@ -169,7 +171,7 @@ export default function Settings() {
           ) : (
             <Save className="w-4 h-4" />
           )}
-          {saved ? 'Enregistré' : 'Enregistrer'}
+          {saved ? t('admin.pages.settings.saved') : t('admin.pages.settings.saveBtn')}
         </button>
       </div>
 
@@ -205,7 +207,7 @@ export default function Settings() {
           ))}
 
           <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 text-xs text-amber-800">
-            <strong>Note :</strong> Cette page nécessite la table <code className="bg-amber-100 px-1 rounded">site_settings</code> dans Supabase (colonnes : <code className="bg-amber-100 px-1 rounded">key text PRIMARY KEY, value text</code>). Les alertes email nécessitent une intégration Resend configurée séparément.
+            <strong>Note :</strong> Cette page nécessite la table <code className="bg-amber-100 px-1 rounded">site_settings</code> dans Supabase (colonnes : <code className="bg-amber-100 px-1 rounded">key text PRIMARY KEY, value text</code>). Le champ <em>admin_emails</em> contrôle l'accès à l'interface d'administration.
           </div>
         </div>
       )}

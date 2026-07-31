@@ -4,6 +4,7 @@ import {
   Tag, Package, MessageSquare, TrendingUp, Building2, Users,
   AlertTriangle, AlertCircle, CheckCircle, Clock, Globe, ArrowUp, ArrowDown, Minus,
 } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { supabase } from '../../lib/supabase';
 
 interface Stats {
@@ -30,6 +31,7 @@ interface Stats {
 interface TopItem { name: string; count: number; }
 
 export default function Dashboard() {
+  const { t } = useTranslation();
   const [stats, setStats] = useState<Stats>({
     categories: 0, products: 0, productsActive: 0, productsInactive: 0,
     brands: 0, quotes: 0, newQuotes: 0, quotesThisMonth: 0, quotesLastMonth: 0,
@@ -117,7 +119,7 @@ export default function Dashboard() {
 
       setLoading(false);
     })().catch(() => {
-      setError('Impossible de charger les données. Vérifiez votre connexion.');
+      setError(t('admin.common.loadError'));
       setLoading(false);
     });
   }, [retryCount]);
@@ -152,8 +154,8 @@ export default function Dashboard() {
   return (
     <div className="space-y-8">
       <div>
-        <h1 className="text-2xl font-bold text-stone-800">Dashboard</h1>
-        <p className="text-stone-500 text-sm mt-1">Morocco Food Export — vue d'ensemble</p>
+        <h1 className="text-2xl font-bold text-stone-800">{t('admin.dashboard.title')}</h1>
+        <p className="text-stone-500 text-sm mt-1">{t('admin.dashboard.subtitle')}</p>
       </div>
 
       {error && (
@@ -161,17 +163,17 @@ export default function Dashboard() {
           <AlertCircle className="w-4 h-4 shrink-0" />
           <span className="flex-1">{error}</span>
           <button onClick={() => { setError(null); setLoading(true); setRetryCount(c => c + 1); }}
-            className="text-xs font-semibold underline hover:no-underline whitespace-nowrap">Réessayer</button>
+            className="text-xs font-semibold underline hover:no-underline whitespace-nowrap">{t('admin.common.retry')}</button>
         </div>
       )}
 
       {/* ── Ligne 1 : stats volume ───────────────────────────────────── */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {[
-          { label: 'Catégories', value: stats.categories, icon: Tag, color: 'bg-amber-500', to: '/admin/categories' },
-          { label: 'Produits', value: stats.products, icon: Package, color: 'bg-emerald-500', to: '/admin/products' },
-          { label: 'Marques', value: stats.brands, icon: Building2, color: 'bg-blue-500', to: '/admin/brands' },
-          { label: 'Acheteurs', value: stats.buyers, icon: Users, color: 'bg-purple-500', to: '/admin/buyers' },
+          { label: t('admin.dashboard.categories'), value: stats.categories, icon: Tag, color: 'bg-amber-500', to: '/admin/categories' },
+          { label: t('admin.dashboard.products'), value: stats.products, icon: Package, color: 'bg-emerald-500', to: '/admin/products' },
+          { label: t('admin.dashboard.brands'), value: stats.brands, icon: Building2, color: 'bg-blue-500', to: '/admin/brands' },
+          { label: t('admin.dashboard.buyers'), value: stats.buyers, icon: Users, color: 'bg-purple-500', to: '/admin/buyers' },
         ].map(card => (
           <Link key={card.label} to={card.to}
             className="bg-white rounded-2xl p-5 shadow-sm border border-stone-100 hover:shadow-md transition-shadow">
@@ -197,8 +199,8 @@ export default function Dashboard() {
             {!loading && <Trend pct={monthTrend} />}
           </div>
           <div className="text-2xl font-bold text-stone-800">{loading ? <Skel /> : stats.quotesThisMonth}</div>
-          <div className="text-stone-500 text-xs mt-1">Devis ce mois</div>
-          {!loading && <div className="text-stone-400 text-xs mt-0.5">{stats.newQuotes} en attente de traitement</div>}
+          <div className="text-stone-500 text-xs mt-1">{t('admin.dashboard.quotesThisMonth')}</div>
+          {!loading && <div className="text-stone-400 text-xs mt-0.5">{t('admin.dashboard.quotesWaiting', { n: stats.newQuotes })}</div>}
         </div>
 
         {/* Taux de traitement */}
@@ -207,8 +209,8 @@ export default function Dashboard() {
             <CheckCircle className="w-4 h-4 text-emerald-600" />
           </div>
           <div className="text-2xl font-bold text-stone-800">{loading ? <Skel /> : `${treatmentRate}%`}</div>
-          <div className="text-stone-500 text-xs mt-1">Devis traités</div>
-          {!loading && <div className="text-stone-400 text-xs mt-0.5">{stats.quotesResponded} répondu{stats.quotesResponded !== 1 ? 's' : ''} / {stats.quotes} total</div>}
+          <div className="text-stone-500 text-xs mt-1">{t('admin.dashboard.quotesTreated')}</div>
+          {!loading && <div className="text-stone-400 text-xs mt-0.5">{t('admin.dashboard.quotesRespondedOf', { responded: stats.quotesResponded, total: stats.quotes })}</div>}
         </div>
 
         {/* Acheteurs cette semaine */}
@@ -217,8 +219,8 @@ export default function Dashboard() {
             <Users className="w-4 h-4 text-purple-600" />
           </div>
           <div className="text-2xl font-bold text-stone-800">{loading ? <Skel /> : `+${stats.buyersThisWeek}`}</div>
-          <div className="text-stone-500 text-xs mt-1">Nouveaux acheteurs (7j)</div>
-          {!loading && <div className="text-stone-400 text-xs mt-0.5">{stats.buyers} inscrits au total</div>}
+          <div className="text-stone-500 text-xs mt-1">{t('admin.dashboard.newBuyers7d')}</div>
+          {!loading && <div className="text-stone-400 text-xs mt-0.5">{t('admin.dashboard.buyersTotal', { n: stats.buyers })}</div>}
         </div>
 
         {/* Produits actifs */}
@@ -227,7 +229,7 @@ export default function Dashboard() {
             <TrendingUp className="w-4 h-4 text-stone-600" />
           </div>
           <div className="text-2xl font-bold text-stone-800">{loading ? <Skel /> : `${activeRatio}%`}</div>
-          <div className="text-stone-500 text-xs mt-1">Produits actifs</div>
+          <div className="text-stone-500 text-xs mt-1">{t('admin.dashboard.productsActive')}</div>
           {!loading && (
             <div className="mt-2 h-1.5 bg-stone-100 rounded-full overflow-hidden">
               <div className="h-full bg-emerald-500 rounded-full" style={{ width: `${activeRatio}%` }} />
@@ -241,33 +243,33 @@ export default function Dashboard() {
         <div className="p-5 border-b border-stone-100 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <AlertTriangle className="w-4 h-4 text-amber-500" />
-            <h2 className="font-semibold text-stone-800 text-sm">Qualité du catalogue</h2>
+            <h2 className="font-semibold text-stone-800 text-sm">{t('admin.dashboard.catalogQuality')}</h2>
           </div>
           <Link to="/admin/data-quality" className="text-amber-600 hover:text-amber-700 text-xs font-medium">
-            Voir détails →
+            {t('admin.common.viewDetails')}
           </Link>
         </div>
         <div className="grid grid-cols-2 sm:grid-cols-4 divide-x divide-y sm:divide-y-0 divide-stone-100">
           {[
             {
-              label: 'Sans image', value: stats.productsNoImage,
+              label: t('admin.dashboard.noImage'), value: stats.productsNoImage,
               pct: completenessImage, good: completenessImage >= 90,
-              desc: '% avec image',
+              desc: t('admin.dashboard.withImage'),
             },
             {
-              label: 'Sans EAN', value: stats.productsNoEAN,
+              label: t('admin.dashboard.noEAN'), value: stats.productsNoEAN,
               pct: completenessEAN, good: completenessEAN >= 80,
-              desc: '% avec EAN',
+              desc: t('admin.dashboard.withEAN'),
             },
             {
-              label: 'Sans marque (actifs)', value: stats.productsNoBrand,
+              label: t('admin.dashboard.noBrand'), value: stats.productsNoBrand,
               pct: null, good: stats.productsNoBrand === 0,
-              desc: 'Produits non liés',
+              desc: t('admin.dashboard.unlinked'),
             },
             {
-              label: 'Sans catégorie (actifs)', value: stats.productsNoCategory,
+              label: t('admin.dashboard.noCategory'), value: stats.productsNoCategory,
               pct: null, good: stats.productsNoCategory === 0,
-              desc: 'Produits non liés',
+              desc: t('admin.dashboard.unlinked'),
             },
           ].map(kpi => (
             <div key={kpi.label} className="p-4">
@@ -300,9 +302,9 @@ export default function Dashboard() {
         {/* Devis récents */}
         <div className="lg:col-span-2 bg-white rounded-2xl shadow-sm border border-stone-100 overflow-hidden">
           <div className="p-5 border-b border-stone-100 flex items-center justify-between">
-            <h2 className="font-semibold text-stone-800 text-sm">Derniers devis</h2>
+            <h2 className="font-semibold text-stone-800 text-sm">{t('admin.dashboard.recentQuotes')}</h2>
             <Link to="/admin/quotes" className="text-amber-600 hover:text-amber-700 text-xs font-medium">
-              Voir tous →
+              {t('admin.common.viewAll')}
             </Link>
           </div>
           {loading ? (
@@ -310,7 +312,7 @@ export default function Dashboard() {
               {[0, 1, 2].map(i => <div key={i} className="h-12 bg-stone-100 rounded-xl animate-pulse" />)}
             </div>
           ) : recentQuotes.length === 0 ? (
-            <div className="p-10 text-center text-stone-400 text-sm">Aucun devis pour l'instant.</div>
+            <div className="p-10 text-center text-stone-400 text-sm">{t('admin.dashboard.noQuotes')}</div>
           ) : (
             <div className="divide-y divide-stone-50">
               {recentQuotes.map(q => (
@@ -339,13 +341,13 @@ export default function Dashboard() {
           <div className="bg-white rounded-2xl shadow-sm border border-stone-100 overflow-hidden">
             <div className="p-4 border-b border-stone-100 flex items-center gap-2">
               <Globe className="w-4 h-4 text-stone-400" />
-              <span className="text-xs font-semibold text-stone-600 uppercase tracking-wide">Top pays (ce mois)</span>
+              <span className="text-xs font-semibold text-stone-600 uppercase tracking-wide">{t('admin.dashboard.topCountries')}</span>
             </div>
             <div className="divide-y divide-stone-50">
               {loading ? (
                 [0, 1, 2].map(i => <div key={i} className="m-3 h-6 bg-stone-100 rounded animate-pulse" />)
               ) : topCountries.length === 0 ? (
-                <div className="p-4 text-xs text-stone-400 text-center">Pas de données ce mois</div>
+                <div className="p-4 text-xs text-stone-400 text-center">{t('admin.dashboard.noDataMonth')}</div>
               ) : topCountries.map((c, i) => {
                 const max = topCountries[0]?.count || 1;
                 return (
@@ -367,13 +369,13 @@ export default function Dashboard() {
           <div className="bg-white rounded-2xl shadow-sm border border-stone-100 overflow-hidden">
             <div className="p-4 border-b border-stone-100 flex items-center gap-2">
               <Tag className="w-4 h-4 text-stone-400" />
-              <span className="text-xs font-semibold text-stone-600 uppercase tracking-wide">Top catégories</span>
+              <span className="text-xs font-semibold text-stone-600 uppercase tracking-wide">{t('admin.dashboard.topCategories')}</span>
             </div>
             <div className="divide-y divide-stone-50">
               {loading ? (
                 [0, 1, 2].map(i => <div key={i} className="m-3 h-6 bg-stone-100 rounded animate-pulse" />)
               ) : topCategories.length === 0 ? (
-                <div className="p-4 text-xs text-stone-400 text-center">Pas de données ce mois</div>
+                <div className="p-4 text-xs text-stone-400 text-center">{t('admin.dashboard.noDataMonth')}</div>
               ) : topCategories.map((c, i) => {
                 const max = topCategories[0]?.count || 1;
                 return (
@@ -397,10 +399,10 @@ export default function Dashboard() {
       {/* ── Actions rapides ──────────────────────────────────────────── */}
       <div className="grid sm:grid-cols-4 gap-3">
         {[
-          { label: 'Ajouter un produit', to: '/admin/products', icon: Package },
-          { label: 'Voir les devis', to: '/admin/quotes', icon: MessageSquare },
-          { label: 'Qualité catalogue', to: '/admin/data-quality', icon: AlertTriangle },
-          { label: 'Paramètres', to: '/admin/settings', icon: Clock },
+          { label: t('admin.dashboard.quickAdd'), to: '/admin/products', icon: Package },
+          { label: t('admin.dashboard.quickQuotes'), to: '/admin/quotes', icon: MessageSquare },
+          { label: t('admin.dashboard.quickQuality'), to: '/admin/data-quality', icon: AlertTriangle },
+          { label: t('admin.dashboard.quickSettings'), to: '/admin/settings', icon: Clock },
         ].map(a => (
           <Link key={a.label} to={a.to}
             className="bg-white border border-stone-100 rounded-xl px-4 py-3.5 flex items-center gap-2.5 hover:border-amber-200 hover:bg-amber-50 transition-all text-sm font-medium text-stone-700 hover:text-amber-700 shadow-sm">

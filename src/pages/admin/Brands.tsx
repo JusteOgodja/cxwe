@@ -1,5 +1,6 @@
 import { useEffect, useState, useRef } from 'react';
 import { Plus, Pencil, Trash2, X, Save, Search, ToggleLeft, ToggleRight, ExternalLink, Upload, Download, FileJson, AlertCircle, CheckSquare } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { supabase } from '../../lib/supabase';
 import type { Brand } from '../../types';
 
@@ -34,6 +35,7 @@ const BRAND_TEMPLATE = [
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export default function Brands() {
+  const { t } = useTranslation();
   type BrandWithCount = Brand & { products: { count: number }[] };
   const [brands, setBrands] = useState<BrandWithCount[]>([]);
   const [loading, setLoading] = useState(true);
@@ -91,7 +93,7 @@ export default function Brands() {
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm('Supprimer cette marque ? Les produits associés perdront leur référence marque.')) return;
+    if (!confirm(t('admin.pages.brands.confirmDelete'))) return;
     setDeleting(id);
     await supabase.from('brands').delete().eq('id', id);
     setDeleting(null);
@@ -108,7 +110,7 @@ export default function Brands() {
 
   const handleBulkDelete = async () => {
     const count = selectedIds.size;
-    if (!confirm(`Supprimer ${count} marque${count > 1 ? 's' : ''} ? Les produits associés perdront leur référence marque.`)) return;
+    if (!confirm(t('admin.pages.brands.confirmBulkDelete', { n: count }))) return;
     setBulkDeleting(true);
     await supabase.from('brands').delete().in('id', [...selectedIds]);
     setSelectedIds(new Set());
@@ -193,25 +195,25 @@ export default function Brands() {
     <div>
       <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
         <div>
-          <h1 className="text-2xl font-bold text-stone-800">Marques</h1>
-          <p className="text-stone-500 text-sm mt-1">{brands.length} marque{brands.length !== 1 ? 's' : ''}</p>
+          <h1 className="text-2xl font-bold text-stone-800">{t('admin.pages.brands.title')}</h1>
+          <p className="text-stone-500 text-sm mt-1">{t('admin.pages.brands.count', { count: brands.length })}</p>
         </div>
         <div className="flex items-center gap-2 flex-wrap">
-          <button onClick={handleExportTemplate} title="Télécharger le modèle JSON"
+          <button onClick={handleExportTemplate}
             className="flex items-center gap-1.5 border border-stone-200 text-stone-600 hover:bg-stone-50 text-sm font-medium px-3 py-2.5 rounded-xl transition-colors">
-            <FileJson className="w-4 h-4" /> Modèle
+            <FileJson className="w-4 h-4" /> {t('admin.pages.brands.template')}
           </button>
           <button onClick={handleExport}
             className="flex items-center gap-1.5 border border-stone-200 text-stone-600 hover:bg-stone-50 text-sm font-medium px-3 py-2.5 rounded-xl transition-colors">
-            <Download className="w-4 h-4" /> Exporter ({brands.length})
+            <Download className="w-4 h-4" /> {t('admin.pages.brands.export')}
           </button>
           <button onClick={() => fileInputRef.current?.click()}
             className="flex items-center gap-1.5 border border-amber-200 text-amber-700 hover:bg-amber-50 text-sm font-medium px-3 py-2.5 rounded-xl transition-colors">
-            <Upload className="w-4 h-4" /> Importer JSON
+            <Upload className="w-4 h-4" /> {t('admin.pages.brands.importJson')}
           </button>
           <button onClick={openAdd}
             className="flex items-center gap-2 bg-amber-500 hover:bg-amber-400 text-white text-sm font-semibold px-4 py-2.5 rounded-xl transition-colors">
-            <Plus className="w-4 h-4" /> Ajouter une marque
+            <Plus className="w-4 h-4" /> {t('admin.pages.brands.addBtn')}
           </button>
           <input ref={fileInputRef} type="file" accept=".json,application/json" className="hidden" onChange={handleFileChange} />
         </div>
@@ -221,7 +223,7 @@ export default function Brands() {
       <div className="flex items-center gap-3 mb-4 flex-wrap">
         <div className="relative max-w-sm flex-1 min-w-[200px]">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-stone-400" />
-          <input type="text" placeholder="Rechercher..." value={search} onChange={e => setSearch(e.target.value)}
+          <input type="text" placeholder={t('admin.pages.brands.search')} value={search} onChange={e => setSearch(e.target.value)}
             className="w-full pl-9 pr-4 py-2.5 border border-stone-200 rounded-xl text-sm focus:outline-none focus:border-amber-400 bg-white" />
         </div>
         {selectedIds.size > 0 && (
@@ -260,7 +262,7 @@ export default function Brands() {
       ) : (
         <div className="bg-white rounded-2xl shadow-sm border border-stone-100 overflow-x-auto">
           {filtered.length === 0 ? (
-            <div className="text-center py-12 text-stone-400 text-sm">Aucune marque trouvée</div>
+            <div className="text-center py-12 text-stone-400 text-sm">{t('admin.pages.brands.noResults')}</div>
           ) : (
             <table className="min-w-max w-full text-sm">
               <thead>
@@ -271,14 +273,14 @@ export default function Brands() {
                       onChange={toggleSelectAll}
                       className="w-4 h-4 rounded border-stone-300 text-amber-500 cursor-pointer" />
                   </th>
-                  <th className="text-left px-4 py-3 text-xs font-semibold text-stone-500 uppercase tracking-wide">Logo</th>
-                  <th className="text-left px-4 py-3 text-xs font-semibold text-stone-500 uppercase tracking-wide min-w-[160px]">Marque</th>
-                  <th className="text-left px-4 py-3 text-xs font-semibold text-stone-500 uppercase tracking-wide">Slug</th>
-                  <th className="text-left px-4 py-3 text-xs font-semibold text-stone-500 uppercase tracking-wide min-w-[200px]">Description</th>
-                  <th className="text-left px-4 py-3 text-xs font-semibold text-stone-500 uppercase tracking-wide">Produits</th>
-                  <th className="text-left px-4 py-3 text-xs font-semibold text-stone-500 uppercase tracking-wide">URL Logo</th>
-                  <th className="text-left px-4 py-3 text-xs font-semibold text-stone-500 uppercase tracking-wide">Créé le</th>
-                  <th className="text-left px-4 py-3 text-xs font-semibold text-stone-500 uppercase tracking-wide">Statut</th>
+                  <th className="text-left px-4 py-3 text-xs font-semibold text-stone-500 uppercase tracking-wide">{t('admin.pages.brands.colLogo')}</th>
+                  <th className="text-left px-4 py-3 text-xs font-semibold text-stone-500 uppercase tracking-wide min-w-[160px]">{t('admin.pages.brands.colBrand')}</th>
+                  <th className="text-left px-4 py-3 text-xs font-semibold text-stone-500 uppercase tracking-wide">{t('admin.pages.brands.colSlug')}</th>
+                  <th className="text-left px-4 py-3 text-xs font-semibold text-stone-500 uppercase tracking-wide min-w-[200px]">{t('admin.pages.brands.colDescription')}</th>
+                  <th className="text-left px-4 py-3 text-xs font-semibold text-stone-500 uppercase tracking-wide">{t('admin.pages.brands.colProducts')}</th>
+                  <th className="text-left px-4 py-3 text-xs font-semibold text-stone-500 uppercase tracking-wide">{t('admin.pages.brands.colLogo')}</th>
+                  <th className="text-left px-4 py-3 text-xs font-semibold text-stone-500 uppercase tracking-wide">{t('admin.pages.brands.colCreated')}</th>
+                  <th className="text-left px-4 py-3 text-xs font-semibold text-stone-500 uppercase tracking-wide">{t('admin.pages.brands.colStatus')}</th>
                   <th className="px-4 py-3" />
                 </tr>
               </thead>
@@ -364,10 +366,10 @@ export default function Brands() {
             <div className="flex items-center justify-between px-6 py-4 border-b border-stone-100 shrink-0">
               <div>
                 <h2 className="font-bold text-stone-800">
-                  Import JSON — {importRows.length} marque{importRows.length !== 1 ? 's' : ''} détectée{importRows.length !== 1 ? 's' : ''}
+                  {t('admin.pages.brands.importJson')} — {importRows.length}
                 </h2>
                 {importErrors.length > 0 && (
-                  <p className="text-xs text-red-500 mt-0.5">{importErrors.length} erreur{importErrors.length > 1 ? 's' : ''} — entrées invalides ignorées</p>
+                  <p className="text-xs text-red-500 mt-0.5">{t('admin.pages.categories.importErrors', { n: importErrors.length })}</p>
                 )}
               </div>
               <button onClick={closeImportModal} className="text-stone-400 hover:text-stone-600"><X className="w-5 h-5" /></button>
@@ -423,12 +425,12 @@ export default function Brands() {
             <div className="flex gap-3 px-6 py-4 border-t border-stone-100 shrink-0 bg-stone-50 rounded-b-2xl">
               <button onClick={closeImportModal}
                 className="flex-1 border border-stone-200 text-stone-600 text-sm py-2.5 rounded-xl hover:bg-white transition-colors">
-                Annuler
+                {t('admin.common.cancel')}
               </button>
               <button onClick={handleImportConfirm} disabled={importing || validImportRows.length === 0}
                 className="flex-1 bg-amber-500 hover:bg-amber-400 disabled:opacity-60 text-white text-sm font-semibold py-2.5 rounded-xl flex items-center justify-center gap-2 transition-colors">
                 {importing ? <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <Upload className="w-4 h-4" />}
-                Importer {validImportRows.length} marque{validImportRows.length !== 1 ? 's' : ''}
+                {t('admin.pages.categories.importBtn', { n: validImportRows.length })}
               </button>
             </div>
           </div>
@@ -441,7 +443,7 @@ export default function Brands() {
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between p-5 border-b border-stone-100 sticky top-0 bg-white rounded-t-2xl">
               <h2 className="font-bold text-stone-800">
-                {modal === 'add' ? 'Nouvelle marque' : `Modifier — ${editing?.name}`}
+                {modal === 'add' ? t('admin.pages.brands.modalAdd') : t('admin.pages.brands.modalEdit')}
               </h2>
               <button onClick={() => setModal(null)} className="text-stone-400 hover:text-stone-600">
                 <X className="w-5 h-5" />
@@ -450,7 +452,7 @@ export default function Brands() {
 
             <form onSubmit={handleSave} className="p-5 space-y-4">
               <div>
-                <label className="block text-xs font-medium text-stone-600 mb-1.5">Nom de la marque *</label>
+                <label className="block text-xs font-medium text-stone-600 mb-1.5">{t('admin.pages.brands.fieldName')}</label>
                 <input required type="text" value={form.name} onChange={handleNameChange}
                   className="w-full border border-stone-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-amber-400 focus:ring-2 focus:ring-amber-100" />
               </div>
@@ -472,14 +474,14 @@ export default function Brands() {
               </div>
 
               <div>
-                <label className="block text-xs font-medium text-stone-600 mb-1.5">Description</label>
+                <label className="block text-xs font-medium text-stone-600 mb-1.5">{t('admin.pages.brands.fieldDescription')}</label>
                 <textarea rows={2} value={form.description}
                   onChange={e => setForm(f => ({ ...f, description: e.target.value }))}
                   className="w-full border border-stone-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-amber-400 resize-none" />
               </div>
 
               <div>
-                <label className="block text-xs font-medium text-stone-600 mb-1.5">URL du logo</label>
+                <label className="block text-xs font-medium text-stone-600 mb-1.5">{t('admin.pages.brands.fieldLogoUrl')}</label>
                 <input type="url" value={form.logo_url}
                   onChange={e => setForm(f => ({ ...f, logo_url: e.target.value }))}
                   placeholder="https://..."
@@ -501,18 +503,18 @@ export default function Brands() {
                 <input type="checkbox" checked={form.is_active}
                   onChange={e => setForm(f => ({ ...f, is_active: e.target.checked }))}
                   className="w-4 h-4 rounded border-stone-300 text-amber-500" />
-                <span className="text-sm text-stone-700">Marque active</span>
+                <span className="text-sm text-stone-700">{t('admin.pages.brands.fieldActive')}</span>
               </label>
 
               <div className="flex gap-3 pt-2">
                 <button type="button" onClick={() => setModal(null)}
                   className="flex-1 border border-stone-200 text-stone-600 text-sm py-2.5 rounded-xl hover:bg-stone-50 transition-colors">
-                  Annuler
+                  {t('admin.common.cancel')}
                 </button>
                 <button type="submit" disabled={saving}
                   className="flex-1 bg-amber-500 hover:bg-amber-400 disabled:opacity-60 text-white text-sm font-semibold py-2.5 rounded-xl flex items-center justify-center gap-2 transition-colors">
                   {saving ? <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <Save className="w-4 h-4" />}
-                  {modal === 'add' ? 'Créer' : 'Enregistrer'}
+                  {modal === 'add' ? t('admin.pages.brands.btnCreate') : t('admin.pages.brands.btnSave')}
                 </button>
               </div>
             </form>

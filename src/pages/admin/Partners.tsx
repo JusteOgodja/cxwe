@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   Search, Trash2, Eye, X, Mail, Phone, MapPin,
   Package, Globe, Award, Handshake, Factory, CheckCircle,
@@ -72,6 +73,7 @@ function Row({ label, value }: { label: string; value?: string | boolean | null 
 }
 
 export default function Partners() {
+  const { t } = useTranslation();
   const [requests, setRequests] = useState<CollabRequest[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
@@ -107,7 +109,7 @@ export default function Partners() {
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm('Supprimer définitivement cette demande ?')) return;
+    if (!confirm(t('admin.pages.partners.confirmDelete'))) return;
     setDeleting(id);
     await supabase.from('collaboration_requests').delete().eq('id', id);
     setDeleting(null);
@@ -119,8 +121,8 @@ export default function Partners() {
     <div>
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-stone-800">Demandes de Partenariat</h1>
-          <p className="text-stone-500 text-sm mt-1">{requests.length} dossier{requests.length !== 1 ? 's' : ''} reçu{requests.length !== 1 ? 's' : ''}</p>
+          <h1 className="text-2xl font-bold text-stone-800">{t('admin.pages.partners.title')}</h1>
+          <p className="text-stone-500 text-sm mt-1">{t('admin.pages.partners.count', { count: requests.length })}</p>
         </div>
       </div>
 
@@ -163,7 +165,7 @@ export default function Partners() {
         </div>
       ) : filtered.length === 0 ? (
         <div className="bg-white rounded-2xl border border-stone-100 text-center py-16 text-stone-400 text-sm">
-          Aucune demande trouvée
+          {t('admin.pages.partners.noResults')}
         </div>
       ) : (
         <div className="bg-white rounded-2xl shadow-sm border border-stone-100 divide-y divide-stone-50">

@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
 import { Users, Search, Download, Mail, Phone, Building2, Globe, Briefcase, ChevronDown, ChevronUp, ExternalLink, AlertCircle } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
@@ -20,6 +21,7 @@ interface Buyer {
 type SortKey = 'created_at' | 'full_name' | 'company_name' | 'country';
 
 export default function Buyers() {
+  const { t } = useTranslation();
   const [buyers, setBuyers] = useState<Buyer[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
@@ -37,7 +39,7 @@ export default function Buyers() {
       setBuyers(data ?? []);
       setLoading(false);
     } catch {
-      setError('Impossible de charger les acheteurs. Vérifiez votre connexion.');
+      setError(t('admin.pages.buyers.loadError'));
       setLoading(false);
     }
   };
@@ -98,15 +100,15 @@ export default function Buyers() {
         <div>
           <h1 className="text-2xl font-bold text-stone-800 flex items-center gap-2">
             <Users className="w-6 h-6 text-amber-500" />
-            Acheteurs inscrits
+            {t('admin.pages.buyers.title')}
           </h1>
-          <p className="text-stone-500 text-sm mt-0.5">{buyers.length} profil{buyers.length !== 1 ? 's' : ''} enregistré{buyers.length !== 1 ? 's' : ''}</p>
+          <p className="text-stone-500 text-sm mt-0.5">{t('admin.pages.buyers.count', { count: buyers.length })}</p>
         </div>
         <button
           onClick={exportCSV}
           className="flex items-center gap-2 bg-amber-500 hover:bg-amber-400 text-white text-sm font-semibold px-4 py-2 rounded-lg transition-colors"
         >
-          <Download className="w-4 h-4" /> Exporter CSV
+          <Download className="w-4 h-4" /> {t('admin.pages.buyers.exportCsv')}
         </button>
       </div>
 
@@ -141,7 +143,7 @@ export default function Buyers() {
           type="text"
           value={search}
           onChange={e => setSearch(e.target.value)}
-          placeholder="Rechercher par nom, société, pays, secteur…"
+          placeholder={t('admin.pages.buyers.search')}
           className="w-full pl-9 pr-4 py-2.5 border border-stone-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/30 focus:border-amber-400"
         />
       </div>
@@ -152,7 +154,7 @@ export default function Buyers() {
           <div className="w-8 h-8 border-2 border-amber-500/30 border-t-amber-500 rounded-full animate-spin" />
         </div>
       ) : filtered.length === 0 ? (
-        <div className="text-center py-20 text-stone-400">Aucun acheteur trouvé</div>
+        <div className="text-center py-20 text-stone-400">{t('admin.pages.buyers.noResults')}</div>
       ) : (
         <div className="bg-white rounded-2xl border border-stone-200 overflow-hidden shadow-sm">
           <div className="overflow-x-auto">
