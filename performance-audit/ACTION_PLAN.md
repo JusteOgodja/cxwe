@@ -6,11 +6,17 @@ comparaison à `BASELINE.md`) avant le suivant.
 
 ## STATUT DES LOTS
 
-- **Lot A (images hero + logo + stabilité visuelle)** : ✅ **RÉALISÉ** (local, non déployé).
-  Preuve host-indépendante : logo 495 Ko → 13 Ko ; hero 6 slides (2 074 Ko) → 1 prioritaire ;
-  ≈ 2,3 Mo retirés du chemin critique accueil ; CLS non dégradé. Détails :
-  `lighthouse/COMPARISON.md` et section « Lot A » du rapport. **À reconfirmer en production
-  après déploiement.**
+- **Lot A (images hero + logo + stabilité visuelle)** : ✅ **RÉALISÉ + validé en Deploy Preview
+  Netlify** (branche `perf/lot-a-image-optimization`, PR #2, `deploy-preview-2`). Objectifs
+  **déterministes atteints** : logo 495 Ko → 13 Ko ; hero 6 slides (2 074 Ko) → 1 prioritaire
+  WebP ; ≈ 2,3 Mo retirés du chemin critique ; CLS stable ; build Netlify OK ; 0 erreur.
+  **Scores Lighthouse CWV non validables sur la preview** (instance froide + vignettes Image
+  CDN non cachées → confound). Détails : `lighthouse/PREVIEW_COMPARISON.md`. **Confirmation CWV
+  à faire en production après déploiement.** Branche **non fusionnée**.
+- **🔴 Lot Sécurité (URGENT, découvert pendant l'audit)** : escalade de privilèges — `site_settings`
+  (contenant `admin_emails`) modifiable par tout utilisateur authentifié (policy RLS
+  `site_settings_authenticated_all`, cmd ALL) → un acheteur peut se promouvoir admin. Plus :
+  `is_admin()` SECURITY DEFINER sans `search_path`. Voir rapport §Lot A/Sécurité. **Non corrigé.**
 - Lots B/C (N+1, code splitting, docx, comptages, index) : **non commencés** (volontairement).
 
 ---

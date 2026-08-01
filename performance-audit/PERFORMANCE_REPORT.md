@@ -230,13 +230,59 @@ variables d'env, appels Supabase, code splitting, `docx`, config Netlify.
   l'absence du Netlify Image CDN en local — à reconfirmer en production après déploiement.
   Mobile TBT/SI bruités (machine chargée) — non concluants.
 
-### Sécurité (contrôle lecture seule, section 12 du cahier des charges)
-`VITE_ADMIN_EMAILS` (frontend) ne fait que **masquer/afficher l'UI admin**. L'autorisation
-réelle est **serveur** : fonction `is_admin()` (SECURITY DEFINER) comparant l'email du **JWT**
-Supabase à `site_settings.admin_emails`, appliquée par les **policies RLS** sur products,
-categories, brands, suppliers, buyer_profiles (écritures et lectures sensibles réservées aux
-admins). **La sécurité ne dépend donc pas du frontend.** Aucune valeur/email n'est révélée ici.
+### Sécurité (contrôle lecture seule, section 12) — CONCLUSION CORRIGÉE
+
+> ⚠️ **Autorisation côté serveur présente, mais audit de sécurité complet encore nécessaire.**
+> Ma conclusion précédente (« sécurité rassurante ») était **prématurée** : la vérification
+> approfondie révèle une **faille d'escalade de privilèges**.
+
+Preuves (fichiers / objets exacts, aucune valeur/email révélée) :
+
+- ✅ **Frontend cosmétique** : `VITE_ADMIN_EMAILS` (utilisé dans `src/pages/admin/AdminLogin.tsx`
+  et `src/pages/admin/AdminLayout.tsx`) ne fait que **masquer/afficher l'UI**.
+- ✅ **Autorisation serveur** : `is_admin()` (migration `20260728000003_rls_admin_function.sql`)
+  compare `auth.jwt() ->> 'email'` à `site_settings.admin_emails` ; les policies RLS
+  `products_admin_*`, `categories_admin_*`, `brands_admin_write`, `suppliers_admin_write`,
+  `buyer_profiles_admin_read` imposent `is_admin()` pour les écritures/lectures sensibles.
+- ✅ **RPC** `search_products`, `list_source_sites`, `get_quality_stats` : `SECURITY INVOKER`
+  (la RLS de l'appelant s'applique). Pas de Supabase Storage dans le projet.
+- ⚠️ **`is_admin()` = `SECURITY DEFINER` sans `search_path` fixé** (`proconfig = null`) → faille
+  de durcissement « search_path mutable » (à corriger : `SET search_path = public, pg_temp`).
+- 🔴 **CRITIQUE — escalade de privilèges** : la table `site_settings` (qui contient
+  `admin_emails`) a une policy RLS `site_settings_authenticated_all` en **`cmd = ALL`** avec
+  `USING/CHECK = (auth.role() = 'authenticated')`. **N'importe quel utilisateur authentifié
+  peut donc écrire dans `site_settings`**, s'ajouter à `admin_emails`, et devenir admin
+  (`is_admin()` renvoie alors `true`). Le contrôle d'accès admin est donc **contournable**.
+
+**À traiter dans un lot sécurité dédié** (hors lot A) : restreindre les écritures de
+`site_settings` aux admins (ou service_role), et fixer le `search_path` de `is_admin()`.
+Ne rien modifier pendant le lot A.
 
 ### Reste hors lot A (lots ultérieurs)
 N+1 des vignettes (CategoryCard/BrandCard), code splitting + `docx` dynamique, comptages
 exacts, **CLS élevé de la fiche produit (1,026 mobile)** et de la page quote.
+
+---
+
+## 20. Prochain lot recommandé : CLS de la fiche produit
+
+**Ne rien modifier ici** — analyse seulement (aucun fichier touché pour ce CLS).
+
+- **Preuve** : Lighthouse `before` — `product/mobile` **CLS = 1,026** (médiane 3 passes) ;
+  `product/desktop` CLS 0,187 ; `quote/desktop` 0,187. L'accueil, lui, est bon (0,002).
+  Le détail `layout-shift-elements` n'a pas été capturé (runs en `--only-categories=performance`).
+- **Cause probable** : la fiche produit (`src/pages/ProductDetail.tsx`) affiche d'abord un
+  **skeleton** (lignes ~133-140 : `aspect-square` + barres) puis remplace par le contenu réel
+  chargé en asynchrone (produit + `product_pricing_tiers` + `product_images` + produits liés).
+  Si la hauteur du skeleton ≠ hauteur finale (bloc prix, tableau de paliers, section « produits
+  liés » avec images `loading="lazy"` sans dimensions ligne ~544), un **grand déplacement**
+  survient à l'arrivée des données — d'où un CLS mobile très élevé. L'image principale (ligne
+  ~189) est dans un conteneur `aspect-square` (espace réservé) → probablement **pas** la cause.
+- **Fichiers probablement concernés** : `src/pages/ProductDetail.tsx` (skeleton, section prix,
+  grille « produits liés »).
+- **Investigations nécessaires** : relancer Lighthouse **toutes catégories** (ou avec
+  diagnostics) pour capturer `layout-shift-elements` et les sélecteurs exacts ; comparer la
+  hauteur du skeleton à celle du contenu final ; réserver l'espace (min-height / aspect-ratio)
+  des blocs qui arrivent après la première peinture.
+- **Présent dans la Deploy Preview ?** Le lot A ne touche pas cette page → le CLS produit
+  **persiste** sur la preview (à confirmer par les mesures `after-preview`).
