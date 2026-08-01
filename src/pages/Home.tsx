@@ -22,6 +22,7 @@ const HERO_IMAGES = [
 function HeroCarousel({ images }: { images: string[] }) {
   const [current, setCurrent] = useState(0);
   const [prev, setPrev] = useState<number | null>(null);
+  const [loaded, setLoaded] = useState<Set<number>>(() => new Set([0]));
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const advance = (next: number) => {
@@ -45,24 +46,57 @@ function HeroCarousel({ images }: { images: string[] }) {
     return () => { if (timerRef.current) clearInterval(timerRef.current); };
   }, [images.length]);
 
+  // Charge la slide courante + précharge la suivante (jamais les 6 d'un coup).
+  useEffect(() => {
+    setLoaded(s => { const n = new Set(s); n.add(current); n.add((current + 1) % images.length); return n; });
+  }, [current, images.length]);
+
+  // Précharge la 2e slide pendant un temps d'inactivité (évite tout à-coup au 1er changement).
+  useEffect(() => {
+    if (images.length < 2) return;
+    const ric = window.requestIdleCallback || ((cb: () => void) => window.setTimeout(cb, 1200));
+    const id = ric(() => setLoaded(s => { const n = new Set(s); n.add(1 % images.length); return n; }));
+    return () => { (window.cancelIdleCallback || window.clearTimeout)(id as number); };
+  }, [images.length]);
+
   if (!images.length) {
     return <div className="absolute inset-0 bg-ma-navy" />;
   }
 
   return (
     <>
-      {/* Slides with crossfade */}
-      {images.map((src, i) => (
-        <div
-          key={src}
-          className="absolute inset-0 bg-center bg-cover transition-opacity duration-1000"
-          style={{
-            backgroundImage: `url(${src})`,
-            opacity: i === current ? 1 : i === prev ? 0 : 0,
-            zIndex: i === current ? 1 : i === prev ? 0 : -1,
-          }}
-        />
-      ))}
+      {/* Slides with crossfade — seule la slide 0 est prioritaire (eager/high) ; les autres se chargent à la demande */}
+      {images.map((src, i) => {
+        const base = src.replace(/\.jpg$/, '');
+        const show = loaded.has(i);
+        return (
+          <div
+            key={src}
+            className="absolute inset-0 transition-opacity duration-1000"
+            style={{
+              opacity: i === current ? 1 : i === prev ? 0 : 0,
+              zIndex: i === current ? 1 : i === prev ? 0 : -1,
+            }}
+            aria-hidden="true"
+          >
+            {show && (
+              <picture>
+                <source type="image/webp" srcSet={`${base}-900.webp 900w, ${base}.webp 1600w`} sizes="100vw" />
+                <img
+                  src={src}
+                  alt=""
+                  width={1600}
+                  height={2200}
+                  className="absolute inset-0 w-full h-full object-cover object-center"
+                  fetchPriority={i === 0 ? 'high' : 'low'}
+                  loading={i === 0 ? 'eager' : 'lazy'}
+                  decoding="async"
+                />
+              </picture>
+            )}
+          </div>
+        );
+      })}
 
       {/* Dot indicators */}
       {images.length > 1 && (
