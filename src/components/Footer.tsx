@@ -13,7 +13,10 @@ export default function Footer() {
           {/* Brand */}
           <div className="lg:col-span-2">
             <div className="mb-5">
-              <img src="/logo.png" alt="Morocco Food Export" className="h-20 sm:h-32 w-auto" />
+              <picture>
+                <source type="image/webp" srcSet="/logo.webp" />
+                <img src="/logo.png" alt="Morocco Food Export" width={128} height={128} className="h-20 sm:h-32 w-auto" />
+              </picture>
             </div>
             <p className="text-stone-400 text-sm leading-relaxed max-w-sm">
               {t('footer.tagline')}

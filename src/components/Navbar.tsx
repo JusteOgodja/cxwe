@@ -76,12 +76,17 @@ export default function Navbar() {
                 boxShadow: '0 0 14px rgba(201,136,58,0.30), 0 0 28px rgba(201,136,58,0.12)',
               }}
             >
-              <img
-                src="/logo.png"
-                alt="Morocco Food Export"
-                className="h-14 w-auto rounded-full block"
-                style={{ filter: 'drop-shadow(0 1px 3px rgba(0,0,0,0.4))' }}
-              />
+              <picture>
+                <source type="image/webp" srcSet="/logo.webp" />
+                <img
+                  src="/logo.png"
+                  alt="Morocco Food Export"
+                  width={56}
+                  height={56}
+                  className="h-14 w-auto rounded-full block"
+                  style={{ filter: 'drop-shadow(0 1px 3px rgba(0,0,0,0.4))' }}
+                />
+              </picture>
             </div>
             <div className="leading-tight hidden sm:block">
               <div className="text-white font-bold text-sm tracking-wide">Morocco Food Export</div>
