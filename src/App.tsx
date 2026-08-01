@@ -24,6 +24,7 @@ import Quotes from './pages/admin/Quotes';
 import Partners from './pages/admin/Partners';
 import Buyers from './pages/admin/Buyers';
 import DataQuality from './pages/admin/DataQuality';
+import Sources from './pages/admin/Sources';
 import Analytics from './pages/admin/Analytics';
 import Settings from './pages/admin/Settings';
 import Partner from './pages/Partner';
@@ -129,6 +130,7 @@ export default function App() {
           <Route path="quotes" element={<Quotes />} />
           <Route path="partners" element={<Partners />} />
           <Route path="buyers" element={<Buyers />} />
+          <Route path="sources" element={<Sources />} />
           <Route path="data-quality" element={<DataQuality />} />
           <Route path="analytics" element={<Analytics />} />
           <Route path="settings" element={<Settings />} />

@@ -424,6 +424,7 @@ const en = {
       quotes: 'Quotes',
       partners: 'Partnerships',
       buyers: 'Buyers',
+      sources: 'Sources',
       dataQuality: 'Data Quality',
       analytics: 'Analytics',
       settings: 'Settings',

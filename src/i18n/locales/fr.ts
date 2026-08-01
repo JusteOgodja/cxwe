@@ -424,6 +424,7 @@ const fr = {
       quotes: 'Devis',
       partners: 'Partenariats',
       buyers: 'Acheteurs',
+      sources: 'Sources',
       dataQuality: 'Qualité données',
       analytics: 'Statistiques',
       settings: 'Paramètres',

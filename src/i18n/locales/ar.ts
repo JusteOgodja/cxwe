@@ -424,6 +424,7 @@ const ar = {
       quotes: 'طلبات العروض',
       partners: 'الشراكات',
       buyers: 'المشترون',
+      sources: 'المصادر',
       dataQuality: 'جودة البيانات',
       analytics: 'الإحصاءات',
       settings: 'الإعدادات',

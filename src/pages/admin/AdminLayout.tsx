@@ -38,6 +38,7 @@ export default function AdminLayout({ isLoggedIn, onLogout }: Props) {
     { key: 'quotes', to: '/admin/quotes', icon: MessageSquare },
     { key: 'partners', to: '/admin/partners', icon: Handshake },
     { key: 'buyers', to: '/admin/buyers', icon: Users },
+    { key: 'sources', to: '/admin/sources', icon: Globe },
     { key: 'dataQuality', to: '/admin/data-quality', icon: AlertTriangle },
     { key: 'analytics', to: '/admin/analytics', icon: BarChart2 },
     { key: 'settings', to: '/admin/settings', icon: Settings },
