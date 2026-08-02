@@ -19,9 +19,6 @@ const LANGS = [
   { code: 'ar', label: 'AR' },
 ];
 
-const ADMIN_EMAILS = (import.meta.env.VITE_ADMIN_EMAILS ?? '')
-  .split(',').map((e: string) => e.trim().toLowerCase()).filter(Boolean);
-
 export default function AdminLayout({ isLoggedIn, onLogout }: Props) {
   const { t, i18n } = useTranslation();
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -45,9 +42,11 @@ export default function AdminLayout({ isLoggedIn, onLogout }: Props) {
   ];
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data }) => {
-      const email = (data.session?.user?.email ?? '').toLowerCase();
-      setIsAdmin(ADMIN_EMAILS.length > 0 && ADMIN_EMAILS.includes(email));
+    // Autorité côté serveur (RLS) : la RPC renvoie un booléen fondé sur
+    // l'UUID de l'utilisateur (app_private.administrators). Indication d'UI
+    // uniquement ; la vraie protection est la RLS. Fail-closed en cas d'erreur.
+    supabase.rpc('current_user_is_admin').then(({ data }) => {
+      setIsAdmin(data === true);
     });
   }, [isLoggedIn]);
 

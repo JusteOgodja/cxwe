@@ -16,25 +16,21 @@ export default function AdminLogin({ onLogin, isLoggedIn }: Props) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  const ADMIN_EMAILS = (import.meta.env.VITE_ADMIN_EMAILS ?? '')
-    .split(',')
-    .map((e: string) => e.trim().toLowerCase())
-    .filter(Boolean);
-
   if (isLoggedIn) return <Navigate to="/admin/dashboard" replace />;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
     setLoading(true);
-    const { data, error: err } = await supabase.auth.signInWithPassword({ email, password });
+    const { error: err } = await supabase.auth.signInWithPassword({ email, password });
     if (err) {
       setError(t('admin.login.errorInvalid'));
       setLoading(false);
       return;
     }
-    const userEmail = (data.user?.email ?? '').toLowerCase();
-    if (ADMIN_EMAILS.length === 0 || !ADMIN_EMAILS.includes(userEmail)) {
+    // Autorité serveur : vérifie le statut admin via RPC (fondée sur l'UUID, RLS).
+    const { data: isAdmin } = await supabase.rpc('current_user_is_admin');
+    if (isAdmin !== true) {
       await supabase.auth.signOut();
       setError(t('admin.login.errorForbidden'));
       setLoading(false);
