@@ -33,14 +33,6 @@ interface CollabRequest {
 
 const STATUS_OPTIONS: PartnerStatus[] = ['new', 'contacted', 'en_discussion', 'partenaire', 'refusé'];
 
-const STATUS_LABELS: Record<PartnerStatus, string> = {
-  new:           'Nouveau',
-  contacted:     'Contacté',
-  en_discussion: 'En discussion',
-  partenaire:    'Partenaire',
-  'refusé':      'Refusé',
-};
-
 const STATUS_COLORS: Record<PartnerStatus, string> = {
   new:           'bg-red-100 text-red-700 border-red-200',
   contacted:     'bg-amber-100 text-amber-700 border-amber-200',
@@ -63,17 +55,19 @@ function Section({ icon: Icon, title, children }: { icon: React.ComponentType<{ 
 }
 
 function Row({ label, value }: { label: string; value?: string | boolean | null }) {
+  const { t } = useTranslation();
   if (!value && value !== false) return null;
   return (
     <div className="flex gap-2">
       <span className="text-stone-400 shrink-0 w-32">{label} :</span>
-      <span className="font-medium">{value === true ? 'Oui' : value === false ? 'Non' : value}</span>
+      <span className="font-medium">{value === true ? t('admin.common.yes') : value === false ? t('admin.common.no') : value}</span>
     </div>
   );
 }
 
 export default function Partners() {
   const { t } = useTranslation();
+  const statusLabel = (status: PartnerStatus) => t(`admin.pages.partners.status.${status}`);
   const [requests, setRequests] = useState<CollabRequest[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
@@ -130,14 +124,14 @@ export default function Partners() {
       <div className="flex gap-3 mb-4 flex-wrap">
         <div className="relative flex-1 min-w-40">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-stone-400" />
-          <input type="text" placeholder="Rechercher entreprise, produit, e-mail…"
+          <input type="text" placeholder={t('admin.pages.partners.searchDetailed')}
             value={search} onChange={e => setSearch(e.target.value)}
             className="w-full pl-9 pr-4 py-2.5 border border-stone-200 rounded-xl text-sm focus:outline-none focus:border-amber-400 bg-white" />
         </div>
         <select value={filterStatus} onChange={e => setFilterStatus(e.target.value)}
           className="border border-stone-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-amber-400 bg-white">
-          <option value="">Tous les statuts</option>
-          {STATUS_OPTIONS.map(s => <option key={s} value={s}>{STATUS_LABELS[s]}</option>)}
+          <option value="">{t('admin.pages.quotes.filterStatus')}</option>
+          {STATUS_OPTIONS.map(s => <option key={s} value={s}>{statusLabel(s)}</option>)}
         </select>
       </div>
 
@@ -151,7 +145,7 @@ export default function Partners() {
                 filterStatus === s ? STATUS_COLORS[s] : 'bg-white border-stone-200 text-stone-500 hover:border-stone-300'
               }`}>
               <div className="text-lg font-bold mb-0.5">{count}</div>
-              {STATUS_LABELS[s]}
+              {statusLabel(s)}
             </button>
           );
         })}
@@ -178,11 +172,11 @@ export default function Partners() {
                 <div className="flex items-center gap-2 flex-wrap">
                   <span className="font-semibold text-stone-800 text-sm">{r.company_name}</span>
                   <span className={`text-xs px-2 py-0.5 rounded-full border font-medium ${STATUS_COLORS[r.status]}`}>
-                    {STATUS_LABELS[r.status]}
+                    {statusLabel(r.status)}
                   </span>
                   {r.already_exporting && (
                     <span className="text-xs bg-blue-50 text-blue-600 border border-blue-100 px-2 py-0.5 rounded-full font-medium">
-                      Déjà exportateur
+                      {t('admin.pages.partners.alreadyExporter')}
                     </span>
                   )}
                 </div>
@@ -193,7 +187,7 @@ export default function Partners() {
               </div>
               <div className="flex items-center gap-2 shrink-0">
                 <span className="text-stone-400 text-xs hidden sm:block whitespace-nowrap">
-                  {new Date(r.created_at).toLocaleDateString('fr-FR')}
+                  {new Date(r.created_at).toLocaleDateString()}
                 </span>
                 <button onClick={() => setSelected(r)}
                   className="p-1.5 text-stone-400 hover:text-amber-600 hover:bg-amber-50 rounded-lg transition-colors">
@@ -220,7 +214,7 @@ export default function Partners() {
               <div>
                 <h2 className="font-bold text-stone-800">{selected.company_name}</h2>
                 <p className="text-xs text-stone-400 mt-0.5">
-                  Reçu le {new Date(selected.created_at).toLocaleString('fr-FR')}
+                  {t('admin.pages.partners.receivedOn', { date: new Date(selected.created_at).toLocaleString() })}
                 </p>
               </div>
               <button onClick={() => setSelected(null)} className="text-stone-400 hover:text-stone-600 mt-0.5">
@@ -232,7 +226,7 @@ export default function Partners() {
 
               {/* Status */}
               <div>
-                <p className="text-xs font-semibold text-stone-400 uppercase tracking-wider mb-2">Statut du dossier</p>
+                <p className="text-xs font-semibold text-stone-400 uppercase tracking-wider mb-2">{t('admin.pages.partners.applicationStatus')}</p>
                 <div className="flex gap-2 flex-wrap">
                   {STATUS_OPTIONS.map(s => (
                     <button key={s} onClick={() => updateStatus(selected.id, s)}
@@ -240,16 +234,16 @@ export default function Partners() {
                       className={`text-xs px-3 py-1.5 rounded-full border font-medium transition-all ${
                         selected.status === s ? STATUS_COLORS[s] : 'bg-white border-stone-200 text-stone-500 hover:border-stone-300'
                       }`}>
-                      {STATUS_LABELS[s]}
+                      {statusLabel(s)}
                     </button>
                   ))}
                 </div>
               </div>
 
               {/* Producer identity */}
-              <Section icon={Factory} title="Producteur">
-                <Row label="Entreprise" value={selected.company_name} />
-                <Row label="Contact" value={selected.contact_name} />
+              <Section icon={Factory} title={t('admin.pages.partners.producer')}>
+                <Row label={t('admin.common.company')} value={selected.company_name} />
+                <Row label={t('admin.pages.partners.contact')} value={selected.contact_name} />
                 <div className="flex gap-2">
                   <span className="text-stone-400 shrink-0 w-32">E-mail :</span>
                   <a href={`mailto:${selected.email}`} className="font-medium text-amber-600 hover:underline flex items-center gap-1">
@@ -258,19 +252,19 @@ export default function Partners() {
                 </div>
                 {selected.phone && (
                   <div className="flex gap-2">
-                    <span className="text-stone-400 shrink-0 w-32">Téléphone :</span>
+                    <span className="text-stone-400 shrink-0 w-32">{t('admin.common.phone')} :</span>
                     <a href={`tel:${selected.phone}`} className="font-medium text-amber-600 hover:underline flex items-center gap-1">
                       <Phone className="w-3 h-3" /> {selected.phone}
                     </a>
                   </div>
                 )}
                 <div className="flex gap-2 items-center">
-                  <span className="text-stone-400 shrink-0 w-32 flex items-center gap-1"><MapPin className="w-3 h-3" /> Localisation :</span>
+                  <span className="text-stone-400 shrink-0 w-32 flex items-center gap-1"><MapPin className="w-3 h-3" /> {t('admin.pages.partners.location')} :</span>
                   <span className="font-medium">{[selected.city, selected.country].filter(Boolean).join(', ')}</span>
                 </div>
                 {selected.website && (
                   <div className="flex gap-2">
-                    <span className="text-stone-400 shrink-0 w-32">Site web :</span>
+                    <span className="text-stone-400 shrink-0 w-32">{t('admin.pages.partners.website')} :</span>
                     <a href={selected.website} target="_blank" rel="noopener noreferrer" className="font-medium text-amber-600 hover:underline truncate">
                       {selected.website}
                     </a>
@@ -279,14 +273,14 @@ export default function Partners() {
               </Section>
 
               {/* Product */}
-              <Section icon={Package} title="Produit proposé">
-                <Row label="Produit" value={selected.product_name} />
-                <Row label="Catégorie" value={selected.product_category} />
-                <Row label="Capacité" value={selected.annual_capacity} />
-                <Row label="Conditionnements" value={selected.packaging_types} />
+              <Section icon={Package} title={t('admin.pages.partners.proposedProduct')}>
+                <Row label={t('admin.pages.partners.product')} value={selected.product_name} />
+                <Row label={t('admin.pages.partners.category')} value={selected.product_category} />
+                <Row label={t('admin.pages.partners.capacity')} value={selected.annual_capacity} />
+                <Row label={t('admin.pages.partners.packaging')} value={selected.packaging_types} />
                 {selected.product_description && (
                   <div>
-                    <p className="text-stone-400 text-xs mb-0.5">Description</p>
+                    <p className="text-stone-400 text-xs mb-0.5">{t('admin.common.description')}</p>
                     <p className="font-medium">{selected.product_description}</p>
                   </div>
                 )}
@@ -302,10 +296,10 @@ export default function Partners() {
               </Section>
 
               {/* Export profile */}
-              <Section icon={Globe} title="Profil export">
-                <Row label="Déjà exportateur" value={selected.already_exporting} />
-                {selected.current_markets && <Row label="Marchés actuels" value={selected.current_markets} />}
-                {selected.target_markets && <Row label="Marchés cibles" value={selected.target_markets} />}
+              <Section icon={Globe} title={t('admin.pages.partners.exportProfile')}>
+                <Row label={t('admin.pages.partners.alreadyExporter')} value={selected.already_exporting} />
+                {selected.current_markets && <Row label={t('admin.pages.partners.currentMarkets')} value={selected.current_markets} />}
+                {selected.target_markets && <Row label={t('admin.pages.partners.targetMarkets')} value={selected.target_markets} />}
               </Section>
 
               {selected.message && (
@@ -315,10 +309,10 @@ export default function Partners() {
               )}
 
               {/* Reply */}
-              <a href={`mailto:${selected.email}?subject=Partenariat Export — ${selected.company_name}&body=Bonjour ${selected.contact_name},%0A%0ANous avons bien reçu votre dossier de partenariat pour ${selected.product_name}.%0A%0ANous sommes intéressés et souhaiterions en savoir plus. Pouvons-nous planifier un appel ?%0A%0ACordialement,%0AL'équipe REDMAC MOROCCO%0Aeyad.sobh@redmac.ma%0A+212 661 257 250`}
+              <a href={`mailto:${selected.email}?subject=${encodeURIComponent(t('admin.pages.partners.emailSubject', { company: selected.company_name }))}&body=${encodeURIComponent(t('admin.pages.partners.emailBody', { contact: selected.contact_name, product: selected.product_name }))}`}
                 className="flex items-center justify-center gap-2 bg-amber-500 hover:bg-amber-400 text-white text-sm font-semibold py-3 rounded-xl w-full transition-colors">
                 <Mail className="w-4 h-4" />
-                Répondre au producteur
+                {t('admin.pages.partners.replyProducer')}
               </a>
             </div>
           </div>

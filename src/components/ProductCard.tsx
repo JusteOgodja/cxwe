@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom';
 import { Package, CheckCircle, ArrowRight, Thermometer, Leaf } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import type { Product } from '../types';
 import { productImage } from '../lib/img';
 
@@ -16,6 +17,8 @@ const TEMP_STYLES: Record<string, string> = {
 };
 
 export default function ProductCard({ product, onQuote }: Props) {
+  const { t } = useTranslation();
+
   return (
     <div className="group bg-white rounded-2xl border border-ma-sand/70 shadow-card hover:shadow-card-hover hover:-translate-y-0.5 transition-all duration-300 flex flex-col overflow-hidden">
 
@@ -109,15 +112,17 @@ export default function ProductCard({ product, onQuote }: Props) {
                 <span className="line-clamp-1">{d}</span>
               </li>
             ))}
-            {product.details.length > 3 && (
-              <li className="text-xs text-stone-300 pl-4">+{product.details.length - 3} autres</li>
+              {product.details.length > 3 && (
+              <li className="text-xs text-stone-300 pl-4">
+                {t('productCard.moreDetails', { count: product.details.length - 3 })}
+              </li>
             )}
           </ul>
         )}
 
         {/* MOQ + origin */}
         <div className="flex items-center justify-between mt-3 pt-2 border-t border-ma-sand/60 text-[10px] text-stone-300 font-medium">
-          {product.commande_min > 1 && <span>MOQ : {product.commande_min}</span>}
+          {product.commande_min > 1 && <span>{t('productCard.moq', { count: product.commande_min })}</span>}
           {product.pays_origine && <span className="ml-auto">{product.pays_origine}</span>}
         </div>
 
@@ -127,14 +132,14 @@ export default function ProductCard({ product, onQuote }: Props) {
             to={`/product/${product.id}`}
             className="flex-1 flex items-center justify-center gap-1 bg-ma-cream hover:bg-ma-sand text-stone-600 text-xs font-medium py-2 rounded-lg transition-colors border border-ma-sand/80"
           >
-            Détails <ArrowRight className="w-3 h-3" />
+            {t('productCard.details')} <ArrowRight className="w-3 h-3" />
           </Link>
           {onQuote && (
             <button
               onClick={() => onQuote(product)}
               className="flex-1 bg-ma-red hover:bg-[#A83928] text-white text-xs font-semibold py-2 rounded-lg transition-colors shadow-sm"
             >
-              Devis
+              {t('productCard.quote')}
             </button>
           )}
         </div>

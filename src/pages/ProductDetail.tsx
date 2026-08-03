@@ -10,6 +10,7 @@ import { supabase } from '../lib/supabase';
 import { productImage } from '../lib/img';
 import { useSEO } from '../hooks/useSEO';
 import type { Product, PricingTier, ProductImage } from '../types';
+import { useTranslation } from 'react-i18next';
 
 const TEMP_COLORS: Record<string, string> = {
   'Ambiante': 'bg-stone-100 text-stone-700',
@@ -67,27 +68,29 @@ function Chip({ label, color = 'stone' }: { label: string; color?: string }) {
 }
 
 function DimRow({ label, dim }: { label: string; dim?: Product['dimensions_unite'] }) {
+  const { t } = useTranslation();
   if (!dim || (!dim.length && !dim.width && !dim.height)) return null;
   return (
     <tr className="border-b border-stone-50 last:border-0">
       <td className="py-2 pr-4 text-xs text-stone-500 font-medium whitespace-nowrap">{label}</td>
       <td className="py-2 text-xs text-stone-700">
         {[dim.length, dim.width, dim.height].filter(Boolean).join(' × ')} cm
-        {dim.weight_net && <span className="ml-3 text-stone-400">Net {dim.weight_net} kg</span>}
-        {dim.weight_brut && <span className="ml-2 text-stone-400">Brut {dim.weight_brut} kg</span>}
+        {dim.weight_net && <span className="ml-3 text-stone-400">{t('productDetail.net')} {dim.weight_net} kg</span>}
+        {dim.weight_brut && <span className="ml-2 text-stone-400">{t('productDetail.gross')} {dim.weight_brut} kg</span>}
       </td>
     </tr>
   );
 }
 
 export default function ProductDetail() {
+  const { t } = useTranslation();
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const [product, setProduct] = useState<Product | null>(null);
 
   useSEO({
-    title: product ? product.name : 'Fiche produit',
-    description: product?.description ?? 'Produit alimentaire marocain disponible à l\'export. Demandez une proforma sous 24h.',
+    title: product ? product.name : t('productDetail.seoTitle'),
+    description: product?.description ?? t('productDetail.seoDescription'),
   });
   const [pricingTiers, setPricingTiers] = useState<PricingTier[]>([]);
   const [related, setRelated] = useState<Product[]>([]);
@@ -160,7 +163,7 @@ export default function ProductDetail() {
       <div className="bg-ma-navy pt-24 pb-8 px-4">
         <div className="max-w-5xl mx-auto">
           <nav className="flex items-center gap-2 text-sm text-stone-400 mb-4 flex-wrap">
-            <Link to="/catalog" className="hover:text-white transition-colors">Catalogue</Link>
+            <Link to="/catalog" className="hover:text-white transition-colors">{t('productDetail.catalog')}</Link>
             {categoryName && categorySlug && (
               <>
                 <span>/</span>
@@ -174,7 +177,7 @@ export default function ProductDetail() {
             to={categorySlug ? `/catalog/${categorySlug}` : '/catalog'}
             className="inline-flex items-center gap-2 text-stone-400 hover:text-white text-sm transition-colors"
           >
-            <ArrowLeft className="w-4 h-4" /> Retour
+            <ArrowLeft className="w-4 h-4" /> {t('productDetail.back')}
           </Link>
         </div>
       </div>
@@ -193,7 +196,7 @@ export default function ProductDetail() {
               ) : (
                 <div className="w-full h-full flex flex-col items-center justify-center gap-3 text-stone-300">
                   <Package className="w-16 h-16" />
-                  <span className="text-sm">Aucune image disponible</span>
+                  <span className="text-sm">{t('productDetail.noImage')}</span>
                 </div>
               )}
               {images.length > 1 && (
@@ -230,7 +233,7 @@ export default function ProductDetail() {
               <div className="flex items-center gap-2 mb-3 pb-3 border-b border-stone-100">
                 <Truck className="w-4 h-4 text-stone-400 shrink-0" />
                 <div>
-                  <p className="text-xs text-stone-400 uppercase tracking-wide leading-none mb-0.5">Grossiste</p>
+                  <p className="text-xs text-stone-400 uppercase tracking-wide leading-none mb-0.5">{t('productDetail.wholesaler')}</p>
                   <p className="text-lg font-extrabold text-stone-900 leading-tight">{product.supplier.name}</p>
                 </div>
               </div>
@@ -243,11 +246,11 @@ export default function ProductDetail() {
                   <Tag className="w-3 h-3" />{categoryName}
                 </span>
               )}
-              {product.is_new && <Chip label="NOUVEAU" color="green" />}
-              {product.is_promo && <Chip label="PROMO" color="red" />}
+              {product.is_new && <Chip label={t('productDetail.new')} color="green" />}
+              {product.is_promo && <Chip label={t('productDetail.promo')} color="red" />}
               {product.temperature && (
                 <span className={`inline-flex items-center gap-1 text-xs font-medium px-2.5 py-1 rounded-lg ${TEMP_COLORS[product.temperature] || TEMP_COLORS['Ambiante']}`}>
-                  <Thermometer className="w-3 h-3" />{product.temperature}
+                  <Thermometer className="w-3 h-3" />{t(`productDetail.temperature.${product.temperature}`, { defaultValue: product.temperature })}
                 </span>
               )}
             </div>
@@ -289,12 +292,12 @@ export default function ProductDetail() {
               <div className="flex items-center gap-2 bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 mb-4">
                 <Euro className="w-4 h-4 text-amber-600 shrink-0" />
                 <div>
-                  <p className="text-[11px] text-amber-700 font-medium">Prix indicatif FOB</p>
+                  <p className="text-[11px] text-amber-700 font-medium">{t('productDetail.indicativeFobPrice')}</p>
                   <p className="text-lg font-bold text-amber-800">
-                    {Number(product.prix_indicatif).toFixed(2)} {product.devise || 'EUR'} / unité
+                    {Number(product.prix_indicatif).toFixed(2)} {product.devise || 'EUR'} / {t('productDetail.unit').toLocaleLowerCase()}
                   </p>
                 </div>
-                <p className="text-[10px] text-amber-600 ml-auto leading-tight max-w-[100px] text-right">Prix hors négociation — devis sur demande</p>
+                <p className="text-[10px] text-amber-600 ml-auto leading-tight max-w-[100px] text-right">{t('productDetail.priceDisclaimer')}</p>
               </div>
             )}
 
@@ -310,31 +313,31 @@ export default function ProductDetail() {
             <div className="grid grid-cols-2 gap-3 mb-5 text-xs">
               {product.commande_min > 1 && (
                 <div className="bg-white border border-stone-100 rounded-xl p-3">
-                  <p className="text-stone-400 mb-0.5">Commande min.</p>
-                  <p className="font-semibold text-stone-800">{product.commande_min} unités</p>
+                  <p className="text-stone-400 mb-0.5">{t('productDetail.minimumOrder')}</p>
+                  <p className="font-semibold text-stone-800">{product.commande_min} {t('productDetail.units')}</p>
                 </div>
               )}
               {product.colisage > 1 && (
                 <div className="bg-white border border-stone-100 rounded-xl p-3">
-                  <p className="text-stone-400 mb-0.5">Colisage</p>
-                  <p className="font-semibold text-stone-800">{product.colisage} u./carton</p>
+                  <p className="text-stone-400 mb-0.5">{t('productDetail.packaging')}</p>
+                  <p className="font-semibold text-stone-800">{product.colisage} {t('productDetail.unitsPerCarton')}</p>
                 </div>
               )}
               {product.pays_origine && (
                 <div className="bg-white border border-stone-100 rounded-xl p-3">
-                  <p className="text-stone-400 mb-0.5">Pays d'origine</p>
+                  <p className="text-stone-400 mb-0.5">{t('productDetail.countryOfOrigin')}</p>
                   <p className="font-semibold text-stone-800">{product.pays_origine}</p>
                 </div>
               )}
               {product.dluo ? (
                 <div className="bg-white border border-stone-100 rounded-xl p-3">
-                  <p className="text-stone-400 mb-0.5 flex items-center gap-1"><Calendar className="w-3 h-3" />Shelf life export</p>
-                  <p className="font-semibold text-stone-800">{product.dluo} mois</p>
+                  <p className="text-stone-400 mb-0.5 flex items-center gap-1"><Calendar className="w-3 h-3" />{t('productDetail.exportShelfLife')}</p>
+                  <p className="font-semibold text-stone-800">{product.dluo} {t('productDetail.months')}</p>
                 </div>
               ) : product.duree_conservation > 0 ? (
                 <div className="bg-white border border-stone-100 rounded-xl p-3">
-                  <p className="text-stone-400 mb-0.5">Conservation</p>
-                  <p className="font-semibold text-stone-800">{product.duree_conservation} j</p>
+                  <p className="text-stone-400 mb-0.5">{t('productDetail.shelfLife')}</p>
+                  <p className="font-semibold text-stone-800">{product.duree_conservation} {t('productDetail.days')}</p>
                 </div>
               ) : null}
             </div>
@@ -346,20 +349,20 @@ export default function ProductDetail() {
                 className="flex items-center justify-center gap-2 w-full bg-ma-red hover:bg-[#9B1E24] text-white font-semibold py-3 rounded-xl transition-colors shadow-sm"
               >
                 <MessageSquare className="w-4 h-4" />
-                Demander un devis
+                {t('productDetail.requestQuote')}
               </Link>
               <Link
                 to={`/sample?product=${encodeURIComponent(product.name)}${categoryName ? `&category=${encodeURIComponent(categoryName)}` : ''}`}
                 className="flex items-center justify-center gap-2 w-full border-2 border-ma-navy text-ma-navy hover:bg-ma-navy hover:text-white text-sm font-semibold py-2.5 rounded-xl transition-colors"
               >
                 <FlaskConical className="w-4 h-4" />
-                Demander un échantillon
+                {t('productDetail.requestSample')}
               </Link>
               {product.fiche_technique_url && (
                 <a href={product.fiche_technique_url} target="_blank" rel="noopener noreferrer"
                   className="flex items-center justify-center gap-2 w-full border border-stone-200 text-stone-600 hover:bg-stone-50 text-sm font-medium py-2.5 rounded-xl transition-colors">
                   <FileText className="w-4 h-4" />
-                  Fiche technique (PDF)
+                  {t('productDetail.technicalSheet')}
                 </a>
               )}
             </div>
@@ -368,20 +371,20 @@ export default function ProductDetail() {
 
         {/* ── Tarifs dégressifs ─────────────────────────────────────────────── */}
         {pricingTiers.length > 0 && (
-          <Section icon={Scale} title="Tarifs dégressifs">
+          <Section icon={Scale} title={t('productDetail.tieredPricing')}>
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b border-stone-100">
-                    <th className="text-left pb-2 text-xs font-semibold text-stone-500 uppercase tracking-wide">Quantité min.</th>
-                    <th className="text-right pb-2 text-xs font-semibold text-stone-500 uppercase tracking-wide">Prix unitaire</th>
-                    <th className="text-right pb-2 text-xs font-semibold text-stone-500 uppercase tracking-wide hidden sm:table-cell">Devise</th>
+                    <th className="text-left pb-2 text-xs font-semibold text-stone-500 uppercase tracking-wide">{t('productDetail.minimumQuantity')}</th>
+                    <th className="text-right pb-2 text-xs font-semibold text-stone-500 uppercase tracking-wide">{t('productDetail.unitPrice')}</th>
+                    <th className="text-right pb-2 text-xs font-semibold text-stone-500 uppercase tracking-wide hidden sm:table-cell">{t('productDetail.currency')}</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-stone-50">
                   {pricingTiers.map((tier, i) => (
                     <tr key={i} className={i === 0 ? 'font-medium text-stone-800' : 'text-stone-600'}>
-                      <td className="py-2">{tier.min_quantity.toLocaleString()} unités</td>
+                      <td className="py-2">{tier.min_quantity.toLocaleString()} {t('productDetail.units')}</td>
                       <td className="py-2 text-right text-ma-green font-semibold">
                         {Number(tier.price).toFixed(2)}
                       </td>
@@ -391,24 +394,24 @@ export default function ProductDetail() {
                 </tbody>
               </table>
             </div>
-            <p className="text-xs text-stone-400 mt-3">* Prix indicatifs — contactez-nous pour un devis personnalisé.</p>
+            <p className="text-xs text-stone-400 mt-3">{t('productDetail.tieredPriceNote')}</p>
           </Section>
         )}
 
         {/* ── Logistique & Dimensions ───────────────────────────────────────── */}
         {(product.dimensions_unite || product.dimensions_carton || product.dimensions_palette || product.palettisation) && (
-          <Section icon={Box} title="Logistique & Dimensions">
+          <Section icon={Box} title={t('productDetail.logisticsDimensions')}>
             <table className="w-full">
               <tbody>
-                <DimRow label="Unité" dim={product.dimensions_unite} />
-                <DimRow label="Carton" dim={product.dimensions_carton} />
-                <DimRow label="Palette" dim={product.dimensions_palette} />
+                <DimRow label={t('productDetail.unit')} dim={product.dimensions_unite} />
+                <DimRow label={t('productDetail.carton')} dim={product.dimensions_carton} />
+                <DimRow label={t('productDetail.pallet')} dim={product.dimensions_palette} />
                 {product.palettisation && (
                   <tr>
-                    <td className="py-2 pr-4 text-xs text-stone-500 font-medium whitespace-nowrap">Palettisation</td>
+                    <td className="py-2 pr-4 text-xs text-stone-500 font-medium whitespace-nowrap">{t('productDetail.palletization')}</td>
                     <td className="py-2 text-xs text-stone-700">
-                      {product.palettisation.cartons_per_layer} cartons/couche · {product.palettisation.layers_per_palette} couches/palette
-                      {' '}→ <strong>{product.palettisation.cartons_per_layer * product.palettisation.layers_per_palette} cartons/palette</strong>
+                      {t('productDetail.palletizationDetails', { cartons: product.palettisation.cartons_per_layer, layers: product.palettisation.layers_per_palette })}
+                      {' '}→ <strong>{t('productDetail.cartonsPerPallet', { count: product.palettisation.cartons_per_layer * product.palettisation.layers_per_palette })}</strong>
                     </td>
                   </tr>
                 )}
@@ -421,13 +424,13 @@ export default function ProductDetail() {
         {(product.pays_origine || (product.incoterms_dispo && product.incoterms_dispo.length > 0) ||
           (product.pays_export_autorises && product.pays_export_autorises.length > 0) ||
           (product.certifications && product.certifications.length > 0)) && (
-          <Section icon={Truck} title="Origine & Commerce">
+          <Section icon={Truck} title={t('productDetail.originCommerce')}>
             <div className="space-y-4">
               {product.pays_origine && (
                 <div className="flex items-start gap-3">
                   <MapPin className="w-4 h-4 text-stone-400 mt-0.5 shrink-0" />
                   <div>
-                    <p className="text-xs text-stone-400 mb-0.5">Pays d'origine</p>
+                    <p className="text-xs text-stone-400 mb-0.5">{t('productDetail.countryOfOrigin')}</p>
                     <p className="text-sm font-medium text-stone-700">{product.pays_origine}</p>
                   </div>
                 </div>
@@ -435,7 +438,7 @@ export default function ProductDetail() {
 
               {product.incoterms_dispo && product.incoterms_dispo.length > 0 && (
                 <div>
-                  <p className="text-xs text-stone-400 mb-2">Incoterms disponibles</p>
+                  <p className="text-xs text-stone-400 mb-2">{t('productDetail.availableIncoterms')}</p>
                   <div className="flex flex-wrap gap-1.5">
                     {product.incoterms_dispo.map(inc => (
                       <span key={inc} className="text-xs font-mono font-semibold bg-stone-100 text-stone-700 px-2 py-1 rounded-lg">{inc}</span>
@@ -446,14 +449,14 @@ export default function ProductDetail() {
 
               {product.pays_export_autorises && product.pays_export_autorises.length > 0 && (
                 <div>
-                  <p className="text-xs text-stone-400 mb-2">Pays d'export autorisés</p>
+                  <p className="text-xs text-stone-400 mb-2">{t('productDetail.authorizedExportCountries')}</p>
                   <p className="text-sm text-stone-700">{product.pays_export_autorises.join(', ')}</p>
                 </div>
               )}
 
               {product.certifications && product.certifications.length > 0 && (
                 <div>
-                  <p className="text-xs text-stone-400 mb-2">Certifications</p>
+                  <p className="text-xs text-stone-400 mb-2">{t('productDetail.certifications')}</p>
                   <div className="flex flex-wrap gap-1.5">
                     {product.certifications.map(c => (
                       <span key={c} className="inline-flex items-center gap-1 text-xs font-medium bg-emerald-50 text-emerald-700 border border-emerald-100 px-2.5 py-1 rounded-lg">
@@ -470,13 +473,13 @@ export default function ProductDetail() {
 
         {/* ── Composition ──────────────────────────────────────────────────── */}
         {(product.allergenes?.length || product.ingredients_texte || product.nutrition_texte) ? (
-          <Section icon={Layers} title="Composition & Nutrition">
+          <Section icon={Layers} title={t('productDetail.compositionNutrition')}>
             <div className="space-y-4">
               {product.allergenes && product.allergenes.length > 0 && (
                 <div>
                   <div className="flex items-center gap-1.5 mb-2">
                     <AlertTriangle className="w-3.5 h-3.5 text-orange-500" />
-                    <p className="text-xs font-semibold text-orange-600">Allergènes</p>
+                    <p className="text-xs font-semibold text-orange-600">{t('productDetail.allergens')}</p>
                   </div>
                   <div className="flex flex-wrap gap-1.5">
                     {product.allergenes.map(a => (
@@ -488,14 +491,14 @@ export default function ProductDetail() {
 
               {product.ingredients_texte && (
                 <div>
-                  <p className="text-xs font-semibold text-stone-500 mb-1.5">Ingrédients</p>
+                  <p className="text-xs font-semibold text-stone-500 mb-1.5">{t('productDetail.ingredients')}</p>
                   <p className="text-sm text-stone-700 leading-relaxed">{product.ingredients_texte}</p>
                 </div>
               )}
 
               {product.nutrition_texte && (
                 <div>
-                  <p className="text-xs font-semibold text-stone-500 mb-1.5">Informations nutritionnelles</p>
+                  <p className="text-xs font-semibold text-stone-500 mb-1.5">{t('productDetail.nutritionFacts')}</p>
                   <pre className="text-xs text-stone-700 font-mono leading-relaxed whitespace-pre-wrap bg-ma-cream rounded-xl p-3">
                     {product.nutrition_texte}
                   </pre>
@@ -507,14 +510,14 @@ export default function ProductDetail() {
 
         {/* ── Codes & Références ───────────────────────────────────────────── */}
         {(product.hs_code || product.ean) && (
-          <Section icon={Info} title="Codes & Références">
+          <Section icon={Info} title={t('productDetail.codesReferences')}>
             <div className="grid sm:grid-cols-2 gap-6 text-sm">
               {product.hs_code && (
                 <div>
-                  <p className="text-xs font-semibold text-stone-500 mb-1">Code SH (Système Harmonisé)</p>
+                  <p className="text-xs font-semibold text-stone-500 mb-1">{t('productDetail.hsCode')}</p>
                   <p className="font-mono text-lg font-bold text-stone-800 tracking-widest mb-1">{product.hs_code}</p>
                   <p className="text-[11px] text-stone-400 leading-snug">
-                    Nomenclature douanière internationale à 6 chiffres (OMD) — détermine les droits de douane, taxes et restrictions applicables dans 195 pays.
+                    {t('productDetail.hsCodeDescription')}
                   </p>
                 </div>
               )}
@@ -522,7 +525,7 @@ export default function ProductDetail() {
                 <div>
                   <p className="text-xs font-semibold text-stone-500 mb-1">Code EAN-13</p>
                   <p className="font-mono text-stone-700 tracking-widest">{product.ean}</p>
-                  <p className="text-[11px] text-stone-400 mt-1">Code-barres international d'identification produit.</p>
+                  <p className="text-[11px] text-stone-400 mt-1">{t('productDetail.eanDescription')}</p>
                 </div>
               )}
             </div>
@@ -533,7 +536,7 @@ export default function ProductDetail() {
         {related.length > 0 && (
           <section>
             <h2 className="text-lg font-bold text-stone-800 mb-4">
-              Autres produits dans {categoryName || 'cette catégorie'}
+              {t('productDetail.otherProductsIn', { category: categoryName || t('productDetail.thisCategory') })}
             </h2>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
               {related.map(p => (

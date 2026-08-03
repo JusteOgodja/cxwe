@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowRight } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { supabase } from '../lib/supabase';
 import { productImage } from '../lib/img';
 import type { Category } from '../types';
@@ -22,6 +23,7 @@ interface Props {
 }
 
 export default function CategoryCard({ category, index }: Props) {
+  const { t } = useTranslation();
   const gradient = CATEGORY_COLORS[index % CATEGORY_COLORS.length];
 
   const [images, setImages] = useState<string[]>([]);
@@ -138,7 +140,7 @@ export default function CategoryCard({ category, index }: Props) {
         {/* Maroc badge */}
         <div className="absolute top-2.5 left-2.5 z-10 pointer-events-none">
           <span className="text-[10px] font-semibold text-white/80 uppercase tracking-widest bg-black/25 backdrop-blur-sm px-2 py-0.5 rounded-full">
-            Maroc
+            {t('categoryCard.morocco')}
           </span>
         </div>
 
@@ -163,7 +165,7 @@ export default function CategoryCard({ category, index }: Props) {
           </p>
         )}
         <div className="flex items-center gap-1 mt-3 text-ma-green text-xs font-semibold">
-          <span>Voir les produits</span>
+          <span>{t('categoryCard.viewProducts')}</span>
           <ArrowRight className="w-3 h-3 group-hover:translate-x-1 transition-transform" />
         </div>
       </div>

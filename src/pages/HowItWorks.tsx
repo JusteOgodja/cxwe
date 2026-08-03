@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
   Search, ClipboardList, FileText,
@@ -5,6 +6,7 @@ import {
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useSEO } from '../hooks/useSEO';
+import { supabase } from '../lib/supabase';
 
 const STEP_COLORS = [
   'bg-amber-50 border-amber-200 text-amber-700',
@@ -24,6 +26,19 @@ const STEP_NUMS = ['01', '02', '03', '04', '05'];
 
 export default function HowItWorks() {
   const { t } = useTranslation();
+  const [activeProductsCount, setActiveProductsCount] = useState<number | null>(null);
+
+  useEffect(() => {
+    (async () => {
+      const { count, error } = await supabase
+        .from('products')
+        .select('id', { count: 'exact', head: true })
+        .eq('is_active', true);
+
+      if (!error) setActiveProductsCount(count || 0);
+    })();
+  }, []);
+
   useSEO({
     title: 'Comment ça marche — Importer des produits du Maroc',
     description: 'De la découverte produit à la livraison : 5 étapes pour importer des produits alimentaires marocains. Proforma sous 24h.',
@@ -44,7 +59,7 @@ export default function HowItWorks() {
   }));
 
   const STATS = [
-    { val: t('howItWorks.stat1val'), label: t('howItWorks.stat1label') },
+    { val: activeProductsCount == null ? t('howItWorks.stat1val') : activeProductsCount.toLocaleString('fr-FR'), label: t('howItWorks.stat1label') },
     { val: t('howItWorks.stat2val'), label: t('howItWorks.stat2label') },
     { val: t('howItWorks.stat3val'), label: t('howItWorks.stat3label') },
     { val: t('howItWorks.stat4val'), label: t('howItWorks.stat4label') },

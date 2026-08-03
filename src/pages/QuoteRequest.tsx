@@ -6,6 +6,7 @@ import {
   Loader2, Building2, Truck, User, MapPin, FileText, Settings2,
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
+import { useTranslation } from 'react-i18next';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -16,6 +17,10 @@ const COUNTRIES = [
   'Sénégal',"Côte d'Ivoire",'Ghana','Nigeria','Cameroun',
   'Algérie','Tunisie','Égypte','Libye','Mauritanie','Maroc','Autre',
 ];
+const COUNTRY_CODES = [
+  'FR','ES','DE','GB','IT','NL','BE','CH','PT','PL','US','CA','AU','SA','AE','QA','KW','BH','OM',
+  'SN','CI','GH','NG','CM','DZ','TN','EG','LY','MR','MA',null,
+] as const;
 
 const INCOTERMS = ['EXW','FCA','FOB','CFR','CIF','DAP','DDP','FAS','CPT','CIP'];
 
@@ -76,11 +81,11 @@ interface SelectedProduct extends SearchProduct {
 // ─── Step config ──────────────────────────────────────────────────────────────
 
 const STEPS = [
-  { id: 1, label: 'Acheteur',    icon: User },
-  { id: 2, label: 'Produits',    icon: Package },
-  { id: 3, label: 'Conditions',  icon: FileText },
-  { id: 4, label: 'Exigences',   icon: Settings2 },
-];
+  { id: 1, labelKey: 'buyer', icon: User },
+  { id: 2, labelKey: 'products', icon: Package },
+  { id: 3, labelKey: 'terms', icon: FileText },
+  { id: 4, labelKey: 'requirements', icon: Settings2 },
+] as const;
 
 // ─── Helper components ────────────────────────────────────────────────────────
 
@@ -112,10 +117,16 @@ function CheckPill({ label, checked, onChange }: { label: string; checked: boole
 // ─── Main component ───────────────────────────────────────────────────────────
 
 export default function QuoteRequest() {
+  const { t, i18n } = useTranslation();
   useSEO({
-    title: 'Demande de Proforma',
-    description: 'Renseignez vos informations acheteur et sélectionnez vos produits. Recevez votre proforma sous 24h.',
+    title: t('quoteRequest.seoTitle'),
+    description: t('quoteRequest.seoDescription'),
   });
+  const optionLabel = (group: string, index: number, fallback: string) =>
+    t(`quoteRequest.options.${group}.item${index}`, { defaultValue: fallback });
+  const regionNames = new Intl.DisplayNames([i18n.resolvedLanguage || i18n.language], { type: 'region' });
+  const countryLabel = (index: number, fallback: string) =>
+    COUNTRY_CODES[index] ? regionNames.of(COUNTRY_CODES[index]!) || fallback : t('quoteRequest.other');
   const [searchParams] = useSearchParams();
   const [step, setStep] = useState(1);
   const [submitting, setSubmitting] = useState(false);
@@ -303,7 +314,7 @@ export default function QuoteRequest() {
     const { error: fallbackErr } = await supabase.from('quote_requests').insert([fallbackPayload]);
     if (fallbackErr) {
       console.error('Supabase insert error:', fallbackErr);
-      setError(`Envoi échoué (${fallbackErr.message}). Contactez-nous directement.`);
+      setError(t('quoteRequest.submitError', { message: fallbackErr.message }));
       setSubmitting(false);
     } else {
       setSubmitted(true);
@@ -318,24 +329,24 @@ export default function QuoteRequest() {
           <div className="w-20 h-20 bg-emerald-100 rounded-full flex items-center justify-center mx-auto mb-6">
             <CheckCircle className="w-10 h-10 text-emerald-600" />
           </div>
-          <h2 className="text-2xl font-bold text-stone-800 mb-2">Demande envoyée !</h2>
+          <h2 className="text-2xl font-bold text-stone-800 mb-2">{t('quoteRequest.successTitle')}</h2>
           <p className="text-stone-500 text-sm leading-relaxed mb-5">
-            Merci <strong>{buyer.contact_name}</strong> — notre équipe va préparer votre proforma sous 24 h
-            et vous la transmettra à <strong>{buyer.email}</strong>.
+            {t('quoteRequest.successMessageBefore')} <strong>{buyer.contact_name}</strong>{t('quoteRequest.successMessageMiddle')}
+            <strong>{buyer.email}</strong>{t('quoteRequest.successMessageAfter')}
           </p>
 
           {/* Summary */}
           <div className="bg-ma-cream rounded-2xl p-4 text-left space-y-3 mb-6 border border-ma-sand">
-            <div className="text-xs text-stone-400 font-semibold uppercase tracking-wide">Récapitulatif</div>
+            <div className="text-xs text-stone-400 font-semibold uppercase tracking-wide">{t('quoteRequest.summary')}</div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
-              <div><span className="text-stone-400">Société : </span><strong>{buyer.company_name}</strong></div>
+              <div><span className="text-stone-400">{t('quoteRequest.company')} : </span><strong>{buyer.company_name}</strong></div>
               {terms.incoterm && <div><span className="text-stone-400">Incoterm : </span><strong>{terms.incoterm}</strong></div>}
-              {terms.currency && <div><span className="text-stone-400">Devise : </span><strong>{terms.currency}</strong></div>}
-              {terms.payment_terms && <div><span className="text-stone-400">Paiement : </span><strong className="line-clamp-1">{terms.payment_terms}</strong></div>}
+              {terms.currency && <div><span className="text-stone-400">{t('quoteRequest.currency')} : </span><strong>{terms.currency}</strong></div>}
+              {terms.payment_terms && <div><span className="text-stone-400">{t('quoteRequest.payment')} : </span><strong className="line-clamp-1">{terms.payment_terms}</strong></div>}
             </div>
             {selectedProducts.length > 0 && (
               <div className="space-y-1.5 pt-1 border-t border-stone-100">
-                <p className="text-xs text-stone-400">{selectedProducts.length} produit{selectedProducts.length > 1 ? 's' : ''}</p>
+                <p className="text-xs text-stone-400">{t('quoteRequest.productCount', { count: selectedProducts.length })}</p>
                 {selectedProducts.map(p => (
                   <div key={p.id} className="flex items-center gap-2">
                     <div className="w-7 h-7 rounded-lg bg-ma-sand overflow-hidden shrink-0">
@@ -349,12 +360,12 @@ export default function QuoteRequest() {
             )}
           </div>
 
-          <p className="text-xs text-stone-400 mb-6">Urgences : <a href="tel:+212605268946" className="text-ma-red">+212 605 268 946</a></p>
+          <p className="text-xs text-stone-400 mb-6">{t('quoteRequest.urgent')} : <a href="tel:+212605268946" className="text-ma-red">+212 605 268 946</a></p>
           <div className="flex gap-3">
-            <Link to="/catalog" className="flex-1 border border-ma-sand text-stone-600 text-sm py-3 rounded-xl hover:bg-ma-cream transition-colors font-medium">Catalogue</Link>
+            <Link to="/catalog" className="flex-1 border border-ma-sand text-stone-600 text-sm py-3 rounded-xl hover:bg-ma-cream transition-colors font-medium">{t('quoteRequest.catalog')}</Link>
             <button onClick={() => { setSubmitted(false); setStep(1); setSelectedProducts([]); }}
               className="flex-1 bg-ma-navy hover:bg-[#1A3570] text-white text-sm py-3 rounded-xl font-medium transition-colors">
-              Nouvelle demande
+              {t('quoteRequest.newRequest')}
             </button>
           </div>
         </div>
@@ -371,10 +382,10 @@ export default function QuoteRequest() {
       <div className="bg-gradient-to-b from-ma-navy to-[#0A1833] pt-24 pb-10 px-4">
         <div className="max-w-2xl mx-auto">
           <Link to="/catalog" className="inline-flex items-center gap-2 text-stone-400 hover:text-white text-sm mb-4 transition-colors">
-            <ArrowLeft className="w-4 h-4" /> Retour au catalogue
+            <ArrowLeft className="w-4 h-4" /> {t('quoteRequest.backToCatalog')}
           </Link>
-          <h1 className="text-3xl font-bold text-white">Demande de Proforma</h1>
-          <p className="text-stone-400 text-sm mt-2">Renseignez vos informations — nous générons votre devis formel sous 24 h.</p>
+          <h1 className="text-3xl font-bold text-white">{t('quoteRequest.title')}</h1>
+          <p className="text-stone-400 text-sm mt-2">{t('quoteRequest.subtitle')}</p>
         </div>
       </div>
 
@@ -397,7 +408,7 @@ export default function QuoteRequest() {
                       : <Icon className={`w-4 h-4 ${active ? 'text-white' : 'text-stone-400'}`} />}
                   </div>
                   <span className={`text-[9px] sm:text-xs mt-1 font-medium text-center hidden sm:block ${active ? 'text-ma-red' : done ? 'text-emerald-600' : 'text-stone-400'}`}>
-                    {s.label}
+                    {t(`quoteRequest.steps.${s.labelKey}`)}
                   </span>
                 </div>
                 {i < STEPS.length - 1 && (
@@ -417,56 +428,56 @@ export default function QuoteRequest() {
             {step === 1 && (
               <div className="space-y-5">
                 <h2 className="text-base font-bold text-stone-800 pb-3 border-b border-stone-100 flex items-center gap-2">
-                  <User className="w-4 h-4 text-ma-gold" /> Informations acheteur
+                  <User className="w-4 h-4 text-ma-gold" /> {t('quoteRequest.buyerInfo')}
                 </h2>
 
                 <div className="grid sm:grid-cols-2 gap-4">
-                  <Field label="Raison sociale" required>
+                  <Field label={t('quoteRequest.company')} required>
                     <input type="text" required value={buyer.company_name} onChange={e => setBuyer(b => ({ ...b, company_name: e.target.value }))} placeholder="SARL Exemple" className={INPUT} />
                   </Field>
-                  <Field label="N° TVA / SIRET / Registre">
+                  <Field label={t('quoteRequest.vatNumber')}>
                     <input type="text" value={buyer.buyer_vat_number} onChange={e => setBuyer(b => ({ ...b, buyer_vat_number: e.target.value }))} placeholder="FR 12 345678901" className={INPUT} />
                   </Field>
-                  <Field label="Nom du contact" required>
+                  <Field label={t('quoteRequest.contactName')} required>
                     <input type="text" required value={buyer.contact_name} onChange={e => setBuyer(b => ({ ...b, contact_name: e.target.value }))} placeholder="Jean Dupont" className={INPUT} />
                   </Field>
-                  <Field label="E-mail" required>
+                  <Field label={t('quoteRequest.email')} required>
                     <input type="email" required value={buyer.email} onChange={e => setBuyer(b => ({ ...b, email: e.target.value }))} placeholder="jean@societe.com" className={INPUT} />
                   </Field>
-                  <Field label="Téléphone / WhatsApp">
+                  <Field label={t('quoteRequest.phone')}>
                     <input type="tel" value={buyer.phone} onChange={e => setBuyer(b => ({ ...b, phone: e.target.value }))} placeholder="+33 6 00 00 00 00" className={INPUT} />
                   </Field>
-                  <Field label="Pays" required>
+                  <Field label={t('quoteRequest.country')} required>
                     <select required value={buyer.country} onChange={e => setBuyer(b => ({ ...b, country: e.target.value }))} className={SELECT}>
-                      <option value="">Sélectionner</option>
-                      {COUNTRIES.map(c => <option key={c} value={c}>{c}</option>)}
+                      <option value="">{t('quoteRequest.select')}</option>
+                      {COUNTRIES.map((c, i) => <option key={c} value={c}>{countryLabel(i, c)}</option>)}
                     </select>
                   </Field>
                 </div>
 
                 <div className="pt-2 border-t border-stone-100">
                   <p className="text-xs font-semibold text-stone-500 uppercase tracking-wide mb-3 flex items-center gap-1.5">
-                    <MapPin className="w-3.5 h-3.5" /> Adresse de facturation
+                    <MapPin className="w-3.5 h-3.5" /> {t('quoteRequest.billingAddress')}
                   </p>
                   <div className="grid sm:grid-cols-3 gap-3">
                     <div className="sm:col-span-3">
-                      <input type="text" value={buyer.buyer_address} onChange={e => setBuyer(b => ({ ...b, buyer_address: e.target.value }))} placeholder="N° et rue" className={INPUT} />
+                      <input type="text" value={buyer.buyer_address} onChange={e => setBuyer(b => ({ ...b, buyer_address: e.target.value }))} placeholder={t('quoteRequest.streetPlaceholder')} className={INPUT} />
                     </div>
-                    <input type="text" value={buyer.buyer_city} onChange={e => setBuyer(b => ({ ...b, buyer_city: e.target.value }))} placeholder="Ville" className={INPUT} />
-                    <input type="text" value={buyer.buyer_postal_code} onChange={e => setBuyer(b => ({ ...b, buyer_postal_code: e.target.value }))} placeholder="Code postal" className={INPUT} />
+                    <input type="text" value={buyer.buyer_city} onChange={e => setBuyer(b => ({ ...b, buyer_city: e.target.value }))} placeholder={t('quoteRequest.city')} className={INPUT} />
+                    <input type="text" value={buyer.buyer_postal_code} onChange={e => setBuyer(b => ({ ...b, buyer_postal_code: e.target.value }))} placeholder={t('quoteRequest.postalCode')} className={INPUT} />
                     <select value={buyer.delivery_country} onChange={e => setBuyer(b => ({ ...b, delivery_country: e.target.value }))} className={SELECT}>
-                      <option value="">Pays (livraison)</option>
-                      {COUNTRIES.map(c => <option key={c} value={c}>{c}</option>)}
+                      <option value="">{t('quoteRequest.deliveryCountry')}</option>
+                      {COUNTRIES.map((c, i) => <option key={c} value={c}>{countryLabel(i, c)}</option>)}
                     </select>
                   </div>
                 </div>
 
                 <div>
                   <label className="flex items-center gap-2 text-xs font-medium text-stone-600 mb-2 cursor-pointer">
-                    Adresse de livraison différente ? (optionnel)
+                    {t('quoteRequest.differentDeliveryAddress')}
                   </label>
                   <textarea rows={2} value={buyer.delivery_address} onChange={e => setBuyer(b => ({ ...b, delivery_address: e.target.value }))}
-                    placeholder="Adresse complète de livraison si différente de la facturation…"
+                    placeholder={t('quoteRequest.deliveryAddressPlaceholder')}
                     className={`${INPUT} resize-none`} />
                 </div>
               </div>
@@ -478,15 +489,15 @@ export default function QuoteRequest() {
             {step === 2 && (
               <div className="space-y-5">
                 <h2 className="text-base font-bold text-stone-800 pb-3 border-b border-stone-100 flex items-center gap-2">
-                  <Package className="w-4 h-4 text-ma-gold" /> Produits & Quantités
+                  <Package className="w-4 h-4 text-ma-gold" /> {t('quoteRequest.productsAndQuantities')}
                 </h2>
 
                 {/* Search mode toggle */}
                 <div className="flex gap-1.5 p-1 bg-stone-100 rounded-xl w-fit">
                   {([
-                    { mode: 'product' as SearchMode,  label: 'Produit',   Icon: Package },
-                    { mode: 'brand' as SearchMode,    label: 'Marque',    Icon: Building2 },
-                    { mode: 'supplier' as SearchMode, label: 'Grossiste', Icon: Truck },
+                    { mode: 'product' as SearchMode,  label: t('quoteRequest.searchProduct'), Icon: Package },
+                    { mode: 'brand' as SearchMode,    label: t('quoteRequest.searchBrand'), Icon: Building2 },
+                    { mode: 'supplier' as SearchMode, label: t('quoteRequest.searchSupplier'), Icon: Truck },
                   ]).map(({ mode, label, Icon }) => (
                     <button key={mode} type="button"
                       onClick={() => { setSearchMode(mode); setProductQuery(''); setShowDropdown(false); }}
@@ -516,7 +527,7 @@ export default function QuoteRequest() {
                               type="text"
                               value={p.quantity}
                               onChange={e => updateProduct(p.id, 'quantity', e.target.value)}
-                              placeholder="Quantité"
+                              placeholder={t('quoteRequest.quantity')}
                               className="flex-1 border border-ma-sand rounded-lg px-3 py-1.5 text-xs focus:outline-none focus:border-ma-gold bg-white"
                             />
                             <select
@@ -524,7 +535,7 @@ export default function QuoteRequest() {
                               onChange={e => updateProduct(p.id, 'unit', e.target.value)}
                               className="border border-stone-200 rounded-lg px-2 py-1.5 text-xs focus:outline-none focus:border-amber-400 bg-white"
                             >
-                              {UNITS.map(u => <option key={u} value={u}>{u}</option>)}
+                              {UNITS.map((u, i) => <option key={u} value={u}>{optionLabel('units', i, u)}</option>)}
                             </select>
                           </div>
                         </div>
@@ -545,7 +556,7 @@ export default function QuoteRequest() {
                     <input type="text" value={productQuery}
                       onChange={e => setProductQuery(e.target.value)}
                       onFocus={() => filteredResults.length > 0 && setShowDropdown(true)}
-                      placeholder={searchMode === 'product' ? 'Rechercher par nom de produit…' : searchMode === 'brand' ? 'Rechercher par marque…' : 'Rechercher par grossiste…'}
+                      placeholder={searchMode === 'product' ? t('quoteRequest.productSearchPlaceholder') : searchMode === 'brand' ? t('quoteRequest.brandSearchPlaceholder') : t('quoteRequest.supplierSearchPlaceholder')}
                       className={INPUT + ' pl-10 pr-10'} />
                   </div>
                   {showDropdown && (
@@ -566,20 +577,20 @@ export default function QuoteRequest() {
                                   {p.brand?.name && <span className="text-xs text-blue-500 font-medium">{p.brand.name}</span>}
                                 </div>
                               </div>
-                              <span className="shrink-0 text-xs font-semibold text-amber-600 bg-amber-50 px-2 py-0.5 rounded-lg">+ Ajouter</span>
+                              <span className="shrink-0 text-xs font-semibold text-amber-600 bg-amber-50 px-2 py-0.5 rounded-lg">+ {t('quoteRequest.add')}</span>
                             </button>
                           ))}
                         </div>
                       ) : !searching && productQuery.length >= 2 ? (
                         <div className="px-4 py-5 text-center text-sm text-stone-400">
-                          Aucun résultat pour <strong>"{productQuery}"</strong>
+                          {t('quoteRequest.noResultsFor')} <strong>"{productQuery}"</strong>
                         </div>
                       ) : null}
                     </div>
                   )}
                 </div>
                 {selectedProducts.length === 0 && (
-                  <p className="text-xs text-stone-400 text-center">Tapez au moins 2 caractères pour rechercher un produit, une marque ou un grossiste.</p>
+                  <p className="text-xs text-stone-400 text-center">{t('quoteRequest.searchHint')}</p>
                 )}
               </div>
             )}
@@ -590,52 +601,52 @@ export default function QuoteRequest() {
             {step === 3 && (
               <div className="space-y-5">
                 <h2 className="text-base font-bold text-stone-800 pb-3 border-b border-stone-100 flex items-center gap-2">
-                  <FileText className="w-4 h-4 text-ma-gold" /> Conditions commerciales
+                  <FileText className="w-4 h-4 text-ma-gold" /> {t('quoteRequest.commercialTerms')}
                 </h2>
 
                 <div className="grid sm:grid-cols-2 gap-4">
                   <Field label="Incoterm" required>
                     <select required value={terms.incoterm} onChange={e => setTerms(t => ({ ...t, incoterm: e.target.value }))} className={SELECT}>
-                      <option value="">Sélectionner</option>
+                      <option value="">{t('quoteRequest.select')}</option>
                       {INCOTERMS.map(i => <option key={i} value={i}>{i}</option>)}
                     </select>
                   </Field>
-                  <Field label="Devise">
+                  <Field label={t('quoteRequest.currency')}>
                     <select value={terms.currency} onChange={e => setTerms(t => ({ ...t, currency: e.target.value }))} className={SELECT}>
                       {['EUR','USD','GBP','MAD','AED','SAR'].map(c => <option key={c} value={c}>{c}</option>)}
                     </select>
                   </Field>
-                  <Field label="Port / lieu de chargement">
-                    <input type="text" value={terms.port_loading} onChange={e => setTerms(t => ({ ...t, port_loading: e.target.value }))} placeholder="Ex : Casablanca, Agadir…" className={INPUT} />
+                  <Field label={t('quoteRequest.loadingPort')}>
+                    <input type="text" value={terms.port_loading} onChange={e => setTerms(t => ({ ...t, port_loading: e.target.value }))} placeholder={t('quoteRequest.loadingPortPlaceholder')} className={INPUT} />
                   </Field>
-                  <Field label="Port / lieu de destination">
-                    <input type="text" value={terms.port_destination} onChange={e => setTerms(t => ({ ...t, port_destination: e.target.value }))} placeholder="Ex : Marseille, Rotterdam…" className={INPUT} />
+                  <Field label={t('quoteRequest.destinationPort')}>
+                    <input type="text" value={terms.port_destination} onChange={e => setTerms(t => ({ ...t, port_destination: e.target.value }))} placeholder={t('quoteRequest.destinationPortPlaceholder')} className={INPUT} />
                   </Field>
                 </div>
 
-                <Field label="Conditions de paiement" required>
+                <Field label={t('quoteRequest.paymentTerms')} required>
                   <select required value={terms.payment_terms} onChange={e => setTerms(t => ({ ...t, payment_terms: e.target.value }))} className={SELECT}>
-                    <option value="">Sélectionner</option>
-                    {PAYMENT_TERMS.map(p => <option key={p} value={p}>{p}</option>)}
+                    <option value="">{t('quoteRequest.select')}</option>
+                    {PAYMENT_TERMS.map((p, i) => <option key={p} value={p}>{optionLabel('paymentTerms', i, p)}</option>)}
                   </select>
                 </Field>
 
                 <div className="grid sm:grid-cols-2 gap-4">
-                  <Field label="Type de transport / conteneur">
+                  <Field label={t('quoteRequest.containerType')}>
                     <select value={terms.container_type} onChange={e => setTerms(t => ({ ...t, container_type: e.target.value }))} className={SELECT}>
-                      <option value="">Sélectionner</option>
-                      {CONTAINER_TYPES.map(c => <option key={c} value={c}>{c}</option>)}
+                      <option value="">{t('quoteRequest.select')}</option>
+                      {CONTAINER_TYPES.map((c, i) => <option key={c} value={c}>{optionLabel('containerTypes', i, c)}</option>)}
                     </select>
                   </Field>
-                  <Field label="Date de livraison souhaitée">
+                  <Field label={t('quoteRequest.deliveryDate')}>
                     <input type="date" value={terms.delivery_date} onChange={e => setTerms(t => ({ ...t, delivery_date: e.target.value }))} className={INPUT} />
                   </Field>
                 </div>
 
-                <Field label="Fréquence de commande">
+                <Field label={t('quoteRequest.orderFrequency')}>
                   <div className="flex flex-wrap gap-2">
-                    {ORDER_FREQUENCIES.map(f => (
-                      <CheckPill key={f} label={f} checked={terms.order_frequency === f}
+                    {ORDER_FREQUENCIES.map((f, i) => (
+                      <CheckPill key={f} label={optionLabel('orderFrequencies', i, f)} checked={terms.order_frequency === f}
                         onChange={() => setTerms(t => ({ ...t, order_frequency: t.order_frequency === f ? '' : f }))} />
                     ))}
                   </div>
@@ -649,10 +660,10 @@ export default function QuoteRequest() {
             {step === 4 && (
               <div className="space-y-5">
                 <h2 className="text-base font-bold text-stone-800 pb-3 border-b border-stone-100 flex items-center gap-2">
-                  <Settings2 className="w-4 h-4 text-ma-gold" /> Exigences & Notes
+                  <Settings2 className="w-4 h-4 text-ma-gold" /> {t('quoteRequest.requirementsAndNotes')}
                 </h2>
 
-                <Field label="Certifications requises">
+                <Field label={t('quoteRequest.requiredCertifications')}>
                   <div className="flex flex-wrap gap-2 mt-1">
                     {CERTIFICATIONS.map(c => (
                       <CheckPill key={c} label={c}
@@ -667,10 +678,10 @@ export default function QuoteRequest() {
                   </div>
                 </Field>
 
-                <Field label="Exigences d'étiquetage">
+                <Field label={t('quoteRequest.labelingRequirements')}>
                   <textarea rows={2} value={reqs.labeling_requirements}
                     onChange={e => setReqs(r => ({ ...r, labeling_requirements: e.target.value }))}
-                    placeholder="Langue, mentions obligatoires, marque distributeur, format barcode…"
+                    placeholder={t('quoteRequest.labelingPlaceholder')}
                     className={`${INPUT} resize-none`} />
                 </Field>
 
@@ -680,8 +691,8 @@ export default function QuoteRequest() {
                       onChange={e => setReqs(r => ({ ...r, private_label: e.target.checked }))}
                       className="mt-0.5 w-4 h-4 rounded border-stone-300 text-ma-gold" />
                     <div>
-                      <p className="text-sm font-semibold text-stone-800">Marque distributeur</p>
-                      <p className="text-xs text-stone-400">Je souhaite un étiquetage à ma marque (private label)</p>
+                      <p className="text-sm font-semibold text-stone-800">{t('quoteRequest.privateLabel')}</p>
+                      <p className="text-xs text-stone-400">{t('quoteRequest.privateLabelDescription')}</p>
                     </div>
                   </label>
                   <label className="flex items-start gap-3 cursor-pointer p-3 border border-ma-sand rounded-xl hover:bg-ma-cream transition-colors">
@@ -689,27 +700,27 @@ export default function QuoteRequest() {
                       onChange={e => setReqs(r => ({ ...r, sample_request: e.target.checked }))}
                       className="mt-0.5 w-4 h-4 rounded border-stone-300 text-ma-gold" />
                     <div>
-                      <p className="text-sm font-semibold text-stone-800">Demande d'échantillons</p>
-                      <p className="text-xs text-stone-400">Je souhaite recevoir des échantillons avant commande</p>
+                      <p className="text-sm font-semibold text-stone-800">{t('quoteRequest.sampleRequest')}</p>
+                      <p className="text-xs text-stone-400">{t('quoteRequest.sampleRequestDescription')}</p>
                     </div>
                   </label>
                 </div>
 
-                <Field label="Instructions complémentaires">
+                <Field label={t('quoteRequest.additionalInstructions')}>
                   <textarea rows={4} value={reqs.message}
                     onChange={e => setReqs(r => ({ ...r, message: e.target.value }))}
-                    placeholder="Toute autre information utile à la préparation du devis : port spécifique, contraintes douanières, réglementation d'import, délais impératifs…"
+                    placeholder={t('quoteRequest.additionalInstructionsPlaceholder')}
                     className={`${INPUT} resize-none`} />
                 </Field>
 
                 {/* Quick recap */}
                 <div className="bg-ma-cream border border-ma-sand rounded-xl p-4 text-xs space-y-1 text-stone-500">
-                  <p className="font-semibold text-stone-700 mb-2">Récapitulatif avant envoi</p>
-                  <p><span className="font-medium">Acheteur :</span> {buyer.company_name} — {buyer.contact_name} ({buyer.email})</p>
-                  <p><span className="font-medium">Produits :</span> {selectedProducts.length} produit{selectedProducts.length > 1 ? 's' : ''} sélectionné{selectedProducts.length > 1 ? 's' : ''}</p>
-                  {terms.incoterm && <p><span className="font-medium">Incoterm :</span> {terms.incoterm} — {terms.port_destination || '(destination à préciser)'}</p>}
-                  {terms.payment_terms && <p><span className="font-medium">Paiement :</span> {terms.payment_terms}</p>}
-                  {terms.currency && <p><span className="font-medium">Devise :</span> {terms.currency}</p>}
+                  <p className="font-semibold text-stone-700 mb-2">{t('quoteRequest.preSubmitSummary')}</p>
+                  <p><span className="font-medium">{t('quoteRequest.buyer')} :</span> {buyer.company_name} — {buyer.contact_name} ({buyer.email})</p>
+                  <p><span className="font-medium">{t('quoteRequest.products')} :</span> {t('quoteRequest.selectedProductCount', { count: selectedProducts.length })}</p>
+                  {terms.incoterm && <p><span className="font-medium">Incoterm :</span> {terms.incoterm} — {terms.port_destination || t('quoteRequest.destinationToSpecify')}</p>}
+                  {terms.payment_terms && <p><span className="font-medium">{t('quoteRequest.payment')} :</span> {terms.payment_terms}</p>}
+                  {terms.currency && <p><span className="font-medium">{t('quoteRequest.currency')} :</span> {terms.currency}</p>}
                 </div>
               </div>
             )}
@@ -724,19 +735,19 @@ export default function QuoteRequest() {
             {step > 1 && (
               <button type="button" onClick={() => setStep(s => s - 1)}
                 className="flex items-center gap-2 border border-ma-sand text-stone-600 text-sm font-medium px-5 py-3 rounded-xl hover:bg-white transition-colors bg-ma-cream">
-                <ArrowLeft className="w-4 h-4" /> Précédent
+                <ArrowLeft className="w-4 h-4" /> {t('quoteRequest.previous')}
               </button>
             )}
 
             {step < 4 ? (
-              <button type="button" onClick={() => { setError(''); if (canProceed()) setStep(s => s + 1); else setError('Veuillez compléter les champs obligatoires avant de continuer.'); }}
+              <button type="button" onClick={() => { setError(''); if (canProceed()) setStep(s => s + 1); else setError(t('quoteRequest.requiredFieldsError')); }}
                 className="flex-1 flex items-center justify-center gap-2 bg-ma-red hover:bg-[#9B1E24] text-white text-sm font-semibold py-3 rounded-xl transition-colors">
-                Suivant <ArrowRight className="w-4 h-4" />
+                {t('quoteRequest.next')} <ArrowRight className="w-4 h-4" />
               </button>
             ) : (
               <button type="submit" disabled={submitting}
                 className="flex-1 flex items-center justify-center gap-2 bg-ma-red hover:bg-[#9B1E24] disabled:opacity-60 text-white text-sm font-semibold py-3 rounded-xl transition-colors">
-                {submitting ? <><Loader2 className="w-4 h-4 animate-spin" /> Envoi…</> : <><Send className="w-4 h-4" /> Envoyer la demande de proforma</>}
+                {submitting ? <><Loader2 className="w-4 h-4 animate-spin" /> {t('quoteRequest.sending')}</> : <><Send className="w-4 h-4" /> {t('quoteRequest.submit')}</>}
               </button>
             )}
           </div>

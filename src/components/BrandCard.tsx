@@ -4,6 +4,7 @@ import { ArrowRight } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { productImage } from '../lib/img';
 import type { Brand } from '../types';
+import { useTranslation } from 'react-i18next';
 
 interface Props {
   brand: Brand;
@@ -11,6 +12,7 @@ interface Props {
 }
 
 export default function BrandCard({ brand, productCount }: Props) {
+  const { t } = useTranslation();
   const [images, setImages] = useState<string[]>([]);
   const [slide, setSlide] = useState(0);
   const [animated, setAnimated] = useState(true);
@@ -167,7 +169,7 @@ export default function BrandCard({ brand, productCount }: Props) {
                 ? 'text-white bg-black/35 backdrop-blur-sm'
                 : 'text-stone-500 bg-white shadow-sm border border-stone-100'
             }`}>
-              {productCount} produit{productCount !== 1 ? 's' : ''}
+              {t('brandCard.productCount', { count: productCount })}
             </span>
           </div>
         )}
