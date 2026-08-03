@@ -1,37 +1,16 @@
 import { useState } from 'react';
 import { Link, Navigate, useNavigate } from 'react-router-dom';
 import { UserPlus } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 
-const SECTORS = [
-  'Alimentaire & Boissons',
-  'Cosmétique & Hygiène',
-  'Pharmacie & Parapharmacie',
-  'Produits ménagers',
-  'Textile & Habillement',
-  'Jouets & Puériculture',
-  'Papeterie & Fournitures',
-  'Autre',
-];
-
-const ROLES = [
-  'Importateur',
-  'Distributeur',
-  'Grossiste',
-  'Détaillant',
-  'Agent / Courtier',
-  'Autre',
-];
-
-const COUNTRIES = [
-  'France', 'Espagne', 'Italie', 'Belgique', 'Pays-Bas', 'Allemagne', 'Portugal',
-  'Royaume-Uni', 'Suisse', 'Canada', 'États-Unis', 'Sénégal', 'Côte d\'Ivoire',
-  'Cameroun', 'Tunisie', 'Algérie', 'Égypte', 'Arabie Saoudite', 'Émirats Arabes Unis',
-  'Autre',
-];
+const SECTORS = ['food', 'cosmetics', 'pharma', 'household', 'textile', 'baby', 'paper', 'other'] as const;
+const ROLES = ['importer', 'distributor', 'wholesaler', 'retailer', 'agent', 'other'] as const;
+const COUNTRIES = ['france', 'spain', 'italy', 'belgium', 'netherlands', 'germany', 'portugal', 'uk', 'switzerland', 'canada', 'usa', 'senegal', 'ivoryCoast', 'cameroon', 'tunisia', 'algeria', 'egypt', 'saudiArabia', 'uae', 'other'] as const;
 
 export default function SignUp() {
+  const { t } = useTranslation();
   const { session } = useAuth();
   const navigate = useNavigate();
 
@@ -60,13 +39,13 @@ export default function SignUp() {
             <path strokeLinecap="round" strokeLinejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25H4.5a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5H4.5a2.25 2.25 0 00-2.25 2.25m19.5 0-10.5 6.75L3.75 6.75" />
           </svg>
         </div>
-        <h2 className="text-xl font-bold text-white mb-2">Confirmez votre email</h2>
+        <h2 className="text-xl font-bold text-white mb-2">{t('signup.confirmTitle')}</h2>
         <p className="text-stone-400 text-sm leading-relaxed">
-          Un lien de confirmation a été envoyé à <span className="text-amber-400 font-medium">{form.email}</span>.<br />
-          Cliquez sur le lien pour activer votre accès au catalogue.
+          {t('signup.confirmTextBefore')} <span className="text-amber-400 font-medium">{form.email}</span>.<br />
+          {t('signup.confirmTextAfter')}
         </p>
         <Link to="/" className="inline-block mt-6 text-sm text-stone-400 hover:text-white transition-colors">
-          ← Retour à l'accueil
+          {t('signup.backHome')}
         </Link>
       </div>
     </div>
@@ -87,7 +66,7 @@ export default function SignUp() {
     });
 
     if (signUpErr || !data.user) {
-      setError(signUpErr?.message ?? 'Erreur lors de la création du compte.');
+      setError(signUpErr?.message ?? t('signup.createError'));
       setLoading(false);
       return;
     }
@@ -104,7 +83,7 @@ export default function SignUp() {
     });
 
     if (profileErr) {
-      setError("Compte créé, mais erreur lors de l'enregistrement du profil. Contactez-nous.");
+      setError(t('signup.profileError'));
       setLoading(false);
       return;
     }
@@ -152,8 +131,8 @@ export default function SignUp() {
         onChange={set(key)}
         className="w-full bg-stone-900 border border-stone-600 text-white rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500/50 transition"
       >
-        <option value="">Sélectionner…</option>
-        {options.map(o => <option key={o} value={o}>{o}</option>)}
+        <option value="">{t('signup.selectPlaceholder')}</option>
+        {options.map(o => <option key={o} value={o}>{t(`signup.options.${o}`)}</option>)}
       </select>
     </div>
   );
@@ -165,9 +144,9 @@ export default function SignUp() {
           <Link to="/">
             <img src="/logo.png" alt="Morocco Food Export" className="h-20 w-auto mx-auto mb-5" />
           </Link>
-          <h1 className="text-2xl font-bold text-white">Créer un accès acheteur</h1>
+          <h1 className="text-2xl font-bold text-white">{t('signup.title')}</h1>
           <p className="text-stone-400 text-sm mt-2">
-            Accédez au catalogue complet et aux fiches produits détaillées
+            {t('signup.subtitle')}
           </p>
         </div>
 
@@ -177,39 +156,39 @@ export default function SignUp() {
             {/* Identité */}
             <div>
               <h2 className="text-xs font-semibold text-amber-400 uppercase tracking-widest mb-4">
-                Vos informations
+                {t('signup.personalSection')}
               </h2>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {field('Nom complet', 'full_name', 'text', 'Prénom Nom')}
-                {field('Email professionnel', 'email', 'email', 'you@company.com')}
-                {field('Mot de passe', 'password', 'password', 'Minimum 8 caractères')}
-                {field('Téléphone / WhatsApp', 'phone', 'tel', '+33 6 00 00 00 00', false)}
+                {field(t('signup.fullName'), 'full_name', 'text', t('signup.fullNamePlaceholder'))}
+                {field(t('signup.email'), 'email', 'email', 'you@company.com')}
+                {field(t('signup.password'), 'password', 'password', t('signup.passwordPlaceholder'))}
+                {field(t('signup.phone'), 'phone', 'tel', '+33 6 00 00 00 00', false)}
               </div>
             </div>
 
             {/* Entreprise */}
             <div>
               <h2 className="text-xs font-semibold text-amber-400 uppercase tracking-widest mb-4">
-                Votre entreprise
+                {t('signup.companySection')}
               </h2>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {field('Société / Raison sociale', 'company_name', 'text', 'Nom de votre entreprise')}
-                {select('Pays', 'country', COUNTRIES)}
-                {select('Secteur d\'activité', 'sector', SECTORS)}
-                {select('Votre rôle', 'role', ROLES)}
+                {field(t('signup.companyName'), 'company_name', 'text', t('signup.companyPlaceholder'))}
+                {select(t('signup.country'), 'country', COUNTRIES as unknown as string[])}
+                {select(t('signup.sector'), 'sector', SECTORS as unknown as string[])}
+                {select(t('signup.role'), 'role', ROLES as unknown as string[])}
               </div>
             </div>
 
             {/* Message optionnel */}
             <div>
               <label className="block text-xs font-medium text-stone-300 mb-1.5">
-                Message <span className="text-stone-500">(optionnel)</span>
+                {t('signup.message')} <span className="text-stone-500">{t('signup.optional')}</span>
               </label>
               <textarea
                 value={form.message}
                 onChange={set('message')}
                 rows={3}
-                placeholder="Décrivez vos besoins, volumes envisagés, marchés cibles…"
+                placeholder={t('signup.messagePlaceholder')}
                 className="w-full bg-stone-900 border border-stone-600 text-white rounded-xl px-4 py-3 text-sm placeholder-stone-500 focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500/50 transition resize-none"
               />
             </div>
@@ -228,14 +207,14 @@ export default function SignUp() {
               {loading
                 ? <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                 : <UserPlus className="w-4 h-4" />}
-              {loading ? 'Création en cours…' : 'Créer mon accès & accéder au catalogue'}
+              {loading ? t('signup.submitting') : t('signup.submit')}
             </button>
           </form>
 
           <p className="text-center text-sm text-stone-400 mt-6">
-            Déjà un compte ?{' '}
+            {t('signup.hasAccount')}{' '}
             <Link to="/login" className="text-amber-400 hover:text-amber-300 font-medium transition-colors">
-              Se connecter
+              {t('signup.login')}
             </Link>
           </p>
         </div>

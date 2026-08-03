@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Package, MessageSquare, Building2, X, SlidersHorizontal, ChevronDown } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { supabase } from '../lib/supabase';
 import ProductCard from '../components/ProductCard';
 import type { Category, Product } from '../types';
@@ -11,7 +12,7 @@ const SELECT = '*, category:categories(name,slug), brand:brands(name,slug), supp
 interface BrandOpt { id: string; name: string; slug: string; }
 
 const DLUO_OPTIONS = [
-  { label: 'Tous', value: '' },
+  { labelKey: 'all', value: '' },
   { label: '< 6 mois', value: 'lt6' },
   { label: '6–12 mois', value: '6to12' },
   { label: '12–24 mois', value: '12to24' },
@@ -21,6 +22,7 @@ const DLUO_OPTIONS = [
 const CERT_OPTIONS = ['Halal', 'Bio / Organique', 'HACCP', 'ISO 22000', 'Casher', 'IFS Food', 'BRC', 'GlobalGAP', 'Fairtrade', 'Sans gluten'];
 
 export default function CategoryPage() {
+  const { t } = useTranslation();
   const { slug } = useParams<{ slug: string }>();
   const navigate = useNavigate();
   const [category, setCategory] = useState<Category | null>(null);
@@ -117,7 +119,6 @@ export default function CategoryPage() {
   const hasFilters = !!(filterBrand || filterOrigine || filterCert || filterDluo || filterMoqMax);
   const activeFilterCount = [filterBrand, filterOrigine, filterCert, filterDluo, filterMoqMax].filter(Boolean).length;
 
-  const changeBrand = (id: string) => { setFilterBrand(id); setPage(1); };
   const resetFilters = () => { setFilterBrand(''); setFilterOrigine(''); setFilterCert(''); setFilterDluo(''); setFilterMoqMax(''); setPage(1); };
   const goTo = (p: number) => {
     setPage(Math.min(Math.max(1, p), totalPages));
@@ -148,7 +149,7 @@ export default function CategoryPage() {
         <div className="max-w-6xl mx-auto">
           <Link to="/catalog"
             className="inline-flex items-center gap-2 text-stone-400 hover:text-white text-sm mb-4 transition-colors">
-            <ArrowLeft className="w-4 h-4" /> Catalogue
+            <ArrowLeft className="w-4 h-4" /> {t('brandPage.catalog')}
           </Link>
           <h1 className="text-3xl font-bold text-white">{category.name}</h1>
           {category.description && (
@@ -165,13 +166,13 @@ export default function CategoryPage() {
             <button onClick={() => setShowFilters(f => !f)}
               className={`inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold border transition-all ${showFilters || activeFilterCount > 0 ? 'bg-ma-navy text-white border-ma-navy' : 'bg-white text-stone-700 border-stone-200 hover:border-ma-navy'}`}>
               <SlidersHorizontal className="w-4 h-4" />
-              Filtres {activeFilterCount > 0 && <span className="bg-white text-ma-navy text-xs font-bold w-5 h-5 rounded-full flex items-center justify-center">{activeFilterCount}</span>}
+              {t('categoryPage.filters')} {activeFilterCount > 0 && <span className="bg-white text-ma-navy text-xs font-bold w-5 h-5 rounded-full flex items-center justify-center">{activeFilterCount}</span>}
               <ChevronDown className={`w-3.5 h-3.5 transition-transform ${showFilters ? 'rotate-180' : ''}`} />
             </button>
             {hasFilters && (
               <button onClick={resetFilters}
                 className="inline-flex items-center gap-1 text-xs text-red-500 hover:text-red-700 font-medium transition-colors">
-                <X className="w-3 h-3" /> Réinitialiser tous les filtres
+                <X className="w-3 h-3" /> {t('categoryPage.resetAllFilters')}
               </button>
             )}
           </div>
@@ -182,11 +183,11 @@ export default function CategoryPage() {
               {brandOptions.length > 0 && (
                 <label className="flex flex-col gap-1">
                   <span className="text-xs font-semibold text-stone-500 uppercase tracking-wide flex items-center gap-1.5">
-                    <Building2 className="w-3 h-3" /> Marque
+                    <Building2 className="w-3 h-3" /> {t('brandPage.brand')}
                   </span>
                   <select value={filterBrand} onChange={e => { setFilterBrand(e.target.value); setPage(1); }}
                     className="text-sm bg-stone-50 border border-stone-200 rounded-xl px-3 py-2 focus:outline-none focus:border-ma-green">
-                    <option value="">Toutes</option>
+                    <option value="">{t('categoryPage.allFeminine')}</option>
                     {brandOptions.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
                   </select>
                 </label>
@@ -196,11 +197,11 @@ export default function CategoryPage() {
               {origineOptions.length > 1 && (
                 <label className="flex flex-col gap-1">
                   <span className="text-xs font-semibold text-stone-500 uppercase tracking-wide flex items-center gap-1.5">
-                    <span>🌍</span> Pays d'origine
+                    <span>🌍</span> {t('categoryPage.originCountry')}
                   </span>
                   <select value={filterOrigine} onChange={e => { setFilterOrigine(e.target.value); setPage(1); }}
                     className="text-sm bg-stone-50 border border-stone-200 rounded-xl px-3 py-2 focus:outline-none focus:border-ma-green">
-                    <option value="">Tous</option>
+                    <option value="">{t('catalog.all')}</option>
                     {origineOptions.map(o => <option key={o} value={o}>{o}</option>)}
                   </select>
                 </label>
@@ -209,11 +210,11 @@ export default function CategoryPage() {
               {/* Certification */}
               <label className="flex flex-col gap-1">
                 <span className="text-xs font-semibold text-stone-500 uppercase tracking-wide flex items-center gap-1.5">
-                  <span>🏅</span> Certification
+                  <span>🏅</span> {t('categoryPage.certification')}
                 </span>
                 <select value={filterCert} onChange={e => { setFilterCert(e.target.value); setPage(1); }}
                   className="text-sm bg-stone-50 border border-stone-200 rounded-xl px-3 py-2 focus:outline-none focus:border-ma-green">
-                  <option value="">Toutes</option>
+                  <option value="">{t('categoryPage.allFeminine')}</option>
                   {CERT_OPTIONS.map(c => <option key={c} value={c}>{c}</option>)}
                 </select>
               </label>
@@ -221,18 +222,18 @@ export default function CategoryPage() {
               {/* Shelf life */}
               <label className="flex flex-col gap-1">
                 <span className="text-xs font-semibold text-stone-500 uppercase tracking-wide flex items-center gap-1.5">
-                  <span>📅</span> Shelf life
+                  <span>📅</span> {t('categoryPage.shelfLife')}
                 </span>
                 <select value={filterDluo} onChange={e => { setFilterDluo(e.target.value); setPage(1); }}
                   className="text-sm bg-stone-50 border border-stone-200 rounded-xl px-3 py-2 focus:outline-none focus:border-ma-green">
-                  {DLUO_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+                  {DLUO_OPTIONS.map(o => <option key={o.value} value={o.value}>{'labelKey' in o ? t('catalog.all') : o.label}</option>)}
                 </select>
               </label>
 
               {/* MOQ max */}
               <label className="flex flex-col gap-1">
-                <span className="text-xs font-semibold text-stone-500 uppercase tracking-wide">MOQ max (unités)</span>
-                <input type="number" min="1" placeholder="Ex : 500"
+                <span className="text-xs font-semibold text-stone-500 uppercase tracking-wide">{t('categoryPage.maxMoq')}</span>
+                <input type="number" min="1" placeholder={t('categoryPage.maxMoqPlaceholder')}
                   value={filterMoqMax} onChange={e => { setFilterMoqMax(e.target.value); setPage(1); }}
                   className="text-sm bg-stone-50 border border-stone-200 rounded-xl px-3 py-2 focus:outline-none focus:border-ma-green" />
               </label>
@@ -244,19 +245,21 @@ export default function CategoryPage() {
         {total === 0 && !gridLoading ? (
           <div className="text-center py-20">
             <Package className="w-14 h-14 text-stone-300 mx-auto mb-4" />
-            <h3 className="text-stone-500 font-medium mb-2">Aucun produit disponible</h3>
+            <h3 className="text-stone-500 font-medium mb-2">{t('brandPage.noProducts')}</h3>
             <p className="text-stone-400 text-sm mb-6">
-              Contactez-nous directement pour la disponibilité et les tarifs de {category.name}.
+              {t('categoryPage.contactAvailability', { category: category.name })}
             </p>
             <Link to="/quote"
               className="inline-flex items-center gap-2 bg-ma-red hover:bg-[#9B1E24] text-white text-sm font-semibold px-6 py-3 rounded-xl transition-colors">
-              <MessageSquare className="w-4 h-4" /> Demander un devis
+              <MessageSquare className="w-4 h-4" /> {t('brandPage.requestQuote')}
             </Link>
           </div>
         ) : (
           <>
             <p className="text-stone-500 text-sm mb-6">
-              {total} produit{total !== 1 ? 's' : ''} {hasFilters ? 'trouvé' : 'dans'}{hasFilters ? (total !== 1 ? 's' : '') : ` ${category.name}`}
+              {hasFilters
+                ? t('categoryPage.foundProducts', { count: total })
+                : t('categoryPage.productsInCategory', { count: total, category: category.name })}
             </p>
             <div className={`grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-5 transition-opacity ${gridLoading ? 'opacity-50' : ''}`}>
               {products.map(product => (
@@ -273,7 +276,7 @@ export default function CategoryPage() {
               <div className="mt-10 flex items-center justify-center gap-1.5 flex-wrap">
                 <button onClick={() => goTo(currentPage - 1)} disabled={currentPage === 1}
                   className="px-3 py-2 text-sm rounded-lg border border-stone-200 bg-white text-stone-600 hover:border-stone-400 disabled:opacity-40 disabled:cursor-not-allowed transition-colors">
-                  Précédent
+                  {t('admin.common.previous')}
                 </button>
                 {Array.from({ length: totalPages }, (_, i) => i + 1)
                   .filter(p => p === 1 || p === totalPages || Math.abs(p - currentPage) <= 1)
@@ -292,7 +295,7 @@ export default function CategoryPage() {
                   ))}
                 <button onClick={() => goTo(currentPage + 1)} disabled={currentPage === totalPages}
                   className="px-3 py-2 text-sm rounded-lg border border-stone-200 bg-white text-stone-600 hover:border-stone-400 disabled:opacity-40 disabled:cursor-not-allowed transition-colors">
-                  Suivant
+                  {t('admin.common.next')}
                 </button>
               </div>
             )}
@@ -301,16 +304,16 @@ export default function CategoryPage() {
 
         {/* CTA banner */}
         <div className="mt-12 bg-gradient-to-br from-ma-navy to-[#0A1833] rounded-2xl p-8 text-center">
-          <h3 className="text-white font-semibold mb-2">Intéressé par {category.name} ?</h3>
+          <h3 className="text-white font-semibold mb-2">{t('brandPage.interested', { brand: category.name })}</h3>
           <p className="text-stone-400 text-sm mb-5">
-            Obtenez un devis personnalisé avec tailles, conditionnement et tarifs.
+            {t('categoryPage.ctaText')}
           </p>
           <Link
             to={`/quote?category=${encodeURIComponent(category.name)}`}
             className="inline-flex items-center gap-2 bg-ma-red hover:bg-[#9B1E24] text-white text-sm font-semibold px-7 py-3 rounded-xl transition-colors"
           >
             <MessageSquare className="w-4 h-4" />
-            Devis pour {category.name}
+            {t('brandPage.quoteFor', { brand: category.name })}
           </Link>
         </div>
       </div>
@@ -320,22 +323,22 @@ export default function CategoryPage() {
         <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4 backdrop-blur-sm"
           onClick={() => setQuoteProduct(null)}>
           <div className="bg-white rounded-2xl p-6 max-w-md w-full shadow-2xl" onClick={e => e.stopPropagation()}>
-            <h3 className="font-bold text-stone-800 mb-1">Demande de devis</h3>
+            <h3 className="font-bold text-stone-800 mb-1">{t('brandPage.quoteRequest')}</h3>
             {quoteProduct.supplier?.name && (
               <p className="text-xs font-bold text-stone-600 uppercase tracking-wide mb-2">{quoteProduct.supplier.name}</p>
             )}
             <p className="text-stone-500 text-sm mb-4">
-              Produit sélectionné : <strong>{quoteProduct.name}</strong>
+              {t('brandPage.selectedProduct')} <strong>{quoteProduct.name}</strong>
             </p>
             <div className="flex gap-3">
               <button onClick={() => setQuoteProduct(null)}
                 className="flex-1 border border-stone-200 text-stone-600 text-sm py-2.5 rounded-xl hover:bg-stone-50 transition-colors">
-                Annuler
+                {t('admin.common.cancel')}
               </button>
               <Link
                 to={`/quote?product=${encodeURIComponent(quoteProduct.name)}&category=${encodeURIComponent(category.name)}`}
                 className="flex-1 bg-ma-red hover:bg-[#9B1E24] text-white text-sm font-semibold py-2.5 rounded-xl transition-colors text-center">
-                Continuer
+                {t('brandPage.continue')}
               </Link>
             </div>
           </div>

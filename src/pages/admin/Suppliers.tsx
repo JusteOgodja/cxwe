@@ -345,10 +345,10 @@ export default function Suppliers() {
             <div className="flex items-center justify-between px-6 py-4 border-b border-stone-100 shrink-0">
               <div>
                 <h2 className="font-bold text-stone-800">
-                  Import JSON — {importRows.length} fournisseur{importRows.length !== 1 ? 's' : ''} détecté{importRows.length !== 1 ? 's' : ''}
+                  {t('admin.pages.suppliers.importTitle', { count: importRows.length })}
                 </h2>
                 {importErrors.length > 0 && (
-                  <p className="text-xs text-red-500 mt-0.5">{importErrors.length} erreur{importErrors.length > 1 ? 's' : ''} — entrées invalides ignorées</p>
+                  <p className="text-xs text-red-500 mt-0.5">{t('admin.pages.suppliers.importErrors', { count: importErrors.length })}</p>
                 )}
               </div>
               <button onClick={closeImportModal} className="text-stone-400 hover:text-stone-600"><X className="w-5 h-5" /></button>
@@ -359,7 +359,7 @@ export default function Suppliers() {
                 <div className="bg-red-50 border border-red-100 rounded-xl p-4">
                   <div className="flex items-center gap-2 mb-2">
                     <AlertCircle className="w-4 h-4 text-red-500 shrink-0" />
-                    <p className="text-xs font-semibold text-red-600">Erreurs détectées</p>
+                    <p className="text-xs font-semibold text-red-600">{t('admin.pages.categories.importErrorsTitle')}</p>
                   </div>
                   <ul className="space-y-1">
                     {importErrors.map((err, i) => <li key={i} className="text-xs text-red-500">• {err}</li>)}
@@ -369,22 +369,22 @@ export default function Suppliers() {
               {importRows.length > 0 && (
                 <div>
                   <p className="text-xs font-semibold text-stone-500 mb-2">
-                    Aperçu — {validImportRows.length} valide{validImportRows.length !== 1 ? 's' : ''} sur {importRows.length}
+                    {t('admin.pages.categories.importPreview', { valid: validImportRows.length, total: importRows.length })}
                   </p>
                   <div className="rounded-xl overflow-hidden border border-stone-100">
                     <table className="w-full text-xs">
                       <thead>
                         <tr className="bg-stone-50 border-b border-stone-100">
-                          <th className="text-left px-4 py-2.5 text-stone-400 font-semibold">Nom</th>
-                          <th className="text-left px-4 py-2.5 text-stone-400 font-semibold">Contact</th>
-                          <th className="text-left px-4 py-2.5 text-stone-400 font-semibold">Pays</th>
+                          <th className="text-left px-4 py-2.5 text-stone-400 font-semibold">{t('admin.common.name')}</th>
+                          <th className="text-left px-4 py-2.5 text-stone-400 font-semibold">{t('admin.pages.suppliers.fieldContact')}</th>
+                          <th className="text-left px-4 py-2.5 text-stone-400 font-semibold">{t('admin.common.country')}</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-stone-50">
                         {importRows.slice(0, 8).map((row, i) => (
                           <tr key={i} className={row.name ? '' : 'bg-red-50/50'}>
                             <td className="px-4 py-2.5 font-medium text-stone-700">
-                              {(row.name as string) || <span className="text-red-400 italic">manquant</span>}
+                              {(row.name as string) || <span className="text-red-400 italic">{t('admin.pages.categories.missingField')}</span>}
                             </td>
                             <td className="px-4 py-2.5 text-stone-500">{(row.contact_name as string) || '—'}</td>
                             <td className="px-4 py-2.5 text-stone-400">{(row.country as string) || '—'}</td>
@@ -400,12 +400,12 @@ export default function Suppliers() {
             <div className="flex gap-3 px-6 py-4 border-t border-stone-100 shrink-0 bg-stone-50 rounded-b-2xl">
               <button onClick={closeImportModal}
                 className="flex-1 border border-stone-200 text-stone-600 text-sm py-2.5 rounded-xl hover:bg-white transition-colors">
-                Annuler
+                {t('admin.common.cancel')}
               </button>
               <button onClick={handleImportConfirm} disabled={importing || validImportRows.length === 0}
                 className="flex-1 bg-amber-500 hover:bg-amber-400 disabled:opacity-60 text-white text-sm font-semibold py-2.5 rounded-xl flex items-center justify-center gap-2 transition-colors">
                 {importing ? <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <Upload className="w-4 h-4" />}
-                Importer {validImportRows.length} fournisseur{validImportRows.length !== 1 ? 's' : ''}
+                {t('admin.pages.suppliers.importSuppliers', { count: validImportRows.length })}
               </button>
             </div>
           </div>

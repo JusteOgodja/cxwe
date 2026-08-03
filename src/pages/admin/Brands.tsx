@@ -230,7 +230,7 @@ export default function Brands() {
           <div className="flex items-center gap-2 bg-red-50 border border-red-200 rounded-xl px-3 py-2">
             <CheckSquare className="w-4 h-4 text-red-500 shrink-0" />
             <span className="text-sm font-medium text-red-700">
-              {selectedIds.size} sélectionnée{selectedIds.size > 1 ? 's' : ''}
+              {t('admin.pages.brands.selectedCount', { count: selectedIds.size })}
             </span>
             <button
               onClick={handleBulkDelete}
@@ -240,12 +240,12 @@ export default function Brands() {
               {bulkDeleting
                 ? <span className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                 : <Trash2 className="w-3.5 h-3.5" />}
-              Supprimer la sélection
+              {t('admin.pages.brands.deleteSelection')}
             </button>
             <button
               onClick={() => setSelectedIds(new Set())}
               className="text-stone-400 hover:text-stone-600 ml-1"
-              title="Désélectionner tout"
+              title={t('admin.pages.brands.clearSelection')}
             >
               <X className="w-4 h-4" />
             </button>
@@ -323,12 +323,12 @@ export default function Brands() {
                       {b.logo_url
                         ? <a href={b.logo_url} target="_blank" rel="noopener noreferrer"
                             className="text-blue-500 hover:text-blue-700 hover:underline truncate block max-w-[120px]"
-                            title={b.logo_url}>Voir ↗</a>
+                            title={b.logo_url}>{t('admin.pages.products.view')} ↗</a>
                         : <span className="text-stone-300">—</span>}
                     </td>
                     {/* Créé le */}
                     <td className="px-4 py-2 text-stone-400 text-xs whitespace-nowrap">
-                      {b.created_at ? new Date(b.created_at).toLocaleDateString('fr-FR') : '—'}
+                      {b.created_at ? new Date(b.created_at).toLocaleDateString() : '—'}
                     </td>
                     {/* Statut */}
                     <td className="px-4 py-2">
@@ -380,7 +380,7 @@ export default function Brands() {
                 <div className="bg-red-50 border border-red-100 rounded-xl p-4">
                   <div className="flex items-center gap-2 mb-2">
                     <AlertCircle className="w-4 h-4 text-red-500 shrink-0" />
-                    <p className="text-xs font-semibold text-red-600">Erreurs détectées</p>
+                    <p className="text-xs font-semibold text-red-600">{t('admin.pages.categories.importErrorsTitle')}</p>
                   </div>
                   <ul className="space-y-1">
                     {importErrors.map((err, i) => <li key={i} className="text-xs text-red-500">• {err}</li>)}
@@ -390,22 +390,22 @@ export default function Brands() {
               {importRows.length > 0 && (
                 <div>
                   <p className="text-xs font-semibold text-stone-500 mb-2">
-                    Aperçu — {validImportRows.length} valide{validImportRows.length !== 1 ? 's' : ''} sur {importRows.length}
+                    {t('admin.pages.categories.importPreview', { valid: validImportRows.length, total: importRows.length })}
                   </p>
                   <div className="rounded-xl overflow-hidden border border-stone-100">
                     <table className="w-full text-xs">
                       <thead>
                         <tr className="bg-stone-50 border-b border-stone-100">
-                          <th className="text-left px-4 py-2.5 text-stone-400 font-semibold">Nom</th>
+                          <th className="text-left px-4 py-2.5 text-stone-400 font-semibold">{t('admin.common.name')}</th>
                           <th className="text-left px-4 py-2.5 text-stone-400 font-semibold">Slug</th>
-                          <th className="text-left px-4 py-2.5 text-stone-400 font-semibold">Description</th>
+                          <th className="text-left px-4 py-2.5 text-stone-400 font-semibold">{t('admin.common.description')}</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-stone-50">
                         {importRows.slice(0, 8).map((row, i) => (
                           <tr key={i} className={row.name ? '' : 'bg-red-50/50'}>
                             <td className="px-4 py-2.5 font-medium text-stone-700">
-                              {(row.name as string) || <span className="text-red-400 italic">manquant</span>}
+                              {(row.name as string) || <span className="text-red-400 italic">{t('admin.pages.categories.missingField')}</span>}
                             </td>
                             <td className="px-4 py-2.5 font-mono text-stone-400">
                               {(row.slug as string) || <span className="text-stone-300 italic">auto</span>}

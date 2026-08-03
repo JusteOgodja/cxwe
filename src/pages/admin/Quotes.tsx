@@ -12,13 +12,6 @@ import ResponseModal from '../../components/admin/ResponseModal';
 
 const STATUS_OPTIONS: QuoteStatus[] = ['new', 'in_review', 'responded', 'closed'];
 
-const STATUS_LABELS: Record<QuoteStatus, string> = {
-  new: 'Nouveau',
-  in_review: 'En cours',
-  responded: 'Répondu',
-  closed: 'Clôturé',
-};
-
 const STATUS_COLORS: Record<QuoteStatus, string> = {
   new: 'bg-red-100 text-red-700 border-red-200',
   in_review: 'bg-amber-100 text-amber-700 border-amber-200',
@@ -40,17 +33,19 @@ function Section({ icon: Icon, title, children }: { icon: React.ComponentType<{ 
 }
 
 function Row({ label, value }: { label: string; value?: string | boolean | null }) {
+  const { t } = useTranslation();
   if (value === undefined || value === null || value === '' || value === false) return null;
   return (
     <div className="flex gap-2">
       <span className="text-stone-400 shrink-0 w-36">{label} :</span>
-      <span className="font-medium">{value === true ? 'Oui' : String(value)}</span>
+      <span className="font-medium">{value === true ? t('admin.common.yes') : String(value)}</span>
     </div>
   );
 }
 
 export default function Quotes() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const statusLabel = (status: QuoteStatus) => t(`admin.pages.quotes.status.${status}`);
   const [searchParams] = useSearchParams();
   const [quotes, setQuotes] = useState<QuoteRequest[]>([]);
   const [loading, setLoading] = useState(true);
@@ -94,12 +89,12 @@ export default function Quotes() {
     Math.floor((Date.now() - new Date(iso).getTime()) / 86_400_000);
 
   const exportCSV = () => {
-    const headers = ['Société', 'Contact', 'Email', 'Pays', 'Statut', 'Produits', 'Incoterm', 'Devise', 'Date'];
+    const headers = [t('admin.pages.quotes.colCompany'), t('admin.pages.quotes.colContact'), t('admin.common.email'), t('admin.pages.quotes.colCountry'), t('admin.pages.quotes.colStatus'), t('admin.pages.quotes.products'), 'Incoterm', t('admin.pages.quotes.currency'), t('admin.pages.quotes.colDate')];
     const rows = filtered.map(q => [
       q.company_name, q.contact_name, q.email, q.country ?? '',
-      STATUS_LABELS[q.status], (q.products_interested ?? '').replace(/\n/g, ' '),
+      statusLabel(q.status), (q.products_interested ?? '').replace(/\n/g, ' '),
       q.incoterm ?? '', q.currency ?? '',
-      new Date(q.created_at).toLocaleDateString('fr-FR'),
+      new Date(q.created_at).toLocaleDateString(i18n.resolvedLanguage || i18n.language),
     ]);
     const csv = [headers, ...rows].map(r => r.map(c => `"${String(c).replace(/"/g, '""')}"`).join(',')).join('\n');
     const a = document.createElement('a');
@@ -143,7 +138,7 @@ export default function Quotes() {
           <AlertCircle className="w-4 h-4 shrink-0" />
           <span className="flex-1">{error}</span>
           <button onClick={() => { setError(null); load(); }}
-            className="text-xs font-semibold underline hover:no-underline whitespace-nowrap">Réessayer</button>
+            className="text-xs font-semibold underline hover:no-underline whitespace-nowrap">{t('admin.common.retry')}</button>
         </div>
       )}
 
@@ -151,20 +146,20 @@ export default function Quotes() {
       <div className="flex gap-3 mb-4 flex-wrap">
         <div className="relative flex-1 min-w-40">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-stone-400" />
-          <input type="text" placeholder="Rechercher société, contact, e-mail, pays…"
+          <input type="text" placeholder={t('admin.pages.quotes.searchDetailed')}
             value={search} onChange={e => setSearch(e.target.value)}
             className="w-full pl-9 pr-4 py-2.5 border border-stone-200 rounded-xl text-sm focus:outline-none focus:border-amber-400 bg-white" />
         </div>
         <select value={filterStatus} onChange={e => setFilterStatus(e.target.value)}
           className="border border-stone-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-amber-400 bg-white">
-          <option value="">Tous les statuts</option>
-          {STATUS_OPTIONS.map(s => <option key={s} value={s}>{STATUS_LABELS[s]}</option>)}
+          <option value="">{t('admin.pages.quotes.filterStatus')}</option>
+          {STATUS_OPTIONS.map(s => <option key={s} value={s}>{statusLabel(s)}</option>)}
         </select>
         <input type="date" value={dateFrom} onChange={e => setDateFrom(e.target.value)}
-          title="Date de début"
+          title={t('admin.pages.quotes.dateFrom')}
           className="border border-stone-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-amber-400 bg-white text-stone-600" />
         <input type="date" value={dateTo} onChange={e => setDateTo(e.target.value)}
-          title="Date de fin"
+          title={t('admin.pages.quotes.dateTo')}
           className="border border-stone-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-amber-400 bg-white text-stone-600" />
         {(search || filterStatus || dateFrom || dateTo) && (
           <button onClick={() => { setSearch(''); setFilterStatus(''); setDateFrom(''); setDateTo(''); }}
@@ -184,7 +179,7 @@ export default function Quotes() {
                 filterStatus === s ? STATUS_COLORS[s] : 'bg-white border-stone-200 text-stone-500 hover:border-stone-300'
               }`}>
               <div className="text-xl font-bold mb-0.5">{count}</div>
-              {STATUS_LABELS[s]}
+              {statusLabel(s)}
             </button>
           );
         })}
@@ -208,7 +203,7 @@ export default function Quotes() {
                 <div className="flex items-center gap-3 flex-wrap">
                   <span className="font-semibold text-stone-800 text-sm">{q.company_name}</span>
                   <span className={`text-xs px-2 py-0.5 rounded-full border font-medium ${STATUS_COLORS[q.status]}`}>
-                    {STATUS_LABELS[q.status]}
+                    {statusLabel(q.status)}
                   </span>
                   {q.incoterm && (
                     <span className="text-xs bg-blue-50 text-blue-600 border border-blue-100 px-2 py-0.5 rounded-full font-mono font-semibold">
@@ -222,7 +217,7 @@ export default function Quotes() {
                   )}
                   {q.sample_request && (
                     <span className="text-xs bg-emerald-50 text-emerald-600 border border-emerald-100 px-2 py-0.5 rounded-full font-medium">
-                      Échantillons
+                      {t('admin.pages.quotes.samples')}
                     </span>
                   )}
                 </div>
@@ -234,7 +229,7 @@ export default function Quotes() {
                 <div className="text-stone-400 text-xs mt-0.5 truncate max-w-sm">
                   {q.products_interested?.split('\n')[0]}
                   {(q.products_interested?.split('\n').length ?? 0) > 1
-                    ? ` +${(q.products_interested?.split('\n').length ?? 1) - 1} autre(s)` : ''}
+                    ? ` +${t('admin.pages.quotes.otherCount', { count: (q.products_interested?.split('\n').length ?? 1) - 1 })}` : ''}
                 </div>
               </div>
               <div className="flex items-center gap-2 shrink-0">
@@ -244,7 +239,7 @@ export default function Quotes() {
                   </span>
                 )}
                 <span className="text-stone-400 text-xs hidden sm:block whitespace-nowrap">
-                  {new Date(q.created_at).toLocaleDateString('fr-FR')}
+                  {new Date(q.created_at).toLocaleDateString(i18n.resolvedLanguage || i18n.language)}
                 </span>
                 <button onClick={() => setSelected(q)}
                   className="p-1.5 text-stone-400 hover:text-amber-600 hover:bg-amber-50 rounded-lg transition-colors">
@@ -277,7 +272,7 @@ export default function Quotes() {
               <div>
                 <h2 className="font-bold text-stone-800 text-base">{selected.company_name}</h2>
                 <p className="text-xs text-stone-400 mt-0.5">
-                  Reçu le {new Date(selected.created_at).toLocaleString('fr-FR')}
+                  {t('admin.pages.quotes.receivedOn', { date: new Date(selected.created_at).toLocaleString(i18n.resolvedLanguage || i18n.language) })}
                 </p>
               </div>
               <button onClick={() => setSelected(null)} className="text-stone-400 hover:text-stone-600 mt-0.5">
@@ -289,7 +284,7 @@ export default function Quotes() {
 
               {/* Status management */}
               <div>
-                <p className="text-xs font-semibold text-stone-400 uppercase tracking-wider mb-2">Statut</p>
+                <p className="text-xs font-semibold text-stone-400 uppercase tracking-wider mb-2">{t('admin.common.status')}</p>
                 <div className="flex gap-2 flex-wrap">
                   {STATUS_OPTIONS.map(s => (
                     <button key={s} onClick={() => updateStatus(selected.id, s)}
@@ -297,17 +292,17 @@ export default function Quotes() {
                       className={`text-xs px-3 py-1.5 rounded-full border font-medium transition-all ${
                         selected.status === s ? STATUS_COLORS[s] : 'bg-white border-stone-200 text-stone-500 hover:border-stone-300'
                       }`}>
-                      {STATUS_LABELS[s]}
+                      {statusLabel(s)}
                     </button>
                   ))}
                 </div>
               </div>
 
               {/* Buyer identity */}
-              <Section icon={Building2} title="Identité acheteur">
-                <Row label="Société" value={selected.company_name} />
-                <Row label="N° TVA / SIRET" value={selected.buyer_vat_number} />
-                <Row label="Contact" value={selected.contact_name} />
+              <Section icon={Building2} title={t('admin.pages.quotes.buyerIdentity')}>
+                <Row label={t('admin.pages.quotes.colCompany')} value={selected.company_name} />
+                <Row label={t('admin.pages.quotes.vatNumber')} value={selected.buyer_vat_number} />
+                <Row label={t('admin.pages.quotes.colContact')} value={selected.contact_name} />
                 <div className="flex gap-2">
                   <span className="text-stone-400 shrink-0 w-36">E-mail :</span>
                   <a href={`mailto:${selected.email}`} className="font-medium text-amber-600 hover:underline flex items-center gap-1">
@@ -316,21 +311,21 @@ export default function Quotes() {
                 </div>
                 {selected.phone && (
                   <div className="flex gap-2">
-                    <span className="text-stone-400 shrink-0 w-36">Téléphone :</span>
+                    <span className="text-stone-400 shrink-0 w-36">{t('admin.common.phone')} :</span>
                     <a href={`tel:${selected.phone}`} className="font-medium text-amber-600 hover:underline flex items-center gap-1">
                       <Phone className="w-3 h-3" /> {selected.phone}
                     </a>
                   </div>
                 )}
-                <Row label="Pays" value={selected.country} />
+                <Row label={t('admin.common.country')} value={selected.country} />
               </Section>
 
               {/* Addresses */}
               {(selected.buyer_address || selected.buyer_city || selected.delivery_address) && (
-                <Section icon={MapPin} title="Adresses">
+                <Section icon={MapPin} title={t('admin.pages.quotes.addresses')}>
                   {(selected.buyer_address || selected.buyer_city || selected.buyer_postal_code) && (
                     <div>
-                      <p className="text-xs text-stone-400 mb-0.5">Facturation</p>
+                      <p className="text-xs text-stone-400 mb-0.5">{t('admin.pages.quotes.billing')}</p>
                       <p className="font-medium">
                         {[selected.buyer_address, selected.buyer_postal_code, selected.buyer_city, selected.country]
                           .filter(Boolean).join(', ')}
@@ -339,7 +334,7 @@ export default function Quotes() {
                   )}
                   {selected.delivery_address && (
                     <div>
-                      <p className="text-xs text-stone-400 mb-0.5">Livraison</p>
+                      <p className="text-xs text-stone-400 mb-0.5">{t('admin.pages.quotes.delivery')}</p>
                       <p className="font-medium">{selected.delivery_address}</p>
                       {selected.delivery_country && <p className="text-xs text-stone-500">{selected.delivery_country}</p>}
                     </div>
@@ -348,11 +343,11 @@ export default function Quotes() {
               )}
 
               {/* Products */}
-              <Section icon={Package} title="Produits demandés">
+              <Section icon={Package} title={t('admin.pages.quotes.requestedProducts')}>
                 <div className="whitespace-pre-line">{selected.products_interested}</div>
                 {selected.quantity_notes && (
                   <div className="pt-2 border-t border-stone-200 mt-2">
-                    <p className="text-xs text-stone-400 mb-0.5">Quantités</p>
+                    <p className="text-xs text-stone-400 mb-0.5">{t('admin.pages.quotes.quantities')}</p>
                     <p className="font-medium">{selected.quantity_notes}</p>
                   </div>
                 )}
@@ -360,25 +355,25 @@ export default function Quotes() {
 
               {/* Commercial terms */}
               {(selected.incoterm || selected.payment_terms || selected.currency || selected.port_loading || selected.port_destination || selected.container_type || selected.delivery_date || selected.order_frequency) && (
-                <Section icon={FileText} title="Conditions commerciales">
+                <Section icon={FileText} title={t('admin.pages.quotes.commercialTerms')}>
                   {selected.incoterm && (
                     <div className="flex gap-2 items-center">
                       <span className="text-stone-400 shrink-0 w-36">Incoterm :</span>
                       <span className="font-mono font-bold text-blue-700 bg-blue-50 px-2 py-0.5 rounded-lg text-xs">{selected.incoterm}</span>
                     </div>
                   )}
-                  <Row label="Devise" value={selected.currency} />
-                  <Row label="Port chargement" value={selected.port_loading} />
-                  <Row label="Port destination" value={selected.port_destination} />
-                  <Row label="Conditions paiement" value={selected.payment_terms} />
-                  <Row label="Transport" value={selected.container_type} />
-                  <Row label="Livraison souhaitée" value={selected.delivery_date
-                    ? new Date(selected.delivery_date).toLocaleDateString('fr-FR')
+                  <Row label={t('admin.pages.quotes.currency')} value={selected.currency} />
+                  <Row label={t('admin.pages.quotes.loadingPort')} value={selected.port_loading} />
+                  <Row label={t('admin.pages.quotes.destinationPort')} value={selected.port_destination} />
+                  <Row label={t('admin.pages.quotes.paymentTerms')} value={selected.payment_terms} />
+                  <Row label={t('admin.pages.quotes.transport')} value={selected.container_type} />
+                  <Row label={t('admin.pages.quotes.requestedDelivery')} value={selected.delivery_date
+                    ? new Date(selected.delivery_date).toLocaleDateString(i18n.resolvedLanguage || i18n.language)
                     : undefined} />
                   {selected.order_frequency && (
                     <div className="flex gap-2 items-center">
                       <span className="text-stone-400 shrink-0 w-36 flex items-center gap-1">
-                        <RefreshCw className="w-3 h-3" /> Fréquence :
+                        <RefreshCw className="w-3 h-3" /> {t('admin.pages.quotes.frequency')} :
                       </span>
                       <span className="font-medium">{selected.order_frequency}</span>
                     </div>
@@ -388,10 +383,10 @@ export default function Quotes() {
 
               {/* Requirements */}
               {(selected.required_certifications?.length || selected.labeling_requirements || selected.private_label || selected.sample_request) && (
-                <Section icon={Settings2} title="Exigences spécifiques">
+                <Section icon={Settings2} title={t('admin.pages.quotes.specificRequirements')}>
                   {(selected.required_certifications ?? []).length > 0 && (
                     <div className="flex gap-2 flex-wrap">
-                      <span className="text-stone-400 shrink-0 w-36">Certifications :</span>
+                      <span className="text-stone-400 shrink-0 w-36">{t('admin.pages.quotes.certifications')} :</span>
                       <div className="flex flex-wrap gap-1">
                         {(selected.required_certifications ?? []).map(c => (
                           <span key={c} className="text-xs bg-emerald-50 text-emerald-700 border border-emerald-100 px-2 py-0.5 rounded-full font-medium">
@@ -401,15 +396,15 @@ export default function Quotes() {
                       </div>
                     </div>
                   )}
-                  <Row label="Étiquetage" value={selected.labeling_requirements} />
+                  <Row label={t('admin.pages.quotes.labeling')} value={selected.labeling_requirements} />
                   <Row label="Private label" value={selected.private_label} />
-                  <Row label="Échantillons" value={selected.sample_request} />
+                  <Row label={t('admin.pages.quotes.samples')} value={selected.sample_request} />
                 </Section>
               )}
 
               {/* Notes */}
               {selected.message && (
-                <Section icon={Layers} title="Notes complémentaires">
+                <Section icon={Layers} title={t('admin.pages.quotes.additionalNotes')}>
                   <p className="whitespace-pre-wrap">{selected.message}</p>
                 </Section>
               )}
@@ -433,7 +428,7 @@ export default function Quotes() {
                 )}
                 {selected.delivery_date && (
                   <span className="inline-flex items-center gap-1 text-xs bg-stone-100 text-stone-600 px-2.5 py-1 rounded-full font-medium">
-                    <Calendar className="w-3 h-3" /> {new Date(selected.delivery_date).toLocaleDateString('fr-FR')}
+                    <Calendar className="w-3 h-3" /> {new Date(selected.delivery_date).toLocaleDateString(i18n.resolvedLanguage || i18n.language)}
                   </span>
                 )}
                 {selected.private_label && (
@@ -443,7 +438,7 @@ export default function Quotes() {
                 )}
                 {selected.sample_request && (
                   <span className="inline-flex items-center gap-1 text-xs bg-emerald-50 text-emerald-700 border border-emerald-100 px-2.5 py-1 rounded-full font-medium">
-                    <Package className="w-3 h-3" /> Échantillons
+                    <Package className="w-3 h-3" /> {t('admin.pages.quotes.samples')}
                   </span>
                 )}
               </div>
@@ -453,7 +448,7 @@ export default function Quotes() {
                 onClick={() => { setResponding(selected); }}
                 className="flex items-center justify-center gap-2 bg-amber-500 hover:bg-amber-400 text-white text-sm font-semibold py-3 rounded-xl w-full transition-colors">
                 <Send className="w-4 h-4" />
-                Préparer & Envoyer la réponse
+                {t('admin.pages.quotes.prepareResponse')}
               </button>
 
             </div>

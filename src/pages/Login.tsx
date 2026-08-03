@@ -1,10 +1,12 @@
 import { useState } from 'react';
 import { Link, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { LogIn } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 
 export default function Login() {
+  const { t } = useTranslation();
   const { session } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
@@ -23,7 +25,7 @@ export default function Login() {
     setLoading(true);
     const { error: err } = await supabase.auth.signInWithPassword({ email, password });
     if (err) {
-      setError('Email ou mot de passe incorrect.');
+      setError(t('login.errorInvalid'));
       setLoading(false);
     } else {
       navigate(from, { replace: true });
@@ -37,14 +39,14 @@ export default function Login() {
           <Link to="/">
             <img src="/logo.png" alt="Morocco Food Export" className="h-20 w-auto mx-auto mb-5" />
           </Link>
-          <h1 className="text-2xl font-bold text-white">Accéder au catalogue</h1>
-          <p className="text-stone-400 text-sm mt-2">Connectez-vous à votre espace acheteur</p>
+          <h1 className="text-2xl font-bold text-white">{t('login.title')}</h1>
+          <p className="text-stone-400 text-sm mt-2">{t('login.subtitle')}</p>
         </div>
 
         <div className="bg-stone-800/60 border border-stone-700 rounded-2xl p-8 shadow-xl backdrop-blur">
           <form onSubmit={handleSubmit} className="space-y-5">
             <div>
-              <label className="block text-xs font-medium text-stone-300 mb-1.5">Email professionnel</label>
+              <label className="block text-xs font-medium text-stone-300 mb-1.5">{t('login.emailLabel')}</label>
               <input
                 type="email"
                 required
@@ -55,7 +57,7 @@ export default function Login() {
               />
             </div>
             <div>
-              <label className="block text-xs font-medium text-stone-300 mb-1.5">Mot de passe</label>
+              <label className="block text-xs font-medium text-stone-300 mb-1.5">{t('login.passwordLabel')}</label>
               <input
                 type="password"
                 required
@@ -80,14 +82,14 @@ export default function Login() {
               {loading
                 ? <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                 : <LogIn className="w-4 h-4" />}
-              {loading ? 'Connexion…' : 'Se connecter'}
+              {loading ? t('login.submitting') : t('login.submit')}
             </button>
           </form>
 
           <p className="text-center text-sm text-stone-400 mt-6">
-            Pas encore de compte ?{' '}
+            {t('login.noAccount')}{' '}
             <Link to="/signup" className="text-amber-400 hover:text-amber-300 font-medium transition-colors">
-              Créer un accès acheteur
+              {t('login.createAccount')}
             </Link>
           </p>
         </div>

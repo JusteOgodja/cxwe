@@ -1,7 +1,8 @@
 import { useEffect, useState, useRef, useMemo } from 'react';
-import { Plus, Pencil, Trash2, X, Save, Search, Minus, Upload, Download, FileJson, AlertCircle, CheckSquare } from 'lucide-react';
+import { Plus, Pencil, Trash2, X, Save, Search, Minus, Upload, Download, FileJson, AlertCircle } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import type { Product, Category, Brand, Supplier } from '../../types';
+import { useTranslation } from 'react-i18next';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -102,6 +103,7 @@ type FormState = typeof EMPTY_FORM;
 function DimForm({ label, value, onChange }: {
   label: string; value: DimState; onChange: (v: DimState) => void;
 }) {
+  const { t } = useTranslation();
   const upd = (k: keyof DimState) => (e: React.ChangeEvent<HTMLInputElement>) =>
     onChange({ ...value, [k]: e.target.value });
   return (
@@ -122,12 +124,12 @@ function DimForm({ label, value, onChange }: {
       </div>
       <div className="grid grid-cols-2 gap-2">
         <div>
-          <label className="text-xs text-stone-400 block mb-0.5">Poids net (kg)</label>
+          <label className="text-xs text-stone-400 block mb-0.5">{t('admin.pages.products.netWeight')}</label>
           <input type="number" value={value.weight_net} onChange={upd('weight_net')} min={0} step="0.01"
             className="w-full border border-stone-200 rounded-lg px-2 py-1.5 text-xs focus:outline-none focus:border-amber-400" />
         </div>
         <div>
-          <label className="text-xs text-stone-400 block mb-0.5">Poids brut (kg)</label>
+          <label className="text-xs text-stone-400 block mb-0.5">{t('admin.pages.products.grossWeight')}</label>
           <input type="number" value={value.weight_brut} onChange={upd('weight_brut')} min={0} step="0.01"
             className="w-full border border-stone-200 rounded-lg px-2 py-1.5 text-xs focus:outline-none focus:border-amber-400" />
         </div>
@@ -163,6 +165,7 @@ function CheckGroup({ title, options, selected, onChange }: {
 const PAGE_SIZE = 100;
 
 export default function Products() {
+  const { t } = useTranslation();
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [brands, setBrands] = useState<Brand[]>([]);
@@ -369,7 +372,7 @@ export default function Products() {
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm('Supprimer ce produit ?')) return;
+    if (!confirm(t('admin.pages.products.confirmDelete'))) return;
     setDeleting(id);
     await supabase.from('products').delete().eq('id', id);
     setDeleting(null);
@@ -423,10 +426,10 @@ export default function Products() {
         const errors: string[] = [];
 
         parsed.forEach((row, i) => {
-          const label = `Produit ${i + 1}${row.name ? ` ("${row.name}")` : ''}`;
+          const label = t('admin.pages.products.importRowLabel', { number: i + 1, name: row.name ? ` ("${row.name}")` : '' });
           if (!row.name) errors.push(`${label} : champ "name" manquant`);
           if (!row.category_slug) errors.push(`${label} : champ "category_slug" manquant`);
-          else if (!catSlugs.has(row.category_slug)) errors.push(`${label} : slug de catégorie "${row.category_slug}" introuvable`);
+          else if (!catSlugs.has(row.category_slug)) errors.push(t('admin.pages.products.categorySlugNotFound', { label, slug: row.category_slug }));
         });
 
         setImportRows(parsed);
@@ -523,11 +526,11 @@ export default function Products() {
     !(p as any).hs_code || !(p as any).pays_origine;
 
   const TABS: { id: Tab; label: string }[] = [
-    { id: 'infos', label: 'Informations' },
-    { id: 'logistique', label: 'Logistique' },
-    { id: 'commerce', label: 'Commerce' },
-    { id: 'composition', label: 'Composition' },
-    { id: 'tarifs', label: 'Tarifs' },
+    { id: 'infos', label: t('admin.pages.products.tabInfo') },
+    { id: 'logistique', label: t('admin.pages.products.tabLogistics') },
+    { id: 'commerce', label: t('admin.pages.products.tabCommerce') },
+    { id: 'composition', label: t('admin.pages.products.tabComposition') },
+    { id: 'tarifs', label: t('admin.pages.products.tabPricing') },
   ];
 
   // ─── Render ──────────────────────────────────────────────────────────────────
@@ -535,25 +538,25 @@ export default function Products() {
     <div>
       <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
         <div>
-          <h1 className="text-2xl font-bold text-stone-800">Produits</h1>
-          <p className="text-stone-500 text-sm mt-1">{totalCount} produit{totalCount !== 1 ? 's' : ''} · page {page + 1}/{totalPages || 1}</p>
+          <h1 className="text-2xl font-bold text-stone-800">{t('admin.pages.products.title')}</h1>
+          <p className="text-stone-500 text-sm mt-1">{t('admin.pages.products.countPage', { count: totalCount, page: page + 1, total: totalPages || 1 })}</p>
         </div>
         <div className="flex items-center gap-2 flex-wrap">
-          <button onClick={handleExportTemplate} title="Télécharger le modèle JSON vide"
+          <button onClick={handleExportTemplate} title={t('admin.pages.products.templateTitle')}
             className="flex items-center gap-1.5 border border-stone-200 text-stone-600 hover:bg-stone-50 text-sm font-medium px-3 py-2.5 rounded-xl transition-colors">
-            <FileJson className="w-4 h-4" /> Modèle
+            <FileJson className="w-4 h-4" /> {t('admin.pages.products.template')}
           </button>
-          <button onClick={handleExport} title={`Exporter ${filtered.length} produit(s) affiché(s) en JSON`}
+          <button onClick={handleExport} title={t('admin.pages.products.exportTitle', { count: filtered.length })}
             className="flex items-center gap-1.5 border border-stone-200 text-stone-600 hover:bg-stone-50 text-sm font-medium px-3 py-2.5 rounded-xl transition-colors">
-            <Download className="w-4 h-4" /> Exporter ({filtered.length})
+            <Download className="w-4 h-4" /> {t('admin.pages.products.export', { count: filtered.length })}
           </button>
           <button onClick={() => fileInputRef.current?.click()}
             className="flex items-center gap-1.5 border border-amber-200 text-amber-700 hover:bg-amber-50 text-sm font-medium px-3 py-2.5 rounded-xl transition-colors">
-            <Upload className="w-4 h-4" /> Importer JSON
+            <Upload className="w-4 h-4" /> {t('admin.pages.products.importJson')}
           </button>
           <button onClick={openAdd}
             className="flex items-center gap-2 bg-amber-500 hover:bg-amber-400 text-white text-sm font-semibold px-4 py-2.5 rounded-xl transition-colors">
-            <Plus className="w-4 h-4" /> Ajouter un produit
+            <Plus className="w-4 h-4" /> {t('admin.pages.products.addProduct')}
           </button>
           <input ref={fileInputRef} type="file" accept=".json,application/json" className="hidden" onChange={handleFileChange} />
         </div>
@@ -562,19 +565,19 @@ export default function Products() {
       {/* Bulk actions bar */}
       {selectedIds.size > 0 && (
         <div className="flex items-center gap-3 bg-amber-50 border border-amber-200 rounded-xl px-4 py-2.5 mb-3">
-          <span className="text-sm font-semibold text-amber-700">{selectedIds.size} produit{selectedIds.size > 1 ? 's' : ''} sélectionné{selectedIds.size > 1 ? 's' : ''}</span>
+          <span className="text-sm font-semibold text-amber-700">{t('admin.pages.products.selectedCount', { count: selectedIds.size })}</span>
           <div className="flex gap-2 ml-auto">
             <button onClick={() => bulkSetActive(true)} disabled={bulkLoading}
               className="flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 bg-emerald-500 hover:bg-emerald-600 text-white rounded-lg transition-colors disabled:opacity-50">
-              Activer
+              {t('admin.pages.products.activate')}
             </button>
             <button onClick={() => bulkSetActive(false)} disabled={bulkLoading}
               className="flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 bg-stone-500 hover:bg-stone-600 text-white rounded-lg transition-colors disabled:opacity-50">
-              Désactiver
+              {t('admin.pages.products.deactivate')}
             </button>
             <button onClick={() => setSelectedIds(new Set())}
               className="text-xs text-stone-500 hover:text-stone-700 px-2 py-1.5 transition-colors">
-              Annuler
+              {t('admin.common.cancel')}
             </button>
           </div>
         </div>
@@ -584,12 +587,12 @@ export default function Products() {
       <div className="flex gap-3 mb-4 flex-wrap">
         <div className="relative flex-1 min-w-40">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-stone-400" />
-          <input type="text" placeholder="Rechercher..." value={search} onChange={e => handleSearch(e.target.value)}
+          <input type="text" placeholder={t('admin.pages.products.search')} value={search} onChange={e => handleSearch(e.target.value)}
             className="w-full pl-9 pr-4 py-2.5 border border-stone-200 rounded-xl text-sm focus:outline-none focus:border-amber-400 bg-white" />
         </div>
         <select value={filterCat} onChange={e => handleCat(e.target.value)}
           className="border border-stone-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-amber-400 bg-white min-w-36">
-          <option value="">Toutes catégories</option>
+          <option value="">{t('admin.pages.products.allCategories')}</option>
           {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
         </select>
       </div>
@@ -603,7 +606,7 @@ export default function Products() {
       ) : (
         <div className="bg-white rounded-2xl shadow-sm border border-stone-100 overflow-x-auto">
           {filtered.length === 0 ? (
-            <div className="text-center py-12 text-stone-400 text-sm">Aucun produit trouvé</div>
+            <div className="text-center py-12 text-stone-400 text-sm">{t('admin.pages.products.noResults')}</div>
           ) : (
             <table className="min-w-max w-full text-sm">
               <thead>
@@ -614,36 +617,36 @@ export default function Products() {
                       onChange={toggleSelectAll}
                       className="rounded border-stone-300 accent-amber-500" />
                   </th>
-                  <th className="text-left px-3 py-3 text-xs font-semibold text-stone-500 uppercase tracking-wide">Image</th>
-                  <th className="text-left px-3 py-3 text-xs font-semibold text-stone-500 uppercase tracking-wide min-w-[200px]">Produit</th>
-                  <th className="text-left px-3 py-3 text-xs font-semibold text-stone-500 uppercase tracking-wide">Catégorie</th>
-                  <th className="text-left px-3 py-3 text-xs font-semibold text-stone-500 uppercase tracking-wide">Marque</th>
+                  <th className="text-left px-3 py-3 text-xs font-semibold text-stone-500 uppercase tracking-wide">{t('admin.pages.products.colImage')}</th>
+                  <th className="text-left px-3 py-3 text-xs font-semibold text-stone-500 uppercase tracking-wide min-w-[200px]">{t('admin.pages.products.colProduct')}</th>
+                  <th className="text-left px-3 py-3 text-xs font-semibold text-stone-500 uppercase tracking-wide">{t('admin.pages.products.colCategory')}</th>
+                  <th className="text-left px-3 py-3 text-xs font-semibold text-stone-500 uppercase tracking-wide">{t('admin.pages.products.colBrand')}</th>
                   <th className="text-left px-3 py-3 text-xs font-semibold text-stone-500 uppercase tracking-wide">EAN</th>
                   <th className="text-left px-3 py-3 text-xs font-semibold text-stone-500 uppercase tracking-wide">HS Code</th>
                   <th className="text-left px-3 py-3 text-xs font-semibold text-stone-500 uppercase tracking-wide">Incoterms</th>
-                  <th className="text-left px-3 py-3 text-xs font-semibold text-stone-500 uppercase tracking-wide">Devise</th>
-                  <th className="text-left px-3 py-3 text-xs font-semibold text-stone-500 uppercase tracking-wide">Temp.</th>
-                  <th className="text-left px-3 py-3 text-xs font-semibold text-stone-500 uppercase tracking-wide">DLC (j)</th>
+                  <th className="text-left px-3 py-3 text-xs font-semibold text-stone-500 uppercase tracking-wide">{t('admin.pages.products.colCurrency')}</th>
+                  <th className="text-left px-3 py-3 text-xs font-semibold text-stone-500 uppercase tracking-wide">{t('admin.pages.products.colTemperature')}</th>
+                  <th className="text-left px-3 py-3 text-xs font-semibold text-stone-500 uppercase tracking-wide">{t('admin.pages.products.colShelfLife')}</th>
                   <th className="text-left px-3 py-3 text-xs font-semibold text-stone-500 uppercase tracking-wide">MOQ</th>
-                  <th className="text-left px-3 py-3 text-xs font-semibold text-stone-500 uppercase tracking-wide">Colisage</th>
-                  <th className="text-left px-3 py-3 text-xs font-semibold text-stone-500 uppercase tracking-wide">Poids</th>
-                  <th className="text-left px-3 py-3 text-xs font-semibold text-stone-500 uppercase tracking-wide">Prix marché</th>
-                  <th className="text-left px-3 py-3 text-xs font-semibold text-stone-500 uppercase tracking-wide">Prix ancien</th>
-                  <th className="text-left px-3 py-3 text-xs font-semibold text-stone-500 uppercase tracking-wide">Remise %</th>
-                  <th className="text-left px-3 py-3 text-xs font-semibold text-stone-500 uppercase tracking-wide">Certifications</th>
-                  <th className="text-left px-3 py-3 text-xs font-semibold text-stone-500 uppercase tracking-wide">Régimes</th>
-                  <th className="text-left px-3 py-3 text-xs font-semibold text-stone-500 uppercase tracking-wide">Allergènes</th>
-                  <th className="text-left px-3 py-3 text-xs font-semibold text-stone-500 uppercase tracking-wide min-w-[160px]">Ingrédients</th>
-                  <th className="text-left px-3 py-3 text-xs font-semibold text-stone-500 uppercase tracking-wide">Note</th>
-                  <th className="text-left px-3 py-3 text-xs font-semibold text-stone-500 uppercase tracking-wide">Avis</th>
-                  <th className="text-left px-3 py-3 text-xs font-semibold text-stone-500 uppercase tracking-wide">Actif</th>
-                  <th className="text-left px-3 py-3 text-xs font-semibold text-stone-500 uppercase tracking-wide">Ordre</th>
-                  <th className="text-left px-3 py-3 text-xs font-semibold text-stone-500 uppercase tracking-wide">Source</th>
-                  <th className="text-left px-3 py-3 text-xs font-semibold text-stone-500 uppercase tracking-wide">URL source</th>
-                  <th className="text-left px-3 py-3 text-xs font-semibold text-stone-500 uppercase tracking-wide">Créé le</th>
-                  <th className="text-left px-3 py-3 text-xs font-semibold text-stone-500 uppercase tracking-wide">Statut</th>
-                  <th className="text-left px-3 py-3 text-xs font-semibold text-stone-500 uppercase tracking-wide">Flags</th>
-                  <th className="text-left px-3 py-3 text-xs font-semibold text-stone-500 uppercase tracking-wide">Qualité</th>
+                  <th className="text-left px-3 py-3 text-xs font-semibold text-stone-500 uppercase tracking-wide">{t('admin.pages.products.colPackaging')}</th>
+                  <th className="text-left px-3 py-3 text-xs font-semibold text-stone-500 uppercase tracking-wide">{t('admin.pages.products.colWeight')}</th>
+                  <th className="text-left px-3 py-3 text-xs font-semibold text-stone-500 uppercase tracking-wide">{t('admin.pages.products.colMarketPrice')}</th>
+                  <th className="text-left px-3 py-3 text-xs font-semibold text-stone-500 uppercase tracking-wide">{t('admin.pages.products.colOldPrice')}</th>
+                  <th className="text-left px-3 py-3 text-xs font-semibold text-stone-500 uppercase tracking-wide">{t('admin.pages.products.colDiscount')}</th>
+                  <th className="text-left px-3 py-3 text-xs font-semibold text-stone-500 uppercase tracking-wide">{t('admin.pages.products.colCertifications')}</th>
+                  <th className="text-left px-3 py-3 text-xs font-semibold text-stone-500 uppercase tracking-wide">{t('admin.pages.products.colDiets')}</th>
+                  <th className="text-left px-3 py-3 text-xs font-semibold text-stone-500 uppercase tracking-wide">{t('admin.pages.products.colAllergens')}</th>
+                  <th className="text-left px-3 py-3 text-xs font-semibold text-stone-500 uppercase tracking-wide min-w-[160px]">{t('admin.pages.products.colIngredients')}</th>
+                  <th className="text-left px-3 py-3 text-xs font-semibold text-stone-500 uppercase tracking-wide">{t('admin.pages.products.colRating')}</th>
+                  <th className="text-left px-3 py-3 text-xs font-semibold text-stone-500 uppercase tracking-wide">{t('admin.pages.products.colReviews')}</th>
+                  <th className="text-left px-3 py-3 text-xs font-semibold text-stone-500 uppercase tracking-wide">{t('admin.pages.products.colActive')}</th>
+                  <th className="text-left px-3 py-3 text-xs font-semibold text-stone-500 uppercase tracking-wide">{t('admin.pages.products.colOrder')}</th>
+                  <th className="text-left px-3 py-3 text-xs font-semibold text-stone-500 uppercase tracking-wide">{t('admin.pages.products.colSource')}</th>
+                  <th className="text-left px-3 py-3 text-xs font-semibold text-stone-500 uppercase tracking-wide">{t('admin.pages.products.colSourceUrl')}</th>
+                  <th className="text-left px-3 py-3 text-xs font-semibold text-stone-500 uppercase tracking-wide">{t('admin.pages.products.colCreated')}</th>
+                  <th className="text-left px-3 py-3 text-xs font-semibold text-stone-500 uppercase tracking-wide">{t('admin.pages.products.colStatus')}</th>
+                  <th className="text-left px-3 py-3 text-xs font-semibold text-stone-500 uppercase tracking-wide">{t('admin.pages.products.colFlags')}</th>
+                  <th className="text-left px-3 py-3 text-xs font-semibold text-stone-500 uppercase tracking-wide">{t('admin.pages.products.colQuality')}</th>
                   <th className="px-3 py-3" />
                 </tr>
               </thead>
@@ -754,7 +757,7 @@ export default function Products() {
                     <td className="px-3 py-2 text-xs text-stone-400 text-right">{p.nb_avis ?? '—'}</td>
                     {/* Actif */}
                     <td className="px-3 py-2 text-center">
-                      <span className={`inline-block w-2 h-2 rounded-full ${p.is_active ? 'bg-emerald-400' : 'bg-stone-300'}`} title={p.is_active ? 'Actif' : 'Inactif'} />
+                      <span className={`inline-block w-2 h-2 rounded-full ${p.is_active ? 'bg-emerald-400' : 'bg-stone-300'}`} title={p.is_active ? t('admin.common.active') : t('admin.common.inactive')} />
                     </td>
                     {/* Ordre */}
                     <td className="px-3 py-2 text-xs text-stone-400 text-right">{p.sort_order ?? '—'}</td>
@@ -767,7 +770,7 @@ export default function Products() {
                     {/* URL source */}
                     <td className="px-3 py-2 text-xs">
                       {p.source_url
-                        ? <a href={p.source_url} target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:text-blue-700 hover:underline truncate block max-w-[120px]" title={p.source_url}>Voir ↗</a>
+                        ? <a href={p.source_url} target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:text-blue-700 hover:underline truncate block max-w-[120px]" title={p.source_url}>{t('admin.pages.products.view')} ↗</a>
                         : <span className="text-stone-300">—</span>}
                     </td>
                     {/* Créé le */}
@@ -785,16 +788,16 @@ export default function Products() {
                       <div className="flex gap-1 flex-wrap min-w-[60px]">
                         {p.is_new && <span className="text-[10px] bg-green-100 text-green-700 px-1 py-0.5 rounded">New</span>}
                         {p.is_promo && <span className="text-[10px] bg-amber-100 text-amber-700 px-1 py-0.5 rounded">Promo</span>}
-                        {p.est_sponsored && <span className="text-[10px] bg-purple-100 text-purple-700 px-1 py-0.5 rounded">Sponsorisé</span>}
+                        {p.est_sponsored && <span className="text-[10px] bg-purple-100 text-purple-700 px-1 py-0.5 rounded">{t('admin.pages.products.sponsored')}</span>}
                         {!p.is_new && !p.is_promo && !p.est_sponsored && <span className="text-stone-300 text-xs">—</span>}
                       </div>
                     </td>
                     {/* Qualité */}
                     <td className="px-3 py-2">
                       {hasIssue(p)
-                        ? <a href="/admin/data-quality" title="Voir dans Qualité données"
+                        ? <a href="/admin/data-quality" title={t('admin.pages.products.viewInQuality')}
                             className="flex items-center gap-1 text-[10px] text-amber-600 bg-amber-50 border border-amber-200 px-1.5 py-0.5 rounded-full font-semibold whitespace-nowrap hover:bg-amber-100 transition-colors">
-                            <AlertCircle className="w-3 h-3" /> Anomalie
+                            <AlertCircle className="w-3 h-3" /> {t('admin.pages.products.issue')}
                           </a>
                         : <span className="text-[10px] text-emerald-600 bg-emerald-50 border border-emerald-200 px-1.5 py-0.5 rounded-full font-medium">✓</span>}
                     </td>
@@ -822,7 +825,7 @@ export default function Products() {
       {totalPages > 1 && (
         <div className="flex items-center justify-between mt-4">
           <p className="text-sm text-stone-500">
-            {page * PAGE_SIZE + 1}–{Math.min((page + 1) * PAGE_SIZE, totalCount)} sur {totalCount} produits
+            {t('admin.pages.products.paginationRange', { from: page * PAGE_SIZE + 1, to: Math.min((page + 1) * PAGE_SIZE, totalCount), total: totalCount })}
           </p>
           <div className="flex items-center gap-1">
             <button
@@ -830,7 +833,7 @@ export default function Products() {
               disabled={page === 0}
               className="px-3 py-1.5 rounded-lg border border-stone-200 text-sm text-stone-600 hover:bg-stone-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
             >
-              ← Précédent
+              ← {t('admin.common.previous')}
             </button>
             {Array.from({ length: Math.min(totalPages, 7) }, (_, i) => {
               const p = totalPages <= 7 ? i : page < 4 ? i : page > totalPages - 4 ? totalPages - 7 + i : page - 3 + i;
@@ -849,7 +852,7 @@ export default function Products() {
               disabled={page >= totalPages - 1}
               className="px-3 py-1.5 rounded-lg border border-stone-200 text-sm text-stone-600 hover:bg-stone-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
             >
-              Suivant →
+              {t('admin.common.next')} →
             </button>
           </div>
         </div>
@@ -863,11 +866,11 @@ export default function Products() {
             <div className="flex items-center justify-between px-6 py-4 border-b border-stone-100 shrink-0">
               <div>
                 <h2 className="font-bold text-stone-800">
-                  Import JSON — {importRows.length} produit{importRows.length !== 1 ? 's' : ''} détecté{importRows.length !== 1 ? 's' : ''}
+                  {t('admin.pages.products.importTitle', { count: importRows.length })}
                 </h2>
                 {importErrors.length > 0 && (
                   <p className="text-xs text-red-500 mt-0.5">
-                    {importErrors.length} erreur{importErrors.length > 1 ? 's' : ''} — les produits invalides seront ignorés
+                    {t('admin.pages.products.importErrors', { count: importErrors.length })}
                   </p>
                 )}
               </div>
@@ -881,7 +884,7 @@ export default function Products() {
                 <div className="bg-red-50 border border-red-100 rounded-xl p-4">
                   <div className="flex items-center gap-2 mb-2">
                     <AlertCircle className="w-4 h-4 text-red-500 shrink-0" />
-                    <p className="text-xs font-semibold text-red-600">Erreurs détectées</p>
+                    <p className="text-xs font-semibold text-red-600">{t('admin.pages.products.errorsDetected')}</p>
                   </div>
                   <ul className="space-y-1 max-h-32 overflow-y-auto">
                     {importErrors.map((err, i) => (
@@ -894,17 +897,17 @@ export default function Products() {
               {importRows.length > 0 && (
                 <div>
                   <p className="text-xs font-semibold text-stone-500 mb-2">
-                    Aperçu — {validImportRows.length} valide{validImportRows.length !== 1 ? 's' : ''} sur {importRows.length}
-                    {importRows.length > 5 && ` (5 premiers affichés)`}
+                    {t('admin.pages.products.importPreview', { valid: validImportRows.length, total: importRows.length })}
+                    {importRows.length > 5 && ` ${t('admin.pages.products.firstFive')}`}
                   </p>
                   <div className="rounded-xl overflow-hidden border border-stone-100">
                     <table className="w-full text-xs">
                       <thead>
                         <tr className="bg-stone-50 border-b border-stone-100">
-                          <th className="text-left px-4 py-2.5 text-stone-400 font-semibold">Nom</th>
-                          <th className="text-left px-4 py-2.5 text-stone-400 font-semibold hidden sm:table-cell">Catégorie</th>
+                          <th className="text-left px-4 py-2.5 text-stone-400 font-semibold">{t('admin.common.name')}</th>
+                          <th className="text-left px-4 py-2.5 text-stone-400 font-semibold hidden sm:table-cell">{t('admin.pages.products.colCategory')}</th>
                           <th className="text-left px-4 py-2.5 text-stone-400 font-semibold hidden sm:table-cell">Code SH</th>
-                          <th className="text-left px-4 py-2.5 text-stone-400 font-semibold">Statut</th>
+                          <th className="text-left px-4 py-2.5 text-stone-400 font-semibold">{t('admin.common.status')}</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-stone-50">
@@ -914,7 +917,7 @@ export default function Products() {
                           return (
                             <tr key={i} className={isValid ? '' : 'bg-red-50/50'}>
                               <td className="px-4 py-2.5 font-medium text-stone-700 truncate max-w-[140px]">
-                                {(row.name as string) || <span className="text-red-400 italic">manquant</span>}
+                                {(row.name as string) || <span className="text-red-400 italic">{t('admin.pages.products.missing')}</span>}
                               </td>
                               <td className="px-4 py-2.5 font-mono text-stone-500 hidden sm:table-cell">
                                 {(row.category_slug as string) || '—'}
@@ -940,7 +943,7 @@ export default function Products() {
             <div className="flex gap-3 px-6 py-4 border-t border-stone-100 shrink-0 bg-stone-50 rounded-b-2xl">
               <button onClick={closeImportModal}
                 className="flex-1 border border-stone-200 text-stone-600 text-sm py-2.5 rounded-xl hover:bg-white transition-colors">
-                Annuler
+                {t('admin.common.cancel')}
               </button>
               <button
                 onClick={handleImportConfirm}
@@ -949,7 +952,7 @@ export default function Products() {
                 {importing
                   ? <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                   : <Upload className="w-4 h-4" />}
-                Importer {validImportRows.length} produit{validImportRows.length !== 1 ? 's' : ''}
+                {t('admin.pages.products.importProducts', { count: validImportRows.length })}
               </button>
             </div>
           </div>
@@ -964,7 +967,7 @@ export default function Products() {
             {/* Header */}
             <div className="flex items-center justify-between px-6 py-4 border-b border-stone-100 shrink-0">
               <h2 className="font-bold text-stone-800">
-                {modal === 'add' ? 'Nouveau produit' : `Modifier — ${editing?.name}`}
+                {modal === 'add' ? t('admin.pages.products.newProduct') : t('admin.pages.products.editProduct', { name: editing?.name })}
               </h2>
               <button onClick={() => setModal(null)} className="text-stone-400 hover:text-stone-600">
                 <X className="w-5 h-5" />
@@ -990,15 +993,15 @@ export default function Products() {
                   <>
                     <div className="grid sm:grid-cols-2 gap-4">
                       <div>
-                        <label className="block text-xs font-medium text-stone-600 mb-1.5">Catégorie *</label>
+                        <label className="block text-xs font-medium text-stone-600 mb-1.5">{t('admin.pages.products.fieldCategory')} *</label>
                         <select required value={form.category_id} onChange={setF('category_id')}
                           className="w-full border border-stone-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-amber-400 bg-white">
-                          <option value="">Sélectionner</option>
+                          <option value="">{t('admin.pages.products.select')}</option>
                           {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
                         </select>
                       </div>
                       <div>
-                        <label className="block text-xs font-medium text-stone-600 mb-1.5">Statut</label>
+                        <label className="block text-xs font-medium text-stone-600 mb-1.5">{t('admin.common.status')}</label>
                         <select value={form.statut} onChange={setF('statut')}
                           className="w-full border border-stone-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-amber-400 bg-white">
                           {STATUTS.map(s => <option key={s} value={s}>{s}</option>)}
@@ -1008,38 +1011,38 @@ export default function Products() {
 
                     <div className="grid sm:grid-cols-2 gap-4">
                       <div>
-                        <label className="block text-xs font-medium text-stone-600 mb-1.5">Marque</label>
+                        <label className="block text-xs font-medium text-stone-600 mb-1.5">{t('admin.pages.products.colBrand')}</label>
                         <select value={form.marque_id} onChange={setF('marque_id')}
                           className="w-full border border-stone-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-amber-400 bg-white">
-                          <option value="">— Aucune —</option>
+                          <option value="">— {t('admin.pages.products.none')} —</option>
                           {brands.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
                         </select>
                       </div>
                       <div>
-                        <label className="block text-xs font-medium text-stone-600 mb-1.5">Fournisseur</label>
+                        <label className="block text-xs font-medium text-stone-600 mb-1.5">{t('admin.pages.products.colSupplier')}</label>
                         <select value={form.fournisseur_id} onChange={setF('fournisseur_id')}
                           className="w-full border border-stone-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-amber-400 bg-white">
-                          <option value="">— Aucun —</option>
+                          <option value="">— {t('admin.pages.products.none')} —</option>
                           {suppliers.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
                         </select>
                       </div>
                     </div>
 
                     <div>
-                      <label className="block text-xs font-medium text-stone-600 mb-1.5">Nom du produit *</label>
+                      <label className="block text-xs font-medium text-stone-600 mb-1.5">{t('admin.pages.products.productName')} *</label>
                       <input required type="text" value={form.name} onChange={setF('name')}
                         className="w-full border border-stone-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-amber-400 focus:ring-2 focus:ring-amber-100" />
                     </div>
 
                     <div>
-                      <label className="block text-xs font-medium text-stone-600 mb-1.5">Description courte</label>
+                      <label className="block text-xs font-medium text-stone-600 mb-1.5">{t('admin.pages.products.shortDescription')}</label>
                       <textarea rows={2} value={form.description} onChange={setF('description')}
                         className="w-full border border-stone-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-amber-400 resize-none" />
                     </div>
 
                     <div>
                       <label className="block text-xs font-medium text-stone-600 mb-1.5">
-                        Détails produit <span className="text-stone-400 font-normal">(un point par ligne)</span>
+                        {t('admin.pages.products.productDetails')} <span className="text-stone-400 font-normal">{t('admin.pages.products.onePerLine')}</span>
                       </label>
                       <textarea rows={4} value={form.details_text} onChange={setF('details_text')}
                         placeholder="Carton 50×125g&#10;Container 20 pieds = 3 250 cartons&#10;Avec huile végétale"
@@ -1047,7 +1050,7 @@ export default function Products() {
                     </div>
 
                     <div>
-                      <label className="block text-xs font-medium text-stone-600 mb-1.5">URL de l'image principale</label>
+                      <label className="block text-xs font-medium text-stone-600 mb-1.5">{t('admin.pages.products.mainImageUrl')}</label>
                       <input type="url" value={form.image_url} onChange={setF('image_url')} placeholder="https://..."
                         className="w-full border border-stone-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-amber-400" />
                     </div>
@@ -1075,19 +1078,19 @@ export default function Products() {
                           className="w-full border border-stone-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-amber-400 font-mono tracking-widest"
                         />
                         <p className="text-[10px] text-stone-400 mt-1 leading-snug">
-                          Nomenclature douanière internationale (OMD) — détermine les droits de douane applicables à l'export.
+                          {t('admin.pages.products.hsCodeHelp')}
                         </p>
                       </div>
                     </div>
 
                     <div className="pt-1">
-                      <p className="text-xs font-medium text-stone-600 mb-2">Indicateurs marketing</p>
+                      <p className="text-xs font-medium text-stone-600 mb-2">{t('admin.pages.products.marketingFlags')}</p>
                       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                         {[
-                          { f: 'is_active', l: 'Actif' },
-                          { f: 'is_new', l: 'Nouveau' },
-                          { f: 'is_promo', l: 'En promo' },
-                          { f: 'est_sponsored', l: 'Sponsorisé' },
+                          { f: 'is_active', l: t('admin.common.active') },
+                          { f: 'is_new', l: t('admin.pages.products.newFlag') },
+                          { f: 'is_promo', l: t('admin.pages.products.promoFlag') },
+                          { f: 'est_sponsored', l: t('admin.pages.products.sponsored') },
                         ].map(({ f, l }) => (
                           <label key={f} className="flex items-center gap-2 cursor-pointer">
                             <input type="checkbox"
@@ -1107,14 +1110,14 @@ export default function Products() {
                   <>
                     <div className="grid sm:grid-cols-2 gap-4">
                       <div>
-                        <label className="block text-xs font-medium text-stone-600 mb-1.5">Température de stockage</label>
+                        <label className="block text-xs font-medium text-stone-600 mb-1.5">{t('admin.pages.products.storageTemperature')}</label>
                         <select value={form.temperature} onChange={setF('temperature')}
                           className="w-full border border-stone-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-amber-400 bg-white">
                           {TEMPERATURES.map(t => <option key={t} value={t}>{t}</option>)}
                         </select>
                       </div>
                       <div>
-                        <label className="block text-xs font-medium text-stone-600 mb-1.5">Durée de conservation (jours)</label>
+                        <label className="block text-xs font-medium text-stone-600 mb-1.5">{t('admin.pages.products.shelfLifeDays')}</label>
                         <input type="number" value={form.duree_conservation} onChange={setF('duree_conservation')} min={1}
                           className="w-full border border-stone-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-amber-400" />
                       </div>
@@ -1122,27 +1125,27 @@ export default function Products() {
 
                     <div className="grid sm:grid-cols-2 gap-4">
                       <div>
-                        <label className="block text-xs font-medium text-stone-600 mb-1.5">Commande minimum (MOQ)</label>
+                        <label className="block text-xs font-medium text-stone-600 mb-1.5">{t('admin.pages.products.minimumOrder')}</label>
                         <input type="number" value={form.commande_min} onChange={setF('commande_min')} min={1}
                           className="w-full border border-stone-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-amber-400" />
                       </div>
                       <div>
-                        <label className="block text-xs font-medium text-stone-600 mb-1.5">Colisage (unités / carton)</label>
+                        <label className="block text-xs font-medium text-stone-600 mb-1.5">{t('admin.pages.products.packagingUnits')}</label>
                         <input type="number" value={form.colisage} onChange={setF('colisage')} min={1}
                           className="w-full border border-stone-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-amber-400" />
                       </div>
                     </div>
 
                     <div>
-                      <label className="block text-xs font-medium text-stone-600 mb-2">Palettisation</label>
+                      <label className="block text-xs font-medium text-stone-600 mb-2">{t('admin.pages.products.palletization')}</label>
                       <div className="grid sm:grid-cols-2 gap-3">
                         <div>
-                          <label className="text-xs text-stone-400 block mb-0.5">Cartons / couche</label>
+                          <label className="text-xs text-stone-400 block mb-0.5">{t('admin.pages.products.cartonsPerLayer')}</label>
                           <input type="number" value={form.cartons_per_layer} onChange={setF('cartons_per_layer')} min={0}
                             className="w-full border border-stone-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-amber-400" />
                         </div>
                         <div>
-                          <label className="text-xs text-stone-400 block mb-0.5">Couches / palette</label>
+                          <label className="text-xs text-stone-400 block mb-0.5">{t('admin.pages.products.layersPerPallet')}</label>
                           <input type="number" value={form.layers_per_palette} onChange={setF('layers_per_palette')} min={0}
                             className="w-full border border-stone-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-amber-400" />
                         </div>
@@ -1150,11 +1153,11 @@ export default function Products() {
                     </div>
 
                     <hr className="border-stone-100" />
-                    <DimForm label="Dimensions unité" value={dimUnite} onChange={setDimUnite} />
+                    <DimForm label={t('admin.pages.products.unitDimensions')} value={dimUnite} onChange={setDimUnite} />
                     <hr className="border-stone-100" />
-                    <DimForm label="Dimensions carton" value={dimCarton} onChange={setDimCarton} />
+                    <DimForm label={t('admin.pages.products.cartonDimensions')} value={dimCarton} onChange={setDimCarton} />
                     <hr className="border-stone-100" />
-                    <DimForm label="Dimensions palette" value={dimPalette} onChange={setDimPalette} />
+                    <DimForm label={t('admin.pages.products.palletDimensions')} value={dimPalette} onChange={setDimPalette} />
                   </>
                 )}
 
@@ -1163,12 +1166,12 @@ export default function Products() {
                   <>
                     <div className="grid sm:grid-cols-2 gap-4">
                       <div>
-                        <label className="block text-xs font-medium text-stone-600 mb-1.5">Pays d'origine</label>
+                        <label className="block text-xs font-medium text-stone-600 mb-1.5">{t('admin.pages.products.countryOfOrigin')}</label>
                         <input type="text" value={form.pays_origine} onChange={setF('pays_origine')}
                           className="w-full border border-stone-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-amber-400" />
                       </div>
                       <div>
-                        <label className="block text-xs font-medium text-stone-600 mb-1.5">Devise</label>
+                        <label className="block text-xs font-medium text-stone-600 mb-1.5">{t('admin.pages.products.colCurrency')}</label>
                         <select value={form.devise} onChange={setF('devise')}
                           className="w-full border border-stone-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-amber-400 bg-white">
                           {DEVISES.map(d => <option key={d} value={d}>{d}</option>)}
@@ -1178,22 +1181,22 @@ export default function Products() {
 
                     <div>
                       <label className="block text-xs font-medium text-stone-600 mb-1.5">
-                        Pays d'export autorisés <span className="text-stone-400 font-normal">(séparés par des virgules)</span>
+                        {t('admin.pages.products.exportCountries')} <span className="text-stone-400 font-normal">{t('admin.pages.products.commaSeparated')}</span>
                       </label>
                       <textarea rows={2} value={form.pays_export_text} onChange={setF('pays_export_text')}
                         placeholder="France, Espagne, Allemagne, Canada, Maroc..."
                         className="w-full border border-stone-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-amber-400 resize-none" />
                     </div>
 
-                    <CheckGroup title="Incoterms disponibles" options={INCOTERMS}
+                    <CheckGroup title={t('admin.pages.products.availableIncoterms')} options={INCOTERMS}
                       selected={form.incoterms_dispo}
                       onChange={v => setForm(f => ({ ...f, incoterms_dispo: v }))} />
 
-                    <CheckGroup title="Certifications" options={CERTIFICATIONS_LIST}
+                    <CheckGroup title={t('admin.pages.products.colCertifications')} options={CERTIFICATIONS_LIST}
                       selected={form.certifications}
                       onChange={v => setForm(f => ({ ...f, certifications: v }))} />
 
-                    <CheckGroup title="Régimes alimentaires" options={REGIMES_LIST}
+                    <CheckGroup title={t('admin.pages.products.diets')} options={REGIMES_LIST}
                       selected={form.regimes}
                       onChange={v => setForm(f => ({ ...f, regimes: v }))} />
                   </>
@@ -1202,19 +1205,19 @@ export default function Products() {
                 {/* ── Composition ────────────────────────────────────────── */}
                 {activeTab === 'composition' && (
                   <>
-                    <CheckGroup title="Allergènes présents" options={ALLERGENES_LIST}
+                    <CheckGroup title={t('admin.pages.products.presentAllergens')} options={ALLERGENES_LIST}
                       selected={form.allergenes}
                       onChange={v => setForm(f => ({ ...f, allergenes: v }))} />
 
                     <div>
-                      <label className="block text-xs font-medium text-stone-600 mb-1.5">Liste des ingrédients</label>
+                      <label className="block text-xs font-medium text-stone-600 mb-1.5">{t('admin.pages.products.ingredientsList')}</label>
                       <textarea rows={4} value={form.ingredients_texte} onChange={setF('ingredients_texte')}
                         placeholder="Eau, sucre, farine de blé, huile de tournesol, sel..."
                         className="w-full border border-stone-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-amber-400 resize-none" />
                     </div>
 
                     <div>
-                      <label className="block text-xs font-medium text-stone-600 mb-1.5">Informations nutritionnelles</label>
+                      <label className="block text-xs font-medium text-stone-600 mb-1.5">{t('admin.pages.products.nutritionFacts')}</label>
                       <textarea rows={6} value={form.nutrition_texte} onChange={setF('nutrition_texte')}
                         placeholder="Valeurs pour 100g :&#10;Énergie : 350 kcal&#10;Protéines : 5 g&#10;Glucides : 60 g  dont sucres : 20 g&#10;Lipides : 8 g"
                         className="w-full border border-stone-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-amber-400 resize-none font-mono" />
@@ -1226,13 +1229,13 @@ export default function Products() {
                 {activeTab === 'tarifs' && (
                   <>
                     <p className="text-xs text-stone-500">
-                      Définissez des prix dégressifs en fonction de la quantité commandée.
+                      {t('admin.pages.products.pricingHelp')}
                     </p>
 
                     {pricingTiers.length > 0 && (
                       <div className="space-y-2">
                         <div className="grid grid-cols-[1fr_1fr_80px_32px] gap-2 text-xs text-stone-400 px-1">
-                          <span>Qté minimum</span><span>Prix unitaire</span><span>Devise</span><span />
+                          <span>{t('admin.pages.products.minimumQuantity')}</span><span>{t('admin.pages.products.unitPrice')}</span><span>{t('admin.pages.products.colCurrency')}</span><span />
                         </div>
                         {pricingTiers.map((tier, i) => (
                           <div key={i} className="grid grid-cols-[1fr_1fr_80px_32px] gap-2 items-center">
@@ -1272,7 +1275,7 @@ export default function Products() {
                       onClick={() => setPricingTiers(t => [...t, { min_quantity: '', price: '', currency: form.devise || 'MAD' }])}
                       className="flex items-center gap-1.5 text-xs text-amber-600 hover:text-amber-700 font-medium border border-amber-200 hover:border-amber-400 px-3 py-2 rounded-lg transition-colors">
                       <Plus className="w-3.5 h-3.5" />
-                      Ajouter un palier de prix
+                      {t('admin.pages.products.addPriceTier')}
                     </button>
                   </>
                 )}
@@ -1284,14 +1287,14 @@ export default function Products() {
             <div className="flex gap-3 px-6 py-4 border-t border-stone-100 shrink-0 bg-stone-50 rounded-b-2xl">
               <button type="button" onClick={() => setModal(null)}
                 className="flex-1 border border-stone-200 text-stone-600 text-sm py-2.5 rounded-xl hover:bg-white transition-colors">
-                Annuler
+                {t('admin.common.cancel')}
               </button>
               <button type="submit" form="product-form" disabled={saving}
                 className="flex-1 bg-amber-500 hover:bg-amber-400 disabled:opacity-60 text-white text-sm font-semibold py-2.5 rounded-xl flex items-center justify-center gap-2 transition-colors">
                 {saving
                   ? <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                   : <Save className="w-4 h-4" />}
-                {modal === 'add' ? 'Créer le produit' : 'Enregistrer les modifications'}
+                {modal === 'add' ? t('admin.pages.products.createProduct') : t('admin.pages.products.saveChanges')}
               </button>
             </div>
 

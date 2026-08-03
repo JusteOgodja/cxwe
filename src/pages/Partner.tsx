@@ -6,6 +6,7 @@ import {
   Leaf, Factory, BarChart3, Handshake,
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
+import { useTranslation } from 'react-i18next';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -13,6 +14,7 @@ const COUNTRIES = [
   'Maroc','France','Espagne','Algérie','Tunisie','Égypte','Sénégal',
   "Côte d'Ivoire",'Mauritanie','Autre',
 ];
+const COUNTRY_CODES = ['MA','FR','ES','DZ','TN','EG','SN','CI','MR',null] as const;
 
 const CATEGORIES = [
   'Huiles (Olive / Argan)','Olives & Conserves','Épices & Aromates',
@@ -32,13 +34,14 @@ const TARGET_MARKETS = [
   'Royaume-Uni','États-Unis','Canada','Arabie Saoudite','Émirats Arabes Unis',
   'Sénégal',"Côte d'Ivoire",'Australie','Autre',
 ];
+const TARGET_MARKET_CODES = ['FR','ES','IT','DE','NL','BE','GB','US','CA','SA','AE','SN','CI','AU',null] as const;
 
 const BENEFITS = [
-  { icon: Globe,    title: 'Réseau mondial',      desc: '50+ pays desservis, partenaires logistiques établis sur tous les continents.' },
-  { icon: Award,    title: 'Conformité export',   desc: 'Nous gérons toute la documentation douanière, certificats et normes d\'import.' },
-  { icon: Truck,    title: 'Logistique clé en main', desc: 'FCL, LCL, fret aérien — nous optimisons le transport selon vos volumes.' },
-  { icon: BarChart3,'title': 'Visibilité marché', desc: 'Votre produit référencé dans notre catalogue B2B consulté par des acheteurs internationaux.' },
-];
+  { icon: Globe, titleKey: 'benefit1Title', descKey: 'benefit1Desc' },
+  { icon: Award, titleKey: 'benefit2Title', descKey: 'benefit2Desc' },
+  { icon: Truck, titleKey: 'benefit3Title', descKey: 'benefit3Desc' },
+  { icon: BarChart3, titleKey: 'benefit4Title', descKey: 'benefit4Desc' },
+] as const;
 
 const INPUT = 'w-full border border-ma-sand rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-ma-navy focus:ring-2 focus:ring-ma-navy/5 transition bg-white';
 const SELECT = `${INPUT} appearance-none`;
@@ -67,12 +70,10 @@ function CheckPill({ label, checked, onChange }: { label: string; checked: boole
 
 // ─── FAQ accordion ────────────────────────────────────────────────────────────
 const FAQS = [
-  { q: 'Qui peut soumettre une demande de partenariat ?', a: 'Tout producteur, coopérative, ou entreprise agroalimentaire marocaine souhaitant accéder aux marchés internationaux via notre réseau d\'export.' },
-  { q: 'Quelles certifications sont requises ?', a: 'Cela dépend du marché cible. Nous vous guidons pour obtenir les certifications nécessaires (Halal, Bio, HACCP, IFS…). Aucune certification n\'est obligatoire pour soumettre votre demande.' },
-  { q: 'Quel est le volume minimum ?', a: 'Pas de volume minimum strict. Nous travaillons avec des producteurs de toutes tailles, des coopératives aux grandes industries. Précisez simplement votre capacité de production.' },
-  { q: 'Combien de temps pour une réponse ?', a: 'Notre équipe commerciale vous contacte sous 72 h après réception de votre dossier.' },
-  { q: 'Y a-t-il des frais pour rejoindre le réseau ?', a: 'L\'adhésion au catalogue est gratuite. Nous opérons sur un modèle de commission sur les ventes réalisées.' },
-];
+  { qKey: 'faq1q', aKey: 'faq1a' }, { qKey: 'faq2q', aKey: 'faq2a' },
+  { qKey: 'faq3q', aKey: 'faq3a' }, { qKey: 'faq4q', aKey: 'faq4a' },
+  { qKey: 'faq5q', aKey: 'faq5a' },
+] as const;
 
 function FAQ({ q, a }: { q: string; a: string }) {
   const [open, setOpen] = useState(false);
@@ -91,6 +92,14 @@ function FAQ({ q, a }: { q: string; a: string }) {
 // ─── Main component ───────────────────────────────────────────────────────────
 
 export default function Partner() {
+  const { t, i18n } = useTranslation();
+  const optionLabel = (group: string, index: number, fallback: string) =>
+    t(`partner.options.${group}.item${index}`, { defaultValue: fallback });
+  const regionNames = new Intl.DisplayNames([i18n.resolvedLanguage || i18n.language], { type: 'region' });
+  const countryLabel = (index: number, fallback: string) => COUNTRY_CODES[index]
+    ? regionNames.of(COUNTRY_CODES[index]!) || fallback : t('partner.other');
+  const marketLabel = (index: number, fallback: string) => TARGET_MARKET_CODES[index]
+    ? regionNames.of(TARGET_MARKET_CODES[index]!) || fallback : t('partner.other');
   const [step, setStep] = useState<1 | 2 | 3>(1);
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
@@ -148,7 +157,7 @@ export default function Partner() {
     const { error: err } = await supabase.from('collaboration_requests').insert([payload]);
     if (err) {
       console.error(err);
-      setError("Envoi échoué. Contactez-nous directement à filalianas0001@gmail.com");
+      setError(t('partner.submitError'));
       setSubmitting(false);
     } else {
       setSubmitted(true);
@@ -163,22 +172,22 @@ export default function Partner() {
           <div className="w-20 h-20 bg-emerald-100 rounded-full flex items-center justify-center mx-auto mb-6">
             <Handshake className="w-10 h-10 text-emerald-600" />
           </div>
-          <h2 className="text-2xl font-bold text-stone-800 mb-2">Dossier reçu !</h2>
+          <h2 className="text-2xl font-bold text-stone-800 mb-2">{t('partner.successTitle')}</h2>
           <p className="text-stone-500 text-sm leading-relaxed mb-6">
-            Merci <strong>{producer.contact_name}</strong> pour votre intérêt.
-            Notre équipe commerciale étudiera votre dossier et vous contactera sous <strong>72 h</strong> à l'adresse <strong>{producer.email}</strong>.
+            {t('partner.successBefore')} <strong>{producer.contact_name}</strong>{t('partner.successMiddle')}
+            <strong>{producer.email}</strong>{t('partner.successAfter')}
           </p>
           <div className="bg-red-50 rounded-2xl p-4 text-left space-y-2 mb-6 text-xs text-stone-600">
-            <p><span className="font-semibold">Entreprise :</span> {producer.company_name}</p>
-            <p><span className="font-semibold">Produit :</span> {product.product_name} ({product.product_category})</p>
-            {xp.target_markets.length > 0 && <p><span className="font-semibold">Marchés cibles :</span> {xp.target_markets.join(', ')}</p>}
+            <p><span className="font-semibold">{t('partner.company')} :</span> {producer.company_name}</p>
+            <p><span className="font-semibold">{t('partner.product')} :</span> {product.product_name} ({product.product_category})</p>
+            {xp.target_markets.length > 0 && <p><span className="font-semibold">{t('partner.targetMarkets')} :</span> {xp.target_markets.join(', ')}</p>}
           </div>
           <div className="flex gap-3">
             <Link to="/" className="flex-1 border border-stone-200 text-stone-600 text-sm py-3 rounded-xl hover:bg-stone-50 font-medium">
-              Accueil
+              {t('partner.home')}
             </Link>
             <Link to="/catalog" className="flex-1 bg-ma-red hover:bg-[#9B1E24] text-white text-sm font-semibold py-3 rounded-xl">
-              Voir le catalogue
+              {t('partner.viewCatalog')}
             </Link>
           </div>
         </div>
@@ -187,9 +196,9 @@ export default function Partner() {
   }
 
   const STEPS = [
-    { id: 1, label: 'Votre entreprise' },
-    { id: 2, label: 'Votre produit' },
-    { id: 3, label: 'Export & envoi' },
+    { id: 1, label: t('partner.steps.company') },
+    { id: 2, label: t('partner.steps.product') },
+    { id: 3, label: t('partner.steps.export') },
   ];
 
   return (
@@ -199,7 +208,7 @@ export default function Partner() {
       <div className="relative bg-gradient-to-b from-ma-navy to-[#0A1833] pt-24 pb-16 px-4 overflow-hidden">
         <div className="relative max-w-3xl mx-auto text-center">
           <Link to="/" className="inline-flex items-center gap-2 text-stone-400 hover:text-white text-sm mb-6 transition-colors">
-            <ArrowLeft className="w-4 h-4" /> Retour
+            <ArrowLeft className="w-4 h-4" /> {t('partner.back')}
           </Link>
           <div className="flex items-center justify-center gap-3 mb-5">
             <div className="h-px w-10 bg-ma-red/50" />
@@ -207,11 +216,10 @@ export default function Partner() {
             <div className="h-px w-10 bg-ma-red/50" />
           </div>
           <h1 className="text-3xl sm:text-4xl font-bold text-white mb-4">
-            Rejoignez Notre Réseau Export
+            {t('partner.title')}
           </h1>
           <p className="text-stone-300 text-base max-w-xl mx-auto leading-relaxed">
-            Vous produisez des produits alimentaires marocains de qualité ?
-            Faites-nous part de votre offre — nous nous chargeons de les exporter vers 50+ pays.
+            {t('partner.subtitle')}
           </p>
         </div>
       </div>
@@ -220,13 +228,13 @@ export default function Partner() {
       <div className="bg-white border-b border-stone-100">
         <div className="max-w-5xl mx-auto px-4 py-8 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
           {BENEFITS.map(b => (
-            <div key={b.title} className="flex items-start gap-3">
+            <div key={b.titleKey} className="flex items-start gap-3">
               <div className="w-9 h-9 bg-red-50 rounded-xl flex items-center justify-center shrink-0">
                 <b.icon className="w-4 h-4 text-ma-red" />
               </div>
               <div>
-                <p className="text-sm font-semibold text-stone-800">{b.title}</p>
-                <p className="text-xs text-stone-500 mt-0.5 leading-relaxed">{b.desc}</p>
+                <p className="text-sm font-semibold text-stone-800">{t(`partner.${b.titleKey}`)}</p>
+                <p className="text-xs text-stone-500 mt-0.5 leading-relaxed">{t(`partner.${b.descKey}`)}</p>
               </div>
             </div>
           ))}
@@ -268,43 +276,43 @@ export default function Partner() {
             {step === 1 && (
               <>
                 <h2 className="text-base font-bold text-stone-800 pb-3 border-b border-stone-100 flex items-center gap-2">
-                  <Factory className="w-4 h-4 text-ma-red" /> Votre entreprise
+                  <Factory className="w-4 h-4 text-ma-red" /> {t('partner.companySection')}
                 </h2>
                 <div className="grid sm:grid-cols-2 gap-4">
-                  <Field label="Raison sociale" required>
+                  <Field label={t('partner.company')} required>
                     <input type="text" required value={producer.company_name}
                       onChange={e => setProducer(p => ({ ...p, company_name: e.target.value }))}
                       placeholder="Coopérative Exemple" className={INPUT} />
                   </Field>
-                  <Field label="Nom du contact" required>
+                  <Field label={t('partner.contactName')} required>
                     <input type="text" required value={producer.contact_name}
                       onChange={e => setProducer(p => ({ ...p, contact_name: e.target.value }))}
                       placeholder="Mohamed Alami" className={INPUT} />
                   </Field>
-                  <Field label="E-mail" required>
+                  <Field label={t('partner.email')} required>
                     <input type="email" required value={producer.email}
                       onChange={e => setProducer(p => ({ ...p, email: e.target.value }))}
                       placeholder="contact@exemple.ma" className={INPUT} />
                   </Field>
-                  <Field label="Téléphone / WhatsApp">
+                  <Field label={t('partner.phone')}>
                     <input type="tel" value={producer.phone}
                       onChange={e => setProducer(p => ({ ...p, phone: e.target.value }))}
                       placeholder="+212 6 00 00 00 00" className={INPUT} />
                   </Field>
-                  <Field label="Pays" required>
+                  <Field label={t('partner.country')} required>
                     <select required value={producer.country}
                       onChange={e => setProducer(p => ({ ...p, country: e.target.value }))}
                       className={SELECT}>
-                      {COUNTRIES.map(c => <option key={c} value={c}>{c}</option>)}
+                      {COUNTRIES.map((c, i) => <option key={c} value={c}>{countryLabel(i, c)}</option>)}
                     </select>
                   </Field>
-                  <Field label="Ville">
+                  <Field label={t('partner.city')}>
                     <input type="text" value={producer.city}
                       onChange={e => setProducer(p => ({ ...p, city: e.target.value }))}
-                      placeholder="Meknès, Agadir…" className={INPUT} />
+                      placeholder={t('partner.cityPlaceholder')} className={INPUT} />
                   </Field>
                 </div>
-                <Field label="Site web (optionnel)">
+                <Field label={t('partner.website')}>
                   <input type="url" value={producer.website}
                     onChange={e => setProducer(p => ({ ...p, website: e.target.value }))}
                     placeholder="https://www.monentreprise.ma" className={INPUT} />
@@ -316,38 +324,38 @@ export default function Partner() {
             {step === 2 && (
               <>
                 <h2 className="text-base font-bold text-stone-800 pb-3 border-b border-stone-100 flex items-center gap-2">
-                  <Package className="w-4 h-4 text-ma-red" /> Votre produit
+                  <Package className="w-4 h-4 text-ma-red" /> {t('partner.productSection')}
                 </h2>
                 <div className="grid sm:grid-cols-2 gap-4">
-                  <Field label="Nom du produit" required>
+                  <Field label={t('partner.productName')} required>
                     <input type="text" required value={product.product_name}
                       onChange={e => setProduct(p => ({ ...p, product_name: e.target.value }))}
-                      placeholder="Huile d'argan pure, BIO" className={INPUT} />
+                      placeholder={t('partner.productNamePlaceholder')} className={INPUT} />
                   </Field>
-                  <Field label="Catégorie" required>
+                  <Field label={t('partner.category')} required>
                     <select required value={product.product_category}
                       onChange={e => setProduct(p => ({ ...p, product_category: e.target.value }))}
                       className={SELECT}>
-                      <option value="">Sélectionner</option>
-                      {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
+                      <option value="">{t('partner.select')}</option>
+                      {CATEGORIES.map((c, i) => <option key={c} value={c}>{optionLabel('categories', i, c)}</option>)}
                     </select>
                   </Field>
                 </div>
-                <Field label="Description du produit">
+                <Field label={t('partner.productDescription')}>
                   <textarea rows={3} value={product.product_description}
                     onChange={e => setProduct(p => ({ ...p, product_description: e.target.value }))}
-                    placeholder="Origine, variété, méthode de production, particularités…"
+                    placeholder={t('partner.productDescriptionPlaceholder')}
                     className={`${INPUT} resize-none`} />
                 </Field>
-                <Field label="Capacité de production annuelle">
+                <Field label={t('partner.annualCapacity')}>
                   <input type="text" value={product.annual_capacity}
                     onChange={e => setProduct(p => ({ ...p, annual_capacity: e.target.value }))}
-                    placeholder="Ex : 50 tonnes / an, 10 000 bouteilles / mois…" className={INPUT} />
+                    placeholder={t('partner.annualCapacityPlaceholder')} className={INPUT} />
                 </Field>
-                <Field label="Certifications disponibles">
+                <Field label={t('partner.availableCertifications')}>
                   <div className="flex flex-wrap gap-2 mt-1">
-                    {CERTIFICATIONS.map(c => (
-                      <CheckPill key={c} label={c}
+                    {CERTIFICATIONS.map((c, i) => (
+                      <CheckPill key={c} label={optionLabel('certifications', i, c)}
                         checked={product.certifications.includes(c)}
                         onChange={() => setProduct(p => ({
                           ...p,
@@ -358,10 +366,10 @@ export default function Partner() {
                     ))}
                   </div>
                 </Field>
-                <Field label="Conditionnements disponibles">
+                <Field label={t('partner.availablePackaging')}>
                   <input type="text" value={product.packaging_types}
                     onChange={e => setProduct(p => ({ ...p, packaging_types: e.target.value }))}
-                    placeholder="Ex : 250 ml, 500 ml, 1 L, vrac 200 L, privé label…" className={INPUT} />
+                    placeholder={t('partner.packagingPlaceholder')} className={INPUT} />
                 </Field>
               </>
             )}
@@ -370,7 +378,7 @@ export default function Partner() {
             {step === 3 && (
               <>
                 <h2 className="text-base font-bold text-stone-800 pb-3 border-b border-stone-100 flex items-center gap-2">
-                  <Globe className="w-4 h-4 text-ma-red" /> Expérience & Marchés cibles
+                  <Globe className="w-4 h-4 text-ma-red" /> {t('partner.exportExperience')}
                 </h2>
 
                 <label className="flex items-start gap-3 cursor-pointer p-3 border border-stone-200 rounded-xl hover:bg-stone-50 transition-colors">
@@ -378,16 +386,16 @@ export default function Partner() {
                     onChange={e => setXp(x => ({ ...x, already_exporting: e.target.checked }))}
                     className="mt-0.5 w-4 h-4 rounded border-stone-300 text-ma-red" />
                   <div>
-                    <p className="text-sm font-semibold text-stone-800">J'exporte déjà à l'international</p>
-                    <p className="text-xs text-stone-400">Cochez si vous avez déjà des expériences d'export en cours ou passées.</p>
+                    <p className="text-sm font-semibold text-stone-800">{t('partner.alreadyExporting')}</p>
+                    <p className="text-xs text-stone-400">{t('partner.alreadyExportingDescription')}</p>
                   </div>
                 </label>
 
                 {xp.already_exporting && (
-                  <Field label="Marchés actuels">
+                  <Field label={t('partner.currentMarkets')}>
                     <div className="flex flex-wrap gap-2 mt-1">
-                      {TARGET_MARKETS.map(m => (
-                        <CheckPill key={m} label={m}
+                      {TARGET_MARKETS.map((m, i) => (
+                        <CheckPill key={m} label={marketLabel(i, m)}
                           checked={xp.current_markets.includes(m)}
                           onChange={() => setXp(x => ({
                             ...x,
@@ -400,10 +408,10 @@ export default function Partner() {
                   </Field>
                 )}
 
-                <Field label="Marchés cibles souhaités">
+                <Field label={t('partner.targetMarkets')}>
                   <div className="flex flex-wrap gap-2 mt-1">
-                    {TARGET_MARKETS.map(m => (
-                      <CheckPill key={m} label={m}
+                    {TARGET_MARKETS.map((m, i) => (
+                      <CheckPill key={m} label={marketLabel(i, m)}
                         checked={xp.target_markets.includes(m)}
                         onChange={() => setXp(x => ({
                           ...x,
@@ -415,20 +423,20 @@ export default function Partner() {
                   </div>
                 </Field>
 
-                <Field label="Message complémentaire">
+                <Field label={t('partner.additionalMessage')}>
                   <textarea rows={4} value={xp.message}
                     onChange={e => setXp(x => ({ ...x, message: e.target.value }))}
-                    placeholder="Toute information utile : labels, récompenses, story de votre produit, contraintes particulières…"
+                    placeholder={t('partner.additionalMessagePlaceholder')}
                     className={`${INPUT} resize-none`} />
                 </Field>
 
                 {/* Recap */}
                 <div className="bg-red-50 rounded-xl p-4 text-xs space-y-1 text-stone-600">
-                  <p className="font-semibold text-stone-700 mb-2">Récapitulatif avant envoi</p>
-                  <p><span className="font-medium">Entreprise :</span> {producer.company_name} — {producer.city || producer.country}</p>
-                  <p><span className="font-medium">Produit :</span> {product.product_name} ({product.product_category})</p>
-                  {product.certifications.length > 0 && <p><span className="font-medium">Certif. :</span> {product.certifications.join(' · ')}</p>}
-                  {xp.target_markets.length > 0 && <p><span className="font-medium">Marchés cibles :</span> {xp.target_markets.join(', ')}</p>}
+                  <p className="font-semibold text-stone-700 mb-2">{t('partner.preSubmitSummary')}</p>
+                  <p><span className="font-medium">{t('partner.company')} :</span> {producer.company_name} — {producer.city || producer.country}</p>
+                  <p><span className="font-medium">{t('partner.product')} :</span> {product.product_name} ({product.product_category})</p>
+                  {product.certifications.length > 0 && <p><span className="font-medium">{t('partner.certifications')} :</span> {product.certifications.join(' · ')}</p>}
+                  {xp.target_markets.length > 0 && <p><span className="font-medium">{t('partner.targetMarkets')} :</span> {xp.target_markets.join(', ')}</p>}
                 </div>
               </>
             )}
@@ -443,7 +451,7 @@ export default function Partner() {
             {step > 1 && (
               <button type="button" onClick={() => setStep(s => (s - 1) as 1 | 2 | 3)}
                 className="flex items-center gap-2 border border-stone-200 text-stone-600 text-sm font-medium px-5 py-3 rounded-xl hover:bg-white bg-stone-50 transition-colors">
-                <ArrowLeft className="w-4 h-4" /> Précédent
+                <ArrowLeft className="w-4 h-4" /> {t('partner.previous')}
               </button>
             )}
             {step < 3 ? (
@@ -451,23 +459,23 @@ export default function Partner() {
                 onClick={() => {
                   setError('');
                   if (canProceed()) setStep(s => (s + 1) as 2 | 3);
-                  else setError('Veuillez compléter les champs obligatoires.');
+                  else setError(t('partner.requiredFieldsError'));
                 }}
                 className="flex-1 flex items-center justify-center gap-2 bg-ma-red hover:bg-[#9B1E24] text-white text-sm font-semibold py-3 rounded-xl transition-colors">
-                Suivant <ArrowRight className="w-4 h-4" />
+                {t('partner.next')} <ArrowRight className="w-4 h-4" />
               </button>
             ) : (
               <button type="submit" disabled={submitting}
                 className="flex-1 flex items-center justify-center gap-2 bg-ma-red hover:bg-[#9B1E24] disabled:opacity-60 text-white text-sm font-semibold py-3 rounded-xl transition-colors">
                 {submitting
-                  ? <><Loader2 className="w-4 h-4 animate-spin" /> Envoi…</>
-                  : <><Send className="w-4 h-4" /> Envoyer mon dossier</>}
+                  ? <><Loader2 className="w-4 h-4 animate-spin" /> {t('partner.sending')}</>
+                  : <><Send className="w-4 h-4" /> {t('partner.submit')}</>}
               </button>
             )}
           </div>
 
           <p className="text-center text-xs text-stone-400 mt-4">
-            Questions ? <a href="mailto:filalianas0001@gmail.com" className="text-ma-red hover:underline">filalianas0001@gmail.com</a>
+            {t('partner.questions')} <a href="mailto:filalianas0001@gmail.com" className="text-ma-red hover:underline">filalianas0001@gmail.com</a>
             {' · '}
             <a href="tel:+212605268946" className="text-ma-red hover:underline">+212 605 268 946</a>
           </p>
@@ -477,11 +485,11 @@ export default function Partner() {
         <div className="mt-16">
           <div className="flex items-center gap-3 mb-6">
             <div className="h-px flex-1 bg-stone-200" />
-            <h3 className="text-sm font-bold text-stone-500 uppercase tracking-wider">Questions fréquentes</h3>
+            <h3 className="text-sm font-bold text-stone-500 uppercase tracking-wider">{t('partner.faqTitle')}</h3>
             <div className="h-px flex-1 bg-stone-200" />
           </div>
           <div className="bg-white rounded-2xl border border-stone-100 px-6 divide-y divide-stone-100">
-            {FAQS.map(f => <FAQ key={f.q} q={f.q} a={f.a} />)}
+            {FAQS.map(f => <FAQ key={f.qKey} q={t(`partner.${f.qKey}`)} a={t(`partner.${f.aKey}`)} />)}
           </div>
         </div>
 
@@ -494,8 +502,8 @@ export default function Partner() {
               </div>
             ))}
           </div>
-          <p className="text-white font-semibold mb-1">Plus de 120 producteurs nous font confiance</p>
-          <p className="text-stone-400 text-sm">Huiles, épices, dattes, poissons, céréales… rejoignez notre réseau d'export.</p>
+          <p className="text-white font-semibold mb-1">{t('partner.socialProofTitle')}</p>
+          <p className="text-stone-400 text-sm">{t('partner.socialProofDescription')}</p>
         </div>
       </div>
     </div>

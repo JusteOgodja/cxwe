@@ -134,6 +134,7 @@ function QuickFixDrawer({
   onClose: () => void;
   onSaved: (updated: ProblemProduct) => void;
 }) {
+  const { t } = useTranslation();
   const [vals, setVals] = useState({
     image_url:   product.image_url || '',
     ean:         product.ean || '',
@@ -246,12 +247,12 @@ function QuickFixDrawer({
         {/* Header */}
         <div className="flex items-start justify-between gap-3 px-5 py-4 border-b border-stone-100">
           <div className="min-w-0">
-            <div className="text-xs font-bold text-amber-600 uppercase tracking-wide mb-0.5">Correction rapide</div>
+            <div className="text-xs font-bold text-amber-600 uppercase tracking-wide mb-0.5">{t('admin.pages.dataQuality.quickFix')}</div>
             <h2 className="font-bold text-stone-800 text-sm leading-snug truncate">{product.name}</h2>
             <div className="flex flex-wrap gap-1 mt-1.5">
               {issues.map(k => (
                 <span key={k} className={`text-xs px-1.5 py-0.5 rounded font-medium ${ISSUES[k].chip}`}>
-                  {ISSUES[k].label}
+                  {t(`admin.pages.dataQuality.issues.${k}`)}
                 </span>
               ))}
             </div>
@@ -275,13 +276,13 @@ function QuickFixDrawer({
             return (
               <div key={sev} className={`border-b ${meta.border}`}>
                 <div className={`px-5 py-2 ${meta.bg}`}>
-                  <span className={`text-xs font-bold uppercase tracking-wide ${meta.color}`}>{meta.label}</span>
+                  <span className={`text-xs font-bold uppercase tracking-wide ${meta.color}`}>{t(`admin.pages.dataQuality.severity.${sev}`)}</span>
                 </div>
                 <div className="px-5 py-4 space-y-4">
 
                   {keys.includes('image') && (
                     <div>
-                      <label className={lbl}><Image className="inline w-3.5 h-3.5 mr-1 text-orange-500" />URL de l'image</label>
+                      <label className={lbl}><Image className="inline w-3.5 h-3.5 mr-1 text-orange-500" />{t('admin.pages.dataQuality.imageUrl')}</label>
                       <input type="url" value={vals.image_url} onChange={e => set('image_url')(e.target.value)} placeholder="https://..." className={inp} />
                       {vals.image_url && (
                         <img src={vals.image_url} alt="preview" className="mt-2 w-20 h-20 object-cover rounded-xl border border-stone-100"
@@ -301,11 +302,11 @@ function QuickFixDrawer({
                     <div>
                       <label className={lbl}>
                         <FileText className="inline w-3.5 h-3.5 mr-1 text-blue-500" />
-                        Description
-                        {keys.includes('description_courte') && <span className="ml-1 text-amber-600 normal-case font-normal">(minimum 80 caractères)</span>}
+                        {t('admin.common.description')}
+                        {keys.includes('description_courte') && <span className="ml-1 text-amber-600 normal-case font-normal">{t('admin.pages.dataQuality.minimumChars')}</span>}
                       </label>
                       <textarea value={vals.description} onChange={e => set('description')(e.target.value)}
-                        placeholder="Description commerciale du produit..." rows={4} className={`${inp} resize-none`} />
+                        placeholder={t('admin.pages.dataQuality.descriptionPlaceholder')} rows={4} className={`${inp} resize-none`} />
                       <div className={`text-right text-xs mt-1 ${vals.description.length < 80 ? 'text-amber-500 font-semibold' : 'text-stone-400'}`}>
                         {vals.description.length} / 80 min
                       </div>
@@ -314,9 +315,9 @@ function QuickFixDrawer({
 
                   {keys.includes('marque') && (
                     <div>
-                      <label className={lbl}><Building2 className="inline w-3.5 h-3.5 mr-1 text-purple-500" />Marque</label>
+                      <label className={lbl}><Building2 className="inline w-3.5 h-3.5 mr-1 text-purple-500" />{t('admin.pages.products.colBrand')}</label>
                       <select value={vals.marque_id} onChange={e => set('marque_id')(e.target.value)} className={inp}>
-                        <option value="">— Sélectionner —</option>
+                        <option value="">— {t('admin.pages.products.select')} —</option>
                         {brands.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
                       </select>
                     </div>
@@ -324,9 +325,9 @@ function QuickFixDrawer({
 
                   {keys.includes('categorie') && (
                     <div>
-                      <label className={lbl}><Tag className="inline w-3.5 h-3.5 mr-1 text-amber-500" />Catégorie</label>
+                      <label className={lbl}><Tag className="inline w-3.5 h-3.5 mr-1 text-amber-500" />{t('admin.pages.products.colCategory')}</label>
                       <select value={vals.category_id} onChange={e => set('category_id')(e.target.value)} className={inp}>
-                        <option value="">— Sélectionner —</option>
+                        <option value="">— {t('admin.pages.products.select')} —</option>
                         {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
                       </select>
                     </div>
@@ -336,56 +337,56 @@ function QuickFixDrawer({
                     <div>
                       <label className={lbl}><Hash className="inline w-3.5 h-3.5 mr-1 text-red-700" />Code HS (douanier)</label>
                       <input type="text" value={vals.hs_code} onChange={e => set('hs_code')(e.target.value)} placeholder="ex: 150910" maxLength={10} className={inp} />
-                      <p className="text-xs text-stone-400 mt-1">6 à 10 chiffres selon la nomenclature douanière internationale.</p>
+                      <p className="text-xs text-stone-400 mt-1">{t('admin.pages.dataQuality.hsCodeHelp')}</p>
                     </div>
                   )}
 
                   {keys.includes('pays_origine') && (
                     <div>
-                      <label className={lbl}><Globe className="inline w-3.5 h-3.5 mr-1 text-red-700" />Pays d'origine</label>
+                      <label className={lbl}><Globe className="inline w-3.5 h-3.5 mr-1 text-red-700" />{t('admin.pages.products.countryOfOrigin')}</label>
                       <input type="text" value={vals.pays_origine} onChange={e => set('pays_origine')(e.target.value)} placeholder="ex: Morocco" className={inp} />
                     </div>
                   )}
 
                   {keys.includes('incoterms') && (
-                    <CheckGroup title="Incoterms disponibles" options={INCOTERMS} selected={vals.incoterms_dispo} field="incoterms_dispo" />
+                    <CheckGroup title={t('admin.pages.products.availableIncoterms')} options={INCOTERMS} selected={vals.incoterms_dispo} field="incoterms_dispo" />
                   )}
 
                   {keys.includes('moq') && (
                     <div>
-                      <label className={lbl}><Package className="inline w-3.5 h-3.5 mr-1 text-red-700" />MOQ — Quantité minimum de commande</label>
+                      <label className={lbl}><Package className="inline w-3.5 h-3.5 mr-1 text-red-700" />{t('admin.pages.dataQuality.moq')}</label>
                       <input type="number" value={vals.commande_min} onChange={e => set('commande_min')(e.target.value)} placeholder="ex: 100" min={1} className={inp} />
                     </div>
                   )}
 
                   {keys.includes('colisage') && (
                     <div>
-                      <label className={lbl}><Package className="inline w-3.5 h-3.5 mr-1 text-red-700" />Colisage (unités / carton)</label>
+                      <label className={lbl}><Package className="inline w-3.5 h-3.5 mr-1 text-red-700" />{t('admin.pages.products.packagingUnits')}</label>
                       <input type="number" value={vals.colisage} onChange={e => set('colisage')(e.target.value)} placeholder="ex: 12" min={1} className={inp} />
                     </div>
                   )}
 
                   {keys.includes('certifications') && (
-                    <CheckGroup title="Certifications" options={CERTS_LIST} selected={vals.certifications} field="certifications" />
+                    <CheckGroup title={t('admin.pages.products.colCertifications')} options={CERTS_LIST} selected={vals.certifications} field="certifications" />
                   )}
 
                   {keys.includes('allergenes') && (
-                    <CheckGroup title="Allergènes présents (règlement UE 1169/2011)" options={ALLERG_LIST} selected={vals.allergenes} field="allergenes" />
+                    <CheckGroup title={t('admin.pages.dataQuality.allergensEu')} options={ALLERG_LIST} selected={vals.allergenes} field="allergenes" />
                   )}
 
                   {keys.includes('poids') && (
                     <div>
-                      <label className={lbl}><Weight className="inline w-3.5 h-3.5 mr-1 text-stone-500" />Poids brut (kg)</label>
+                      <label className={lbl}><Weight className="inline w-3.5 h-3.5 mr-1 text-stone-500" />{t('admin.pages.products.grossWeight')}</label>
                       <input type="number" value={vals.poids_brut_kg} onChange={e => set('poids_brut_kg')(e.target.value)} placeholder="ex: 0.5" min={0} step="0.001" className={inp} />
                     </div>
                   )}
 
                   {keys.includes('pays_export') && (
                     <div>
-                      <label className={lbl}><Globe className="inline w-3.5 h-3.5 mr-1 text-stone-500" />Pays d'export autorisés</label>
+                      <label className={lbl}><Globe className="inline w-3.5 h-3.5 mr-1 text-stone-500" />{t('admin.pages.products.exportCountries')}</label>
                       <input type="text" value={vals.pays_export} onChange={e => set('pays_export')(e.target.value)}
                         placeholder="France, Espagne, Allemagne, ..." className={inp} />
-                      <p className="text-xs text-stone-400 mt-1">Séparer les pays par des virgules.</p>
+                      <p className="text-xs text-stone-400 mt-1">{t('admin.pages.dataQuality.separateCountries')}</p>
                     </div>
                   )}
 
@@ -409,7 +410,7 @@ function QuickFixDrawer({
           }).length === 0 && (
             <div className="m-5 flex items-center gap-2 text-emerald-600 bg-emerald-50 border border-emerald-200 rounded-xl px-4 py-3 text-sm font-medium">
               <CheckCircle className="w-4 h-4 shrink-0" />
-              Produit complet — plus aucun problème.
+              {t('admin.pages.dataQuality.productComplete')}
             </div>
           )}
         </div>
@@ -418,12 +419,12 @@ function QuickFixDrawer({
         <div className="px-5 py-4 border-t border-stone-100 flex gap-3">
           <button onClick={onClose}
             className="flex-1 border border-stone-200 text-stone-600 text-sm font-medium py-2.5 rounded-xl hover:bg-stone-50 transition-colors">
-            Fermer
+            {t('admin.common.close')}
           </button>
           <button onClick={handleSave} disabled={saving}
             className="flex-1 flex items-center justify-center gap-2 bg-amber-500 hover:bg-amber-600 text-white text-sm font-semibold py-2.5 rounded-xl transition-colors disabled:opacity-60">
             {saving ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-            {saving ? 'Enregistrement…' : 'Enregistrer'}
+            {saving ? t('admin.common.saving') : t('admin.common.save')}
           </button>
         </div>
       </div>
@@ -573,7 +574,7 @@ export default function DataQuality() {
           <div className={`text-5xl font-black leading-none ${loading ? 'text-stone-200' : scoreColor}`}>
             {loading ? '—' : score}
           </div>
-          <div className="text-xs text-stone-400 font-medium mt-1">Score /100</div>
+          <div className="text-xs text-stone-400 font-medium mt-1">{t('admin.pages.dataQuality.score')}</div>
         </div>
         <div className="flex-1 min-w-0">
           <div className="h-3 bg-stone-100 rounded-full overflow-hidden mb-2">
@@ -581,7 +582,7 @@ export default function DataQuality() {
               style={{ width: loading ? '0%' : `${score}%` }} />
           </div>
           <p className="text-xs text-stone-400 leading-relaxed">
-            Score pondéré — les critères export (HS code, incoterms, MOQ…) comptent double.
+            {t('admin.pages.dataQuality.scoreHelp')}
             Souhaitables exclus du calcul.
           </p>
         </div>
@@ -592,13 +593,13 @@ export default function DataQuality() {
         {kpiGroups.map(({ sev, meta, items }) => (
           <div key={sev} className={`rounded-2xl border ${meta.border} overflow-hidden`}>
             <div className={`px-4 py-2.5 ${meta.bg} flex items-center gap-2`}>
-              <span className={`text-xs font-bold uppercase tracking-wide ${meta.color}`}>{meta.label}</span>
+              <span className={`text-xs font-bold uppercase tracking-wide ${meta.color}`}>{t(`admin.pages.dataQuality.severity.${sev}`)}</span>
               <span className={`text-xs ${meta.color} opacity-60`}>
-                · {items.filter(i => i.count > 0).length} critère{items.filter(i => i.count > 0).length !== 1 ? 's' : ''} avec problèmes
+                · {t('admin.pages.dataQuality.criteriaWithIssues', { count: items.filter(i => i.count > 0).length })}
               </span>
             </div>
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 divide-x divide-y divide-stone-100 bg-white">
-              {items.map(({ key, def, count }) => {
+              {items.map(({ key, count }) => {
                 const isOk = count === 0;
                 return (
                   <button key={key}
@@ -609,7 +610,7 @@ export default function DataQuality() {
                     <div className={`text-xl font-bold ${isOk ? 'text-emerald-600' : sev === 'critique' ? 'text-red-600' : sev === 'important' ? 'text-amber-600' : 'text-stone-500'}`}>
                       {loading ? <Skel /> : count.toLocaleString('fr-FR')}
                     </div>
-                    <div className="text-xs font-medium text-stone-600 mt-0.5 leading-tight">{def.label}</div>
+                    <div className="text-xs font-medium text-stone-600 mt-0.5 leading-tight">{t(`admin.pages.dataQuality.issues.${key}`)}</div>
                     {!loading && (
                       <div className="flex items-center gap-1 mt-1.5 text-xs">
                         {isOk
@@ -655,7 +656,7 @@ export default function DataQuality() {
                       className={`flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-colors ${
                         activeFilter === k ? `${sev === 'critique' ? 'bg-red-600' : sev === 'important' ? 'bg-amber-500' : 'bg-stone-500'} text-white` : `${meta.color} hover:bg-stone-100`
                       }`}>
-                      {ISSUES[k].label}
+                      {t(`admin.pages.dataQuality.issues.${k}`)}
                       <span className={`text-xs px-1 py-0.5 rounded-full font-bold ${activeFilter === k ? 'bg-white/25 text-white' : 'bg-stone-200 text-stone-500'}`}>{c}</span>
                     </button>
                   );
@@ -701,7 +702,7 @@ export default function DataQuality() {
                     <div className="flex flex-wrap gap-1 mt-1">
                       {p.issues.slice(0, 5).map(k => (
                         <span key={k} className={`text-xs px-1.5 py-0.5 rounded font-medium ${ISSUES[k].chip}`}>
-                          {ISSUES[k].label}
+                          {t(`admin.pages.dataQuality.issues.${k}`)}
                         </span>
                       ))}
                       {p.issues.length > 5 && (
@@ -780,11 +781,11 @@ export default function DataQuality() {
             <div className="bg-white rounded-2xl shadow-sm border border-stone-100 p-5">
               <div className="flex items-center gap-2 mb-1">
                 <Building2 className="w-4 h-4 text-stone-400" />
-                <span className="text-sm font-semibold text-stone-700">Marques sans produits actifs</span>
+                <span className="text-sm font-semibold text-stone-700">{t('admin.pages.dataQuality.brandsWithoutProducts')}</span>
               </div>
               <div className="text-3xl font-bold text-amber-600">{stats.brands_no_products}</div>
               <Link to="/admin/brands" className="inline-flex items-center gap-1 text-xs text-amber-600 hover:text-amber-700 font-medium mt-2">
-                Gérer les marques <ExternalLink className="w-3 h-3" />
+                {t('admin.pages.dataQuality.manageBrands')} <ExternalLink className="w-3 h-3" />
               </Link>
             </div>
           )}
@@ -792,11 +793,11 @@ export default function DataQuality() {
             <div className="bg-white rounded-2xl shadow-sm border border-stone-100 p-5">
               <div className="flex items-center gap-2 mb-1">
                 <Tag className="w-4 h-4 text-stone-400" />
-                <span className="text-sm font-semibold text-stone-700">Catégories sans produits actifs</span>
+                <span className="text-sm font-semibold text-stone-700">{t('admin.pages.dataQuality.categoriesWithoutProducts')}</span>
               </div>
               <div className="text-3xl font-bold text-amber-600">{stats.categories_no_products}</div>
               <Link to="/admin/categories" className="inline-flex items-center gap-1 text-xs text-amber-600 hover:text-amber-700 font-medium mt-2">
-                Gérer les catégories <ExternalLink className="w-3 h-3" />
+                {t('admin.pages.dataQuality.manageCategories')} <ExternalLink className="w-3 h-3" />
               </Link>
             </div>
           )}

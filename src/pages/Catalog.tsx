@@ -1,6 +1,7 @@
 import { useEffect, useState, useMemo, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { Search, LayoutGrid, Building2, X, Package } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { supabase } from '../lib/supabase';
 import { productImage } from '../lib/img';
 import CategoryCard from '../components/CategoryCard';
@@ -13,9 +14,10 @@ const BRANDS_PER_PAGE = 24;
 interface ProductHit { id: string; name: string; image_url: string; brand: { name: string }[] | { name: string } | null; }
 
 export default function Catalog() {
+  const { t } = useTranslation();
   useSEO({
-    title: 'Catalogue Export Maroc — Produits alimentaires',
-    description: 'Parcourez le catalogue de produits alimentaires marocains pour l\'export. Filtrez par catégorie ou marque.',
+    title: t('catalog.seoTitle'),
+    description: t('catalog.seoDescription'),
   });
 
   const [view, setView] = useState<'categories' | 'brands'>('categories');
@@ -167,10 +169,10 @@ export default function Catalog() {
       {/* Header */}
       <div className="bg-gradient-to-b from-ma-navy to-[#0A1833] pt-24 pb-12 px-4">
         <div className="max-w-4xl mx-auto text-center">
-          <p className="text-ma-gold text-xs font-semibold uppercase tracking-widest mb-3">Export B2B · Maroc</p>
-          <h1 className="text-3xl sm:text-4xl font-bold text-white mb-3">Catalogue produits</h1>
+          <p className="text-ma-gold text-xs font-semibold uppercase tracking-widest mb-3">{t('catalog.badge')}</p>
+          <h1 className="text-3xl sm:text-4xl font-bold text-white mb-3">{t('catalog.heading')}</h1>
           <p className="text-stone-400 text-sm max-w-xl mx-auto mb-6">
-            Parcourez nos produits alimentaires marocains authentiques disponibles à l'export.
+            {t('catalog.heroSub')}
           </p>
 
           {/* Product search (autocomplete over the whole catalogue) */}
@@ -178,7 +180,7 @@ export default function Catalog() {
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-stone-500" />
             <input
               type="text"
-              placeholder="Rechercher un produit dans tout le catalogue…"
+              placeholder={t('catalog.productSearch')}
               value={prodQuery}
               onChange={e => setProdQuery(e.target.value)}
               onFocus={() => prodHits.length && setProdOpen(true)}
@@ -193,7 +195,7 @@ export default function Catalog() {
             {prodOpen && prodQuery.trim().length >= 2 && (
               <div className="absolute z-30 mt-2 w-full bg-white rounded-xl shadow-2xl border border-stone-100 overflow-hidden text-left max-h-96 overflow-y-auto">
                 {prodHits.length === 0 ? (
-                  <p className="px-4 py-4 text-sm text-stone-400">Aucun produit trouvé</p>
+                  <p className="px-4 py-4 text-sm text-stone-400">{t('catalog.noResults')}</p>
                 ) : prodHits.map(h => (
                   <Link key={h.id} to={`/product/${h.id}`} onClick={() => setProdOpen(false)}
                     className="flex items-center gap-3 px-3 py-2.5 hover:bg-ma-cream transition-colors border-b border-stone-50 last:border-0">
@@ -220,7 +222,7 @@ export default function Catalog() {
                 view === 'categories' ? 'bg-ma-red text-white shadow-sm' : 'text-stone-400 hover:text-white'
               }`}
             >
-              <LayoutGrid className="w-4 h-4" /> Catégories
+              <LayoutGrid className="w-4 h-4" /> {t('catalog.categoriesTab')}
             </button>
             <button
               onClick={() => { setView('brands'); setSearch(''); }}
@@ -228,7 +230,7 @@ export default function Catalog() {
                 view === 'brands' ? 'bg-ma-red text-white shadow-sm' : 'text-stone-400 hover:text-white'
               }`}
             >
-              <Building2 className="w-4 h-4" /> Marques
+              <Building2 className="w-4 h-4" /> {t('catalog.brandsTab')}
             </button>
           </div>
         </div>
@@ -245,17 +247,19 @@ export default function Catalog() {
           <>
             <div className="relative max-w-sm mb-6">
               <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-stone-400" />
-              <input type="text" placeholder="Filtrer les catégories…" value={search}
+              <input type="text" placeholder={t('catalog.filterCategories')} value={search}
                 onChange={e => setSearch(e.target.value)}
                 className="w-full pl-10 pr-3 py-2.5 bg-white border border-stone-200 rounded-xl text-sm text-stone-700 focus:outline-none focus:border-ma-red" />
             </div>
             {filteredCats.length === 0 ? (
               <div className="text-center py-20 text-stone-400">
-                <p className="text-lg font-medium">Aucune catégorie trouvée</p>
+                <p className="text-lg font-medium">{t('catalog.noCategories')}</p>
               </div>
             ) : (
               <>
-                <p className="text-stone-500 text-sm mb-6">{filteredCats.length} {filteredCats.length === 1 ? 'catégorie' : 'catégories'}</p>
+                <p className="text-stone-500 text-sm mb-6">
+                  {t('catalog.categoryCount', { count: filteredCats.length })}
+                </p>
                 <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
                   {filteredCats.map((cat, i) => <CategoryCard key={cat.id} category={cat} index={i} />)}
                 </div>
@@ -270,20 +274,20 @@ export default function Catalog() {
                 {/* Brand name search */}
                 <div className="relative flex-1 min-w-[200px] max-w-sm">
                   <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-stone-400" />
-                  <input type="text" placeholder="Filtrer les marques par nom…" value={search}
+                  <input type="text" placeholder={t('catalog.filterBrands')} value={search}
                     onChange={e => setSearch(e.target.value)}
                     className="w-full pl-10 pr-3 py-2.5 bg-white border border-stone-200 rounded-xl text-sm text-stone-700 focus:outline-none focus:border-ma-green" />
                 </div>
                 {/* Category filter */}
                 <select value={brandCategory} onChange={e => setBrandCategory(e.target.value)}
                   className="text-sm bg-white border border-stone-200 rounded-xl px-3 py-2.5 text-stone-700 focus:outline-none focus:border-ma-green max-w-[220px]">
-                  <option value="">Toutes les catégories</option>
+                  <option value="">{t('catalog.allCats')}</option>
                   {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
                 </select>
                 {(search || letter || brandCategory) && (
                   <button onClick={() => { setSearch(''); setLetter(''); setBrandCategory(''); }}
                     className="inline-flex items-center gap-1 text-xs text-red-500 hover:text-red-700 font-medium">
-                    <X className="w-3 h-3" /> Réinitialiser
+                    <X className="w-3 h-3" /> {t('catalog.reset')}
                   </button>
                 )}
               </div>
@@ -292,7 +296,7 @@ export default function Catalog() {
               <div className="flex flex-wrap gap-1">
                 <button onClick={() => setLetter('')}
                   className={`text-xs font-semibold px-2.5 py-1 rounded-md transition-colors ${letter === '' ? 'bg-ma-navy text-white' : 'bg-white text-stone-500 border border-stone-200 hover:border-ma-navy'}`}>
-                  Tous
+                  {t('catalog.all')}
                 </button>
                 {'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('').map(L => {
                   const has = letters.has(L);
@@ -318,13 +322,13 @@ export default function Catalog() {
 
             {filteredBrands.length === 0 ? (
               <div className="text-center py-20 text-stone-400">
-                <p className="text-lg font-medium">Aucune marque trouvée</p>
-                <p className="text-sm mt-2">Essayez d'autres filtres</p>
+                <p className="text-lg font-medium">{t('catalog.noBrands')}</p>
+                <p className="text-sm mt-2">{t('catalog.tryOtherFilters')}</p>
               </div>
             ) : (
               <>
                 <p className="text-stone-500 text-sm mb-6">
-                  {filteredBrands.length} {filteredBrands.length === 1 ? 'marque' : 'marques'}
+                  {t('catalog.brandCount', { count: filteredBrands.length })}
                 </p>
                 <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
                   {pageBrands.map(b => <BrandCard key={b.id} brand={b} productCount={brandCounts[b.id]} />)}
@@ -335,7 +339,7 @@ export default function Catalog() {
                   <div className="mt-10 flex items-center justify-center gap-1.5 flex-wrap">
                     <button onClick={() => goBrandPage(currentBrandPage - 1)} disabled={currentBrandPage === 1}
                       className="px-3 py-2 text-sm rounded-lg border border-stone-200 bg-white text-stone-600 hover:border-stone-400 disabled:opacity-40 disabled:cursor-not-allowed transition-colors">
-                      Précédent
+                      {t('admin.common.previous')}
                     </button>
                     {Array.from({ length: totalBrandPages }, (_, i) => i + 1)
                       .filter(p => p === 1 || p === totalBrandPages || Math.abs(p - currentBrandPage) <= 1)
@@ -353,7 +357,7 @@ export default function Catalog() {
                       ))}
                     <button onClick={() => goBrandPage(currentBrandPage + 1)} disabled={currentBrandPage === totalBrandPages}
                       className="px-3 py-2 text-sm rounded-lg border border-stone-200 bg-white text-stone-600 hover:border-stone-400 disabled:opacity-40 disabled:cursor-not-allowed transition-colors">
-                      Suivant
+                      {t('admin.common.next')}
                     </button>
                   </div>
                 )}
@@ -365,7 +369,7 @@ export default function Catalog() {
         {/* Contact note */}
         <div className="mt-16 bg-white border border-ma-sand rounded-2xl p-6 text-center shadow-card">
           <p className="text-ma-navy font-semibold text-sm">
-            Contactez-nous pour les tailles, conditionnements et tarifs spécifiques.
+            {t('catalog.contactNote')}
           </p>
           <p className="text-ma-red text-xs mt-1.5 font-medium">
             filalianas0001@gmail.com — +212 605 268 946
