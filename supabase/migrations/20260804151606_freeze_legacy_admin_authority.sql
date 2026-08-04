@@ -20,12 +20,30 @@
 
 BEGIN;
 
--- 0) PRÉCONDITION ANTI-VERROUILLAGE — interrompt la migration si aucune autorité
---    administrateur exploitable n'existe (ne jamais geler dans un état sans admin).
+-- 0) PRÉCONDITION ANTI-VERROUILLAGE — interrompt la migration AVANT tout DROP/CREATE
+--    si l'état d'autorité n'est pas sûr (ne jamais geler dans un état incohérent).
+--    Vérifie : (a) exactement UNE ligne admin_emails ; (b) au moins une entrée non
+--    vide ; (c) au moins une entrée correspondant à un compte auth.users ;
+--    (d) fonction d'autorité durcie présente (SECURITY DEFINER + search_path figé) ;
+--    (e) les 3 policies admin du hotfix présentes ; (f) policy vulnérable absente.
+--    Aucune valeur sensible n'est journalisée : exception générique uniquement.
 DO $precheck$
 DECLARE
-  n_valid integer;
+  n_rows    integer;
+  n_valid   integer;
+  n_isadmin integer;
+  n_hotfix  integer;
+  n_vuln    integer;
 BEGIN
+  -- (a) exactement une ligne admin_emails
+  SELECT count(*) INTO n_rows
+  FROM public.site_settings
+  WHERE key = 'admin_emails';
+  IF n_rows <> 1 THEN
+    RAISE EXCEPTION 'Freeze aborted: administrator authority precondition not met';
+  END IF;
+
+  -- (b)+(c) au moins une entrée non vide correspondant à un compte auth.users
   SELECT count(*) INTO n_valid
   FROM public.site_settings AS s
   CROSS JOIN LATERAL pg_catalog.regexp_split_to_table(COALESCE(s.value, ''), ',') AS configured_email
@@ -34,9 +52,45 @@ BEGIN
      = pg_catalog.lower(pg_catalog.btrim(configured_email))
   WHERE s.key = 'admin_emails'
     AND pg_catalog.btrim(configured_email) <> '';
-
   IF n_valid < 1 THEN
-    RAISE EXCEPTION 'Freeze aborted: no valid administrator authority found';
+    RAISE EXCEPTION 'Freeze aborted: administrator authority precondition not met';
+  END IF;
+
+  -- (d) fonction d'autorité durcie présente (SECURITY DEFINER + search_path figé)
+  SELECT count(*) INTO n_isadmin
+  FROM pg_proc p
+  JOIN pg_namespace n ON n.oid = p.pronamespace
+  WHERE n.nspname = 'public'
+    AND p.proname = 'is_admin'
+    AND p.prosecdef IS TRUE
+    AND EXISTS (
+      SELECT 1 FROM unnest(COALESCE(p.proconfig, ARRAY[]::text[])) AS c
+      WHERE c LIKE 'search_path=%'
+    );
+  IF n_isadmin < 1 THEN
+    RAISE EXCEPTION 'Freeze aborted: administrator authority precondition not met';
+  END IF;
+
+  -- (e) les 3 policies admin du hotfix sont présentes
+  SELECT count(*) INTO n_hotfix
+  FROM pg_policies
+  WHERE schemaname = 'public' AND tablename = 'site_settings'
+    AND policyname IN (
+      'site_settings_admin_select',
+      'site_settings_admin_insert',
+      'site_settings_admin_update'
+    );
+  IF n_hotfix <> 3 THEN
+    RAISE EXCEPTION 'Freeze aborted: administrator authority precondition not met';
+  END IF;
+
+  -- (f) la policy vulnérable historique est absente
+  SELECT count(*) INTO n_vuln
+  FROM pg_policies
+  WHERE schemaname = 'public' AND tablename = 'site_settings'
+    AND policyname = 'site_settings_authenticated_all';
+  IF n_vuln <> 0 THEN
+    RAISE EXCEPTION 'Freeze aborted: administrator authority precondition not met';
   END IF;
 END
 $precheck$;
