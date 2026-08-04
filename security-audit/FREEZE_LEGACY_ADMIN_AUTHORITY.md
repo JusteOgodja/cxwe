@@ -21,8 +21,12 @@ renommage d'une autre clé vers `admin_emails`, et l'insertion d'une nouvelle li
 ## Journal d'application en production (2026-08-04)
 - **Date d'application (UTC)** : 2026-08-04 (session ~19:00Z). *(Appliquée hors historique de
   migration ; horodatage non journalisé côté `schema_migrations`.)*
-- **SHA-256 du SQL appliqué** : `4d5db94780cca679acf4e75601270fc314da51d46e5e1946cb41a97a2c694b66`
-  (identique à l'empreinte du fichier Git — envoyé **verbatim**).
+- **SHA-256 des octets déployés (CRLF)** : `4d5db94780cca679acf4e75601270fc314da51d46e5e1946cb41a97a2c694b66`
+  — octets réellement envoyés en production.
+- **SHA-256 canonique Git (LF)** : `3f8f39a3876a932c412d0d2e874a189936317ffc3dacc0e4d6dacf9f4b001159`
+  — fichier canonique archivé dans Git (`security-audit/applied-manual-sql/`).
+- Les deux contenus sont **sémantiquement équivalents** mais **PAS byte-identical** ; la
+  différence provient **uniquement** de la normalisation des fins de ligne CRLF → LF.
 - **Méthode** : `execute_sql` (Supabase MCP), fichier entier en **une seule** exécution,
   `BEGIN;`…`COMMIT;` gérés par le fichier (une seule couche transactionnelle).
 - **Hors historique** : appliquée **hors** `supabase_migrations.schema_migrations` (aucune
