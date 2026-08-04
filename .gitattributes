@@ -1,0 +1,5 @@
+# Normalisation des fins de ligne.
+# Les scripts SQL (migrations, tests, scripts appliqués manuellement) sont figés
+# en LF afin que leurs empreintes SHA-256 soient stables et reproductibles,
+# indépendamment de core.autocrlf sur le poste de travail.
+*.sql text eol=lf

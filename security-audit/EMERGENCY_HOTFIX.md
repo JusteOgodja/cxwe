@@ -1,6 +1,6 @@
 # Hotfix d'urgence — Verrouillage de l'autorité admin (`site_settings`)
 
-Migration : `supabase/migrations/20260804090250_emergency_lock_admin_settings.sql`
+Migration (appliquée manuellement, **archivée** — ne pas rejouer) : `security-audit/applied-manual-sql/20260804090250_emergency_lock_admin_settings.sql`
 Test : `security-audit/tests/00_emergency_hotfix_proof.sql`
 
 ## Vulnérabilité
@@ -59,9 +59,10 @@ Avant hotfix : `updated_admin_emails_rows=1`, `is_admin_after=t`. Après hotfix 
 `security/admin-authority-hardening`.)
 
 ## Application
-Appliquer **uniquement** `20260804090250_emergency_lock_admin_settings.sql` (SQL editor ou
-`supabase db push` ciblé). Ne pas lancer `db push` global (historique local divergent) ni
-`migration repair`.
+**Déjà appliqué en production** (via `execute_sql`, fichier verbatim). Le script est **archivé**
+sous `security-audit/applied-manual-sql/` **pour audit uniquement — ne pas le rejouer**. Ne pas
+lancer `db push` global (historique local divergent) ni `migration repair` (voir
+`supabase/migrations/README.md` et `security-audit/APPLIED_MANUAL_DATABASE_CHANGES.md`).
 
 ## Test APRÈS (doit démontrer le confinement)
 Exécuter `tests/00_emergency_hotfix_proof.sql` (rollback) → attendu :
