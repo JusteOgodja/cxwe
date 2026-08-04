@@ -98,6 +98,56 @@ Préférer la **restauration du backup** pris à l'étape 0. Le retour arrière 
 recréer la policy vulnérable. Si l'on veut simplement revenir à l'ancienne fonction email
 non durcie, la recréer — mais **conserver** les policies admin-only sur `site_settings`.
 
+## Journal d'application en production (2026-08-04)
+
+- **Date d'application (UTC)** : 2026-08-04. *(Le hotfix étant appliqué hors historique de
+  migration, l'horodatage précis n'est pas journalisé côté `schema_migrations` ; l'application
+  et la validation ont eu lieu le même jour, session du 2026-08-04 UTC.)*
+- **SHA-256 du SQL appliqué** : `cc6a256cc96ebe5cef087a1a9b8751711536f62d8a58e4104d5e6121576116e1`
+  (identique à l'empreinte du fichier Git — envoyé **verbatim**).
+- **Méthode** : `execute_sql` (Supabase MCP), **fichier envoyé verbatim** (`BEGIN;`…`COMMIT;`
+  conservés — transaction pilotée par le fichier, une seule couche transactionnelle).
+- **Hors historique de migration** : appliqué **hors** `supabase_migrations.schema_migrations`
+  (aucune insertion manuelle dans cette table). Divergence assumée ; réconciliation ultérieure
+  par une procédure séparée — **sans** `db push` / `migration repair` / `db reset`.
+- **Précondition anti-verrouillage** : **réussie** (non déclenchée) → autorité admin valide
+  présente au moment de l'application.
+- **Transaction** : arrivée à **`COMMIT`** sans erreur (aucune persistance partielle).
+
+### État final vérifié (post-COMMIT, valeurs non sensibles)
+
+- **3 policies finales** sur `public.site_settings` :
+  `site_settings_admin_select` (SELECT), `site_settings_admin_insert` (INSERT),
+  `site_settings_admin_update` (UPDATE) — toutes `TO authenticated`,
+  `USING`/`WITH CHECK ((SELECT public.is_admin()))`.
+- **Grants finaux** : `authenticated` = `SELECT, INSERT, UPDATE` (aucun DELETE/TRUNCATE/
+  REFERENCES/TRIGGER) ; `anon` = **aucun** ; `PUBLIC` = aucun.
+- **`public.is_admin()`** : `SECURITY DEFINER`, `search_path = ''`.
+- **Ancien exploit bloqué** : un utilisateur authentifié ordinaire tentant de modifier
+  `admin_emails` → `attacker_upd_rows = 0`, `attacker_is_admin = f` (rejeu en rollback).
+
+### Validation par vraie session administrateur (navigateur, production)
+
+- **Session Supabase réelle** validée (persistée dans le navigateur, non simulée en SQL).
+- **Contrôle admin côté serveur** : RPC `public.is_admin()` → HTTP 200 / `true`.
+- **Interface admin** accessible.
+- **Paramètre fonctionnel** (`site_tagline`) : **lecture, modification, persistance après
+  rechargement, puis restauration** de la valeur initiale — toutes validées via la RLS admin.
+- **Aucune donnée de test persistante** : le paramètre de test a été restauré à sa valeur
+  initiale (vide) et vérifié après rechargement complet.
+- **Déconnexion** : session supprimée ; accès direct aux routes admin **refusé** (redirection
+  vers la connexion) ; Navbar sans accès admin ; aucune donnée admin résiduelle.
+- **Aucune erreur** console ni réseau (aucun 401/403/500, aucune erreur RLS/RPC) sur le parcours.
+
+### Limite temporaire connue
+
+- Le champ **« Admin Emails »** reste **visible et éditable** dans la page admin Settings de
+  production (frontend `main` non encore mis à jour). Ce n'est **plus** une faille d'escalade
+  (la RLS bloque tout non-admin — `attacker_upd_rows = 0`), mais un admin déjà authentifié
+  pourrait encore éditer `admin_emails` via ce champ. Retrait prévu par la PR frontend
+  `security/remove-legacy-admin-email-ui`, puis gel SQL par
+  `security/freeze-legacy-admin-authority`.
+
 ## Limites temporaires
 - L'autorité reste fondée sur l'email (durci) jusqu'au modèle UUID (`app_private`) — voir la
   branche de travail `security/admin-authority-hardening` (hors périmètre de ce hotfix).
