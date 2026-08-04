@@ -74,14 +74,29 @@ doit désormais affecter **0 ligne**.
 Connecté en tant qu'admin réel : ouvrir la page admin Settings, modifier un paramètre
 fonctionnel (ex. `site_name`) et **enregistrer** → doit réussir.
 
-## Rollback
-Recréer l'ancienne policy (⚠️ **réintroduit la faille**, urgence seulement) :
-```sql
-CREATE POLICY site_settings_authenticated_all ON public.site_settings
-  FOR ALL USING (auth.role()='authenticated') WITH CHECK (auth.role()='authenticated');
-```
-(et éventuellement restaurer l'ancienne `public.is_admin()` ILIKE). Préférer la restauration
-du backup.
+## Récupération sûre (en cas de perte d'accès administrateur)
+⚠️ **Ne JAMAIS recréer `site_settings_authenticated_all`** ni rendre `site_settings`
+modifiable par tout utilisateur authentifié. La récupération ne réintroduit **jamais** la
+faille. Procédure (avec un rôle opérateur privilégié — service_role / SQL owner, qui
+contourne la RLS) :
+1. **Intervenir avec un rôle privilégié** (service_role) — jamais via un compte client.
+2. **Vérifier / restaurer la ligne `admin_emails`** : s'assurer qu'il existe **exactement une**
+   ligne `key='admin_emails'` contenant l'email de l'administrateur légitime.
+3. **Vérifier la correspondance Auth** : cet email doit correspondre (exact, insensible à la
+   casse) à un `auth.users.email` existant.
+4. **Conserver les policies admin-only** (`site_settings_admin_select/insert/update`) — ne pas
+   les supprimer.
+5. **Vérifier `public.is_admin()`** : `SECURITY DEFINER`, `search_path=''`, renvoie `true` pour
+   l'administrateur.
+6. **Ne jamais** restaurer une policy permissive.
+
+Un script de récupération local à **placeholders** (non versionné, sans email/UUID réel) est
+fourni hors dépôt : `<scratchpad>/recovery_admin_access.sql`.
+
+## Rollback de la migration (si nécessaire, hors perte d'accès)
+Préférer la **restauration du backup** pris à l'étape 0. Le retour arrière ne doit PAS
+recréer la policy vulnérable. Si l'on veut simplement revenir à l'ancienne fonction email
+non durcie, la recréer — mais **conserver** les policies admin-only sur `site_settings`.
 
 ## Limites temporaires
 - L'autorité reste fondée sur l'email (durci) jusqu'au modèle UUID (`app_private`) — voir la

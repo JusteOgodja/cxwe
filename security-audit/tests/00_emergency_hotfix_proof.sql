@@ -87,3 +87,56 @@ BEGIN
 
   RAISE EXCEPTION 'HOTFIX_PROOF => %', r;
 END $$;
+
+-- =============================================================================
+-- PARTIE 2 — Précondition anti-verrouillage (tables isolées, rollback).
+-- Résultat attendu (observé) :
+--   s1_absent=ABORTED; s2_empty=ABORTED; s3_dup=ABORTED; s4_nomatch=ABORTED;
+--   s5_match=ACCEPTED; s6_case=ACCEPTED; s7_underscore=ABORTED
+-- (mid-migration : garanti par BEGIN/COMMIT + RAISE de la précondition ->
+--  aucun changement partiel ne persiste si la précondition échoue.)
+-- =============================================================================
+DO $$
+DECLARE r text := '';
+BEGIN
+  CREATE TEMP TABLE _s(key text, value text);
+  CREATE TEMP TABLE _u(email text);
+  INSERT INTO _u VALUES ('admin@test'), ('axb@test');
+  -- s1 absent
+  DELETE FROM _s;
+  BEGIN
+    IF (SELECT count(*) FROM _s WHERE key='admin_emails') <> 1 THEN RAISE EXCEPTION 'a'; END IF;
+    IF (SELECT count(*) FROM _s s CROSS JOIN LATERAL regexp_split_to_table(coalesce(s.value,''),',') e JOIN _u u ON lower(btrim(u.email))=lower(btrim(e)) WHERE s.key='admin_emails' AND btrim(e)<>'') < 1 THEN RAISE EXCEPTION 'a'; END IF;
+    r:=r||'s1_absent=ACCEPTED; '; EXCEPTION WHEN OTHERS THEN r:=r||'s1_absent=ABORTED; '; END;
+  -- s2 vide
+  DELETE FROM _s; INSERT INTO _s VALUES ('admin_emails','');
+  BEGIN
+    IF (SELECT count(*) FROM _s WHERE key='admin_emails') <> 1 THEN RAISE EXCEPTION 'a'; END IF;
+    IF (SELECT count(*) FROM _s s CROSS JOIN LATERAL regexp_split_to_table(coalesce(s.value,''),',') e JOIN _u u ON lower(btrim(u.email))=lower(btrim(e)) WHERE s.key='admin_emails' AND btrim(e)<>'') < 1 THEN RAISE EXCEPTION 'a'; END IF;
+    r:=r||'s2_empty=ACCEPTED; '; EXCEPTION WHEN OTHERS THEN r:=r||'s2_empty=ABORTED; '; END;
+  -- s3 dupliqué
+  DELETE FROM _s; INSERT INTO _s VALUES ('admin_emails','admin@test'),('admin_emails','x@test');
+  BEGIN
+    IF (SELECT count(*) FROM _s WHERE key='admin_emails') <> 1 THEN RAISE EXCEPTION 'a'; END IF;
+    r:=r||'s3_dup=ACCEPTED; '; EXCEPTION WHEN OTHERS THEN r:=r||'s3_dup=ABORTED; '; END;
+  -- s4 aucun compte
+  DELETE FROM _s; INSERT INTO _s VALUES ('admin_emails','ghost@test');
+  BEGIN
+    IF (SELECT count(*) FROM _s s CROSS JOIN LATERAL regexp_split_to_table(coalesce(s.value,''),',') e JOIN _u u ON lower(btrim(u.email))=lower(btrim(e)) WHERE s.key='admin_emails' AND btrim(e)<>'') < 1 THEN RAISE EXCEPTION 'a'; END IF;
+    r:=r||'s4_nomatch=ACCEPTED; '; EXCEPTION WHEN OTHERS THEN r:=r||'s4_nomatch=ABORTED; '; END;
+  -- s5 correspond
+  DELETE FROM _s; INSERT INTO _s VALUES ('admin_emails','admin@test');
+  BEGIN
+    IF (SELECT count(*) FROM _s s CROSS JOIN LATERAL regexp_split_to_table(coalesce(s.value,''),',') e JOIN _u u ON lower(btrim(u.email))=lower(btrim(e)) WHERE s.key='admin_emails' AND btrim(e)<>'') < 1 THEN RAISE EXCEPTION 'a'; END IF;
+    r:=r||'s5_match=ACCEPTED; '; EXCEPTION WHEN OTHERS THEN r:=r||'s5_match=ABORTED; '; END;
+  -- s6 casse / s7 underscore
+  DELETE FROM _s; INSERT INTO _s VALUES ('admin_emails','ADMIN@TEST');
+  BEGIN
+    IF (SELECT count(*) FROM _s s CROSS JOIN LATERAL regexp_split_to_table(coalesce(s.value,''),',') e JOIN _u u ON lower(btrim(u.email))=lower(btrim(e)) WHERE s.key='admin_emails' AND btrim(e)<>'') < 1 THEN RAISE EXCEPTION 'a'; END IF;
+    r:=r||'s6_case=ACCEPTED; '; EXCEPTION WHEN OTHERS THEN r:=r||'s6_case=ABORTED; '; END;
+  DELETE FROM _s; INSERT INTO _s VALUES ('admin_emails','a_b@test');
+  BEGIN
+    IF (SELECT count(*) FROM _s s CROSS JOIN LATERAL regexp_split_to_table(coalesce(s.value,''),',') e JOIN _u u ON lower(btrim(u.email))=lower(btrim(e)) WHERE s.key='admin_emails' AND btrim(e)<>'') < 1 THEN RAISE EXCEPTION 'a'; END IF;
+    r:=r||'s7_underscore=ACCEPTED; '; EXCEPTION WHEN OTHERS THEN r:=r||'s7_underscore=ABORTED; '; END;
+  RAISE EXCEPTION 'PRECHECK_PROOF => %', r;
+END $$;

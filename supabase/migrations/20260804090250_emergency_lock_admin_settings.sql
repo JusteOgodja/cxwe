@@ -18,6 +18,44 @@
 -- administrateur(s) légitime(s) (voir security-audit/EMERGENCY_HOTFIX.md).
 -- =============================================================================
 
+BEGIN;
+
+-- 0) PRÉCONDITION ANTI-VERROUILLAGE — interrompt TOUTE la migration (rollback)
+--    si l'autorité admin actuelle n'est pas exploitable, pour ne jamais se
+--    retrouver sans administrateur après le verrouillage.
+--    Vérifie : (a) exactement UNE ligne admin_emails (une ligne dupliquée ou
+--    absente => abort) ; (b) au moins une adresse non vide après btrim ;
+--    (c) au moins une adresse (comparaison exacte, insensible à la casse,
+--    sans joker) correspond à l'email d'un utilisateur auth.users existant.
+--    Aucun email/UUID/valeur n'est journalisé : erreur générique uniquement.
+DO $precheck$
+DECLARE
+  n_rows  integer;
+  n_valid integer;
+BEGIN
+  SELECT count(*) INTO n_rows
+  FROM public.site_settings
+  WHERE key = 'admin_emails';
+
+  IF n_rows <> 1 THEN
+    RAISE EXCEPTION 'Emergency admin lock aborted: no valid administrator authority found';
+  END IF;
+
+  SELECT count(*) INTO n_valid
+  FROM public.site_settings AS s
+  CROSS JOIN LATERAL pg_catalog.regexp_split_to_table(COALESCE(s.value, ''), ',') AS configured_email
+  JOIN auth.users AS u
+    ON pg_catalog.lower(pg_catalog.btrim(u.email))
+     = pg_catalog.lower(pg_catalog.btrim(configured_email))
+  WHERE s.key = 'admin_emails'
+    AND pg_catalog.btrim(configured_email) <> '';
+
+  IF n_valid < 1 THEN
+    RAISE EXCEPTION 'Emergency admin lock aborted: no valid administrator authority found';
+  END IF;
+END
+$precheck$;
+
 -- 1) Fonction d'autorité durcie. Comparaison d'email EXACTE (pas d'ILIKE / pas
 --    de jokers), après découpage de la liste et normalisation (trim + lower).
 CREATE OR REPLACE FUNCTION public.is_admin()
@@ -72,3 +110,5 @@ CREATE POLICY site_settings_admin_insert ON public.site_settings
   FOR INSERT TO authenticated WITH CHECK ((SELECT public.is_admin()));
 CREATE POLICY site_settings_admin_update ON public.site_settings
   FOR UPDATE TO authenticated USING ((SELECT public.is_admin())) WITH CHECK ((SELECT public.is_admin()));
+
+COMMIT;
