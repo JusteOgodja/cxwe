@@ -31,6 +31,8 @@ interdit) → elle est classée **UNKNOWN** et **reportée au staging** (`supaba
 3. Éventuels **résidus de policies** non‑admin sur media/pricing/lots/images/collaboration
    (hérités) — décider s'ils font partie de l'état cible.
 
-**Bilan.** Parité **prouvée** sur tout le **cœur de sécurité** (tables, RLS, is_admin, policies
-site_settings, grants). Parité **structurelle applicative** = à certifier en staging (UNKNOWN ici,
-par limite d'outillage, non par divergence constatée).
+**Bilan.** **Aucune différence détectée sur les éléments de sécurité explicitement modélisés et
+testés ; parité avec la production non encore prouvée.** Parité **structurelle applicative** = à
+certifier en staging (UNKNOWN ici, par limite d'outillage). Cette première étape est une **baseline
+SQL validée sur PostgreSQL 16 avec harnais Supabase simulé — la validation sur la pile Supabase
+complète reste requise** (voir FULL_SUPABASE_LOCAL_REHEARSAL).

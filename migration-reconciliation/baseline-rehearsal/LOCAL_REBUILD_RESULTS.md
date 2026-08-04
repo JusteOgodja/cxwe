@@ -1,5 +1,8 @@
 # LOCAL_REBUILD_RESULTS — reconstruction locale (base vide)
 
+> **Statut de validation** : **Baseline SQL validée sur PostgreSQL 16 avec harnais Supabase simulé.
+> Validation sur la pile Supabase complète encore requise** (voir FULL_SUPABASE_LOCAL_REHEARSAL).
+
 ## Environnement
 - **Docker** `postgres:16-alpine` (conteneur jetable `rehearsal-db`), base `rehearsal` **vide**.
 - **Aucun lien à la production.** Aucune donnée de production. `supabase` CLI absent → contexte
