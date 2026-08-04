@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Menu, X, Handshake, LogIn, LogOut, LayoutDashboard } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
+import { supabase } from '../lib/supabase';
 import { useTranslation } from 'react-i18next';
 
 const LANGS = [
@@ -15,14 +16,23 @@ export default function Navbar() {
   const [scrolled, setScrolled] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
-  const { session, user, signOut } = useAuth();
+  const { session, signOut } = useAuth();
   const { t, i18n } = useTranslation();
 
-  const ADMIN_EMAILS = (import.meta.env.VITE_ADMIN_EMAILS ?? '')
-    .split(',')
-    .map((e: string) => e.trim().toLowerCase())
-    .filter(Boolean);
-  const isAdmin = !!user?.email && ADMIN_EMAILS.includes(user.email.toLowerCase());
+  // Statut admin déterminé côté serveur (public.is_admin()), jamais via une liste
+  // d'emails côté navigateur. `false` par défaut : le menu admin n'apparaît qu'une
+  // fois le contrôle serveur terminé — aucun clignotement pour un utilisateur ordinaire.
+  const [isAdmin, setIsAdmin] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    if (!session) { setIsAdmin(false); return; }
+    // Session présente : la RPC protégée peut être appelée.
+    supabase.rpc('is_admin').then(({ data, error }) => {
+      if (!cancelled) setIsAdmin(!error && data === true);
+    });
+    return () => { cancelled = true; };
+  }, [session]);
 
   const handleSignOut = async () => {
     await signOut();
