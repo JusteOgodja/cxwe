@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Save, RefreshCw, CheckCircle, AlertCircle, Globe, Mail, Phone, MessageSquare, Bell, Info, Image, DollarSign, Linkedin, Instagram, Facebook, Building2, FileText, ShieldCheck } from 'lucide-react';
+import { Save, RefreshCw, CheckCircle, AlertCircle, Globe, Mail, Phone, MessageSquare, Bell, Info, Image, DollarSign, Linkedin, Instagram, Facebook, Building2, FileText } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { supabase } from '../../lib/supabase';
 
@@ -33,9 +33,14 @@ const DEFAULTS: Setting[] = [
   { key: 'legal_siret', value: '', description: "Numéro RC / SIRET / IF" },
   // Maintenance
   { key: 'maintenance_mode', value: 'false', description: "Afficher une page de maintenance aux visiteurs" },
-  // Accès admin
-  { key: 'admin_emails', value: '', description: "Adresses email des administrateurs, séparées par une virgule (ex: admin@example.com,autre@example.com)" },
 ];
+
+// L'autorité admin (clé historique `admin_emails`) N'EST PLUS gérée par cette page :
+// l'accès est déterminé côté serveur (public.is_admin()). Cette clé est filtrée
+// explicitement au chargement ET avant tout enregistrement (voir plus bas), afin
+// qu'une éventuelle régression réintroduisant la ligne dans l'état React ne puisse
+// jamais l'inclure dans le payload envoyé à Supabase.
+const LEGACY_ADMIN_AUTHORITY_KEY = 'admin_emails';
 
 const SECTION_ICONS: Record<string, typeof Globe> = {
   contact_email: Mail,
@@ -55,7 +60,6 @@ const SECTION_ICONS: Record<string, typeof Globe> = {
   legal_address: Building2,
   legal_siret: FileText,
   maintenance_mode: Info,
-  admin_emails: ShieldCheck,
 };
 
 const SECTIONS = [
@@ -65,7 +69,6 @@ const SECTIONS = [
   { title: 'Alertes & notifications', keys: ['alert_new_quote', 'alert_new_buyer'] },
   { title: 'Informations légales', keys: ['legal_company_name', 'legal_address', 'legal_siret'] },
   { title: 'Mode maintenance', keys: ['maintenance_mode'] },
-  { title: 'Accès & Sécurité', keys: ['admin_emails'] },
 ];
 
 export default function Settings() {
@@ -80,11 +83,16 @@ export default function Settings() {
   useEffect(() => {
     (async () => {
       const { data } = await supabase.from('site_settings').select('key, value');
+      const rows = (data ?? []) as Setting[];
       const map: Record<string, string> = {};
       // Start with defaults
       DEFAULTS.forEach(d => { map[d.key] = d.value; });
-      // Override with DB values
-      (data || []).forEach((row: any) => { map[row.key] = row.value; });
+      // Override with DB values — FILTRAGE NIVEAU 1 : ignorer explicitement la clé
+      // d'autorité historique si Supabase la renvoie (elle ne doit jamais entrer
+      // dans l'état du formulaire).
+      rows
+        .filter(row => row.key !== LEGACY_ADMIN_AUTHORITY_KEY)
+        .forEach(row => { map[row.key] = row.value; });
       setSettings(map);
       setLoading(false);
     })().catch(() => {
@@ -100,7 +108,12 @@ export default function Settings() {
 
   const handleSave = async () => {
     setSaving(true);
-    const rows = Object.entries(settings).map(([key, value]) => ({ key, value }));
+    // FILTRAGE NIVEAU 2 : ne jamais envoyer la clé d'autorité historique, même si
+    // une régression l'avait réintroduite dans l'état React. La ligne admin_emails
+    // est gelée côté base (RLS) ; le formulaire ne doit pas tenter de l'écrire.
+    const rows = Object.entries(settings)
+      .filter(([key]) => key !== LEGACY_ADMIN_AUTHORITY_KEY)
+      .map(([key, value]) => ({ key, value }));
     await supabase.from('site_settings').upsert(rows, { onConflict: 'key' });
     setSaving(false);
     setSaved(true);
@@ -136,7 +149,7 @@ export default function Settings() {
           ) : (
             <input
               id={key}
-              type={key !== 'admin_emails' && key.includes('email') ? 'email' : key.includes('phone') || key.includes('whatsapp') ? 'tel' : 'text'}
+              type={key.includes('email') ? 'email' : key.includes('phone') || key.includes('whatsapp') ? 'tel' : 'text'}
               value={value}
               onChange={e => handleChange(key, e.target.value)}
               placeholder={key === 'contact_email' ? 'contact@example.com' : key === 'contact_whatsapp' ? '+212 6 00 00 00 00' : ''}
@@ -207,7 +220,7 @@ export default function Settings() {
           ))}
 
           <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 text-xs text-amber-800">
-            <strong>Note :</strong> Cette page nécessite la table <code className="bg-amber-100 px-1 rounded">site_settings</code> dans Supabase (colonnes : <code className="bg-amber-100 px-1 rounded">key text PRIMARY KEY, value text</code>). Le champ <em>admin_emails</em> contrôle l'accès à l'interface d'administration.
+            <strong>Note :</strong> Cette page nécessite la table <code className="bg-amber-100 px-1 rounded">site_settings</code> dans Supabase (colonnes : <code className="bg-amber-100 px-1 rounded">key text PRIMARY KEY, value text</code>). L'accès administrateur est déterminé côté serveur ; cette page ne gère pas l'autorité d'administration.
           </div>
         </div>
       )}

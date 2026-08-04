@@ -19,9 +19,6 @@ const LANGS = [
   { code: 'ar', label: 'AR' },
 ];
 
-const ADMIN_EMAILS = (import.meta.env.VITE_ADMIN_EMAILS ?? '')
-  .split(',').map((e: string) => e.trim().toLowerCase()).filter(Boolean);
-
 export default function AdminLayout({ isLoggedIn, onLogout }: Props) {
   const { t, i18n } = useTranslation();
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -45,10 +42,16 @@ export default function AdminLayout({ isLoggedIn, onLogout }: Props) {
   ];
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data }) => {
-      const email = (data.session?.user?.email ?? '').toLowerCase();
-      setIsAdmin(ADMIN_EMAILS.length > 0 && ADMIN_EMAILS.includes(email));
-    });
+    let cancelled = false;
+    (async () => {
+      const { data: sess } = await supabase.auth.getSession();
+      // Pas de session -> pas admin. Ne pas appeler la RPC protégée en anonyme.
+      if (!sess.session) { if (!cancelled) setIsAdmin(false); return; }
+      // Autorité déterminée côté serveur (public.is_admin()), jamais côté client.
+      const { data, error } = await supabase.rpc('is_admin');
+      if (!cancelled) setIsAdmin(!error && data === true);
+    })();
+    return () => { cancelled = true; };
   }, [isLoggedIn]);
 
   useEffect(() => {

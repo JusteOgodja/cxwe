@@ -16,25 +16,23 @@ export default function AdminLogin({ onLogin, isLoggedIn }: Props) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  const ADMIN_EMAILS = (import.meta.env.VITE_ADMIN_EMAILS ?? '')
-    .split(',')
-    .map((e: string) => e.trim().toLowerCase())
-    .filter(Boolean);
-
   if (isLoggedIn) return <Navigate to="/admin/dashboard" replace />;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
     setLoading(true);
-    const { data, error: err } = await supabase.auth.signInWithPassword({ email, password });
+    const { error: err } = await supabase.auth.signInWithPassword({ email, password });
     if (err) {
       setError(t('admin.login.errorInvalid'));
       setLoading(false);
       return;
     }
-    const userEmail = (data.user?.email ?? '').toLowerCase();
-    if (ADMIN_EMAILS.length === 0 || !ADMIN_EMAILS.includes(userEmail)) {
+    // Autorité admin déterminée côté serveur (public.is_admin()), jamais via une
+    // liste d'emails côté navigateur. La session vient d'être créée : la RPC
+    // protégée est appelable. Si non-admin, on déconnecte immédiatement.
+    const { data: isAdmin, error: rpcErr } = await supabase.rpc('is_admin');
+    if (rpcErr || isAdmin !== true) {
       await supabase.auth.signOut();
       setError(t('admin.login.errorForbidden'));
       setLoading(false);
