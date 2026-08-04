@@ -1,6 +1,6 @@
 # Gel de l'autorité historique `site_settings.admin_emails`
 
-Migration : `supabase/migrations/20260804151606_freeze_legacy_admin_authority.sql`
+Migration (appliquée manuellement, **archivée** — ne pas rejouer) : `security-audit/applied-manual-sql/20260804151606_freeze_legacy_admin_authority.sql`
 Test : `security-audit/tests/01_freeze_legacy_admin_authority_proof.sql`
 
 ## Objectif

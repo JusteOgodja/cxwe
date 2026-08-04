@@ -1,5 +1,5 @@
 -- =============================================================================
--- PREUVE DU HOTFIX — migration 20260804090250_emergency_lock_admin_settings.sql
+-- PREUVE DU HOTFIX — script security-audit/applied-manual-sql/20260804090250_emergency_lock_admin_settings.sql
 --
 -- Table isolée public._hf_settings + fonction _hf_is_admin() reproduisant
 -- EXACTEMENT la logique du hotfix (comparaison d'email exacte via
