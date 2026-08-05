@@ -15,7 +15,7 @@ staging_project_is_not_production = UNVERIFIED (aucun projet de staging fourni)
 
 ## Procédure prévue (à exécuter par l'opérateur, hors production)
 1. Provisionner un **nouveau projet Supabase de staging** (aucune donnée réelle).
-2. **Vérifier deux fois** que le `project_ref` lié ≠ production `fknxppuvpdmcfhtfrjcx`.
+2. **Vérifier deux fois** que le `project_ref` lié ≠ production `fk****cx (ref prod masqué)`.
    Afficher le ref **masqué** (ex. `fk****cx`) avant toute commande mutante.
 3. Appliquer **uniquement** la baseline candidate au projet vide. **Ne copier aucune donnée de
    production.** Créer utilisateurs + données synthétiques.

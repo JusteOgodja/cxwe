@@ -9,7 +9,7 @@ action sur `main` ou sur la base de production. **Aucune donnée de production**
 2. **OU projet Supabase de staging séparé** (nouveau projet dédié, aucune donnée réelle).
 
 > Les commandes ci‑dessous s'exécutent **uniquement** dans cet environnement de répétition, jamais
-> contre le projet de production `fknxppuvpdmcfhtfrjcx`.
+> contre le projet de production `fk****cx (ref prod masqué)`.
 
 ## Étape 0 — Capturer la baseline (Stratégie B) ou l'historique (Stratégie A)
 - **B** : dans un clone hors dépôt principal, `supabase db pull` **connecté au projet de
