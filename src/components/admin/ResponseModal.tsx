@@ -4,7 +4,6 @@ import {
   CheckCircle, Loader2, Copy, Check,
 } from 'lucide-react';
 import type { QuoteRequest } from '../../types';
-import { generateProforma } from '../../lib/generateProforma';
 import { useTranslation } from 'react-i18next';
 import type { TFunction } from 'i18next';
 
@@ -71,8 +70,12 @@ export default function ResponseModal({ quote, onClose }: Props) {
   const [copied, setCopied] = useState(false);
 
   const handleGenerate = async () => {
+    if (generating) return; // évite un double export lors de clics répétés
     setGenerating(true);
     try {
+      // Import dynamique : la lib docx (lourde) n'est chargée qu'au déclenchement
+      // réel de l'export, jamais dans le bundle initial.
+      const { generateProforma } = await import('../../lib/generateProforma');
       await generateProforma(quote);
     } catch (e) {
       console.error('Erreur génération proforma:', e);

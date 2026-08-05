@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, lazy, Suspense } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { supabase } from './lib/supabase';
@@ -7,33 +7,46 @@ import Navbar from './components/Navbar';
 import Footer from './components/Footer';
 import ProtectedRoute from './components/ProtectedRoute';
 import Home from './pages/Home';
-import Catalog from './pages/Catalog';
-import CategoryPage from './pages/CategoryPage';
-import QuoteRequest from './pages/QuoteRequest';
-import ProductDetail from './pages/ProductDetail';
-import Login from './pages/Login';
-import SignUp from './pages/SignUp';
-import AdminLogin from './pages/admin/AdminLogin';
-import AdminLayout from './pages/admin/AdminLayout';
-import Dashboard from './pages/admin/Dashboard';
-import Categories from './pages/admin/Categories';
-import Products from './pages/admin/Products';
-import Brands from './pages/admin/Brands';
-import Suppliers from './pages/admin/Suppliers';
-import Quotes from './pages/admin/Quotes';
-import Partners from './pages/admin/Partners';
-import Buyers from './pages/admin/Buyers';
-import DataQuality from './pages/admin/DataQuality';
-import Sources from './pages/admin/Sources';
-import Analytics from './pages/admin/Analytics';
-import Settings from './pages/admin/Settings';
-import Partner from './pages/Partner';
-import Trust from './pages/Trust';
-import BrandPage from './pages/BrandPage';
-import SampleRequest from './pages/SampleRequest';
-import HowItWorks from './pages/HowItWorks';
-import NotFound from './pages/NotFound';
 import WhatsAppButton from './components/WhatsAppButton';
+
+// Routes non nécessaires au premier rendu (accueil) -> chargées à la demande.
+// Le bundle critique ne garde que App/Navbar/Footer/routing/accueil.
+const Catalog = lazy(() => import('./pages/Catalog'));
+const CategoryPage = lazy(() => import('./pages/CategoryPage'));
+const QuoteRequest = lazy(() => import('./pages/QuoteRequest'));
+const ProductDetail = lazy(() => import('./pages/ProductDetail'));
+const Login = lazy(() => import('./pages/Login'));
+const SignUp = lazy(() => import('./pages/SignUp'));
+const AdminLogin = lazy(() => import('./pages/admin/AdminLogin'));
+const AdminLayout = lazy(() => import('./pages/admin/AdminLayout'));
+const Dashboard = lazy(() => import('./pages/admin/Dashboard'));
+const Categories = lazy(() => import('./pages/admin/Categories'));
+const Products = lazy(() => import('./pages/admin/Products'));
+const Brands = lazy(() => import('./pages/admin/Brands'));
+const Suppliers = lazy(() => import('./pages/admin/Suppliers'));
+const Quotes = lazy(() => import('./pages/admin/Quotes'));
+const Partners = lazy(() => import('./pages/admin/Partners'));
+const Buyers = lazy(() => import('./pages/admin/Buyers'));
+const DataQuality = lazy(() => import('./pages/admin/DataQuality'));
+const Sources = lazy(() => import('./pages/admin/Sources'));
+const Analytics = lazy(() => import('./pages/admin/Analytics'));
+const Settings = lazy(() => import('./pages/admin/Settings'));
+const Partner = lazy(() => import('./pages/Partner'));
+const Trust = lazy(() => import('./pages/Trust'));
+const BrandPage = lazy(() => import('./pages/BrandPage'));
+const SampleRequest = lazy(() => import('./pages/SampleRequest'));
+const HowItWorks = lazy(() => import('./pages/HowItWorks'));
+const NotFound = lazy(() => import('./pages/NotFound'));
+
+// Fallback sobre, centré, cohérent avec le spinner d'authentification (pas
+// d'écran blanc, pas de changement de layout majeur).
+function PageFallback() {
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-stone-50">
+      <div className="w-8 h-8 border-2 border-amber-500/30 border-t-amber-500 rounded-full animate-spin" />
+    </div>
+  );
+}
 
 function PublicLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -84,6 +97,7 @@ export default function App() {
     <BrowserRouter>
       <AuthProvider>
       <RTLSync />
+      <Suspense fallback={<PageFallback />}>
       <Routes>
         <Route path="/" element={<PublicLayout><Home /></PublicLayout>} />
         <Route path="/catalog" element={<PublicLayout><Catalog /></PublicLayout>} />
@@ -138,6 +152,7 @@ export default function App() {
 
         <Route path="*" element={<PublicLayout><NotFound /></PublicLayout>} />
       </Routes>
+      </Suspense>
       </AuthProvider>
     </BrowserRouter>
   );
