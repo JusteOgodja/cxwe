@@ -36,6 +36,19 @@ EXECUTE is_admin : authenticated=t  anon=f
 - Précondition : vérifie **exactement** les 3 policies attendues (`Anyone can view active brands`,
   `Authenticated users can manage brands`, `brands_admin_write`) — annulation intégrale si l'état diffère.
 
+## Journal d'application en production (2026-08-05)
+- **Appliquée** via `execute_sql` (fichier verbatim, hors `supabase_migrations`), transaction arrivée
+  à **`COMMIT`** ; **précondition passée** (l'ensemble exact des 3 policies attendues correspondait).
+- **Policies finales** (5) : `Anyone can view active brands` (SELECT PUBLIC, conservée) +
+  `brands_admin_select/insert/update/delete` (authenticated, `is_admin()`). Supprimées :
+  `brands_admin_write`, `Authenticated users can manage brands`.
+- **Contrôles post-déploiement (anon réel, prod)** : `GET brands?is_active=eq.true` = **200** (was
+  401) ; count marques actives = **200 / 506** ; **INSERT anon = 401 (bloqué)** ; accueil = 4 requêtes,
+  **0 requête échouée**, stat marques fonctionnel.
+- **Non-régression** : `anon_execute_is_admin=false` (inchangé) ; gel `admin_emails` actif ;
+  `site_settings_authenticated_all` absente ; categories/products inchangés ; ancien exploit toujours
+  bloqué.
+
 ## B. Correction (par policies — pas de grant is_admin à anon)
 
 Fichier : `20260805191820_fix_brands_policies.sql` (transactionnel + préconditions).
