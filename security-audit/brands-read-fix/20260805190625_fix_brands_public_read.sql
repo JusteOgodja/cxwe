@@ -1,0 +1,36 @@
+-- =============================================================================
+-- CORRECTION DU 401 ANONYME SUR public.brands (lecture publique des marques).
+--
+-- CAUSE RÉELLE (prouvée par le corps d'erreur PostgREST) :
+--   {"code":"42501","message":"permission denied for function is_admin"}
+--   La policy `brands_admin_write` est `FOR ALL` (roles {public}) avec
+--   USING/WITH CHECK = is_admin(). Une policy FOR ALL s'applique AUSSI au SELECT.
+--   Pour un SELECT anonyme, PostgreSQL évalue donc is_admin(), mais le rôle `anon`
+--   n'a PAS le privilège EXECUTE sur public.is_admin() (révoqué par le hotfix de
+--   sécurité) -> erreur 42501 -> HTTP 401.
+--   (categories / products n'ont pas de policy FOR ALL référençant is_admin() —
+--    leurs policies admin sont par commande INSERT/UPDATE/DELETE — d'où leur 200.)
+--
+--   ⚠️ Le grant SELECT de anon sur brands est DÉJÀ présent : ce n'est PAS la cause.
+--   L'hypothèse initiale « GRANT SELECT ON brands TO anon » serait un no-op.
+--
+-- CORRECTION MINIMALE ET SÛRE : autoriser `anon` à EXÉCUTER is_admin().
+--   • GRANT n'autorise que l'EXÉCUTION de la fonction ; la fonction is_admin()
+--     est STABLE SECURITY DEFINER et renvoie FALSE pour un anonyme
+--     (elle vérifie d'abord `auth.uid() IS NOT NULL`) -> AUCUN privilège gagné,
+--     AUCUNE ligne supplémentaire exposée.
+--   • La policy publique « Anyone can view active brands » (is_active = true)
+--     fournit alors la lecture des marques ACTIVES ; les marques inactives
+--     restent invisibles (is_admin()=false).
+--   • anon reste SANS écriture : aucune policy d'écriture ne s'applique à anon
+--     ( "Authenticated users can manage brands" est TO authenticated ;
+--       "brands_admin_write" évalue is_admin()=false pour anon ).
+--
+-- Ce script NE modifie AUCUNE policy, AUCUNE fonction, AUCUNE donnée, AUCUNE
+-- colonne, et AUCUN autre grant. Idempotent (GRANT est ré-appliquable).
+--
+-- Application prévue : via `execute_sql` (comme le hotfix / le gel), hors
+-- historique supabase_migrations, PUIS archivage. NE PAS lancer `db push`.
+-- =============================================================================
+
+GRANT EXECUTE ON FUNCTION public.is_admin() TO anon;
