@@ -45,3 +45,12 @@ supabase/enrichment/
 
 # Sauvegardes de suppression
 supabase/deleted_backup_*.json
+
+# Audit de performance — rapports Lighthouse bruts (volumineux, archivés hors dépôt).
+# On ne versionne que les .md de synthèse et les scripts de repro.
+performance-audit/lighthouse/before/
+performance-audit/lighthouse/after-local/
+performance-audit/lighthouse/after-preview/
+performance-audit/screenshots/
+performance-audit/lighthouse/_*.json
+performance-audit*.zip
