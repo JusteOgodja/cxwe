@@ -148,6 +148,9 @@ export default function Home() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
   const [platformStats, setPlatformStats] = useState<PlatformStats>({ products: null, brands: null, categories: null });
+  // Images de cartes catégories, récupérées en UNE requête groupée (voir plus bas),
+  // puis passées à chaque CategoryCard en prop -> supprime le N+1 (1 requête/carte).
+  const [categoryImages, setCategoryImages] = useState<Record<string, string[]>>({});
   const { t } = useTranslation();
 
   useSEO({
@@ -156,27 +159,57 @@ export default function Home() {
   });
 
   useEffect(() => {
-    supabase
-      .from('categories')
-      .select('*')
-      .eq('is_active', true)
-      .order('sort_order')
-      .then(({ data }) => {
-        setCategories(data || []);
-        setLoading(false);
-      });
+    let cancelled = false;
 
+    (async () => {
+      // 1) Catégories — colonnes utiles uniquement (pas de SELECT *).
+      const { data: cats } = await supabase
+        .from('categories')
+        .select('id, name, slug, description, image_url, sort_order')
+        .eq('is_active', true)
+        .order('sort_order');
+      if (cancelled) return;
+      const catList = (cats || []) as Category[];
+      setCategories(catList);
+      setLoading(false);
+      // Le nombre de catégories actives vient de la liste déjà chargée (0 requête de plus).
+      setPlatformStats(s => ({ ...s, categories: catList.length }));
+
+      // 2) Images des cartes — UNE seule requête groupée (au lieu d'une par carte).
+      //    Échantillon interfolié par id (UUID) pour couvrir toutes les catégories ;
+      //    on garde jusqu'à 7 images par catégorie dans une map en mémoire.
+      const { data: imgRows } = await supabase
+        .from('products')
+        .select('category_id, image_url')
+        .eq('is_active', true)
+        .not('image_url', 'is', null)
+        .neq('image_url', '')
+        .order('id')
+        .limit(700);
+      if (cancelled) return;
+      const map: Record<string, string[]> = {};
+      for (const row of (imgRows || []) as { category_id: string; image_url: string }[]) {
+        if (!row.image_url) continue;
+        const arr = map[row.category_id] || (map[row.category_id] = []);
+        if (arr.length < 7) arr.push(row.image_url);
+      }
+      setCategoryImages(map);
+    })();
+
+    // 3) Compteurs de stats (products, brands). categories = déjà déduit de la liste.
     Promise.all([
       supabase.from('products').select('*', { count: 'exact', head: true }).eq('is_active', true),
       supabase.from('brands').select('*', { count: 'exact', head: true }).eq('is_active', true),
-      supabase.from('categories').select('*', { count: 'exact', head: true }).eq('is_active', true),
-    ]).then(([products, brands, cats]) => {
-      setPlatformStats({
+    ]).then(([products, brands]) => {
+      if (cancelled) return;
+      setPlatformStats(s => ({
+        ...s,
         products: products.count,
-        brands: brands.count,
-        categories: cats.count,
-      });
-    });
+        brands: brands.count ?? s.brands,
+      }));
+    }).catch(() => { /* brands peut renvoyer 401 pour anon (grant manquant, voir docs) */ });
+
+    return () => { cancelled = true; };
   }, []);
 
   const formatCount = (n: number | null, suffix = '+') =>
@@ -284,7 +317,7 @@ export default function Home() {
         ) : (
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
             {categories.map((cat, i) => (
-              <CategoryCard key={cat.id} category={cat} index={i} />
+              <CategoryCard key={cat.id} category={cat} index={i} images={categoryImages[cat.id] || []} />
             ))}
           </div>
         )}

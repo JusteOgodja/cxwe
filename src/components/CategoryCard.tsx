@@ -2,7 +2,6 @@ import { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowRight } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import { supabase } from '../lib/supabase';
 import { productImage } from '../lib/img';
 import type { Category } from '../types';
 
@@ -20,51 +19,36 @@ const CATEGORY_COLORS = [
 interface Props {
   category: Category;
   index: number;
+  /** Images produits de la catégorie, récupérées en lot par la page parente (0 requête ici). */
+  images?: string[];
 }
 
-export default function CategoryCard({ category, index }: Props) {
+export default function CategoryCard({ category, index, images = [] }: Props) {
   const { t } = useTranslation();
   const gradient = CATEGORY_COLORS[index % CATEGORY_COLORS.length];
 
-  const [images, setImages] = useState<string[]>([]);
   const [slide, setSlide] = useState(0);
   const [animated, setAnimated] = useState(true);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  // Charge les images ET démarre le défilement automatique dès l'affichage (sans survol).
+  // Démarre le défilement automatique dès l'affichage (sans survol). Les images sont
+  // fournies en prop par la page parente -> plus aucune requête Supabase par carte.
   useEffect(() => {
-    let cancelled = false;
     let startTimeout: ReturnType<typeof setTimeout>;
-    (async () => {
-      const { data } = await supabase
-        .from('products')
-        .select('image_url')
-        .eq('category_id', category.id)
-        .eq('is_active', true)
-        .not('image_url', 'is', null)
-        .neq('image_url', '')
-        .limit(7);
-      if (cancelled) return;
-      const imgs = (data || [])
-        .map((p: { image_url: string }) => p.image_url)
-        .filter(Boolean) as string[];
-      setImages(imgs);
-      if (imgs.length >= 2) {
-        // léger décalage par carte pour éviter un défilement parfaitement synchrone
-        startTimeout = setTimeout(() => {
-          timerRef.current = setInterval(() => {
-            setAnimated(true);
-            setSlide(s => s + 1);
-          }, 2800);
-        }, (index % 6) * 250);
-      }
-    })();
+    if (images.length >= 2) {
+      // léger décalage par carte pour éviter un défilement parfaitement synchrone
+      startTimeout = setTimeout(() => {
+        timerRef.current = setInterval(() => {
+          setAnimated(true);
+          setSlide(s => s + 1);
+        }, 2800);
+      }, (index % 6) * 250);
+    }
     return () => {
-      cancelled = true;
       clearTimeout(startTimeout);
       if (timerRef.current) clearInterval(timerRef.current);
     };
-  }, [category.id, index]);
+  }, [images.length, index]);
 
   const handleTransitionEnd = () => {
     if (images.length > 1 && slide >= images.length) {

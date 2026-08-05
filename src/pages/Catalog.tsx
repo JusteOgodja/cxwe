@@ -39,10 +39,33 @@ export default function Catalog() {
   const [prodOpen, setProdOpen] = useState(false);
   const prodRef = useRef<HTMLDivElement>(null);
 
+  // Images de cartes catégories, récupérées en UNE requête groupée (évite le N+1
+  // d'une requête par carte), passées en prop à chaque CategoryCard.
+  const [catImages, setCatImages] = useState<Record<string, string[]>>({});
+
   useEffect(() => {
     (async () => {
-      const { data: cats } = await supabase.from('categories').select('*').eq('is_active', true).order('sort_order');
-      setCategories(cats || []);
+      const { data: cats } = await supabase.from('categories').select('id, name, slug, description, image_url, sort_order').eq('is_active', true).order('sort_order');
+      setCategories((cats || []) as Category[]);
+
+      // Images des cartes — une seule requête groupée (au lieu d'une par carte).
+      supabase
+        .from('products')
+        .select('category_id, image_url')
+        .eq('is_active', true)
+        .not('image_url', 'is', null)
+        .neq('image_url', '')
+        .order('id')
+        .limit(700)
+        .then(({ data: imgRows }) => {
+          const map: Record<string, string[]> = {};
+          for (const row of (imgRows || []) as { category_id: string; image_url: string }[]) {
+            if (!row.image_url) continue;
+            const arr = map[row.category_id] || (map[row.category_id] = []);
+            if (arr.length < 7) arr.push(row.image_url);
+          }
+          setCatImages(map);
+        });
       // brands can exceed the 1000-row cap → fetch all pages
       // only brands with at least 1 active product
       const all: Brand[] = [];
@@ -261,7 +284,7 @@ export default function Catalog() {
                   {t('catalog.categoryCount', { count: filteredCats.length })}
                 </p>
                 <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
-                  {filteredCats.map((cat, i) => <CategoryCard key={cat.id} category={cat} index={i} />)}
+                  {filteredCats.map((cat, i) => <CategoryCard key={cat.id} category={cat} index={i} images={catImages[cat.id] || []} />)}
                 </div>
               </>
             )}
