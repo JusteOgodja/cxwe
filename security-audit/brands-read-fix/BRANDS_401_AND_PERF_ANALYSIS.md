@@ -21,6 +21,21 @@ Réponse : **HTTP 401**, corps : `{"code":"42501","message":"permission denied f
 2. `Authenticated users can manage brands` (`ALL`, `true`) autorise **tout utilisateur authentifié**
    (ex. un acheteur) à **écrire** dans `brands` — sur-permissif.
 
+### Privilèges PostgreSQL réels (lecture seule, `has_table_privilege`/`has_function_privilege`)
+```
+anon           : SELECT=t INSERT=t UPDATE=t DELETE=t
+authenticated  : SELECT=t INSERT=t UPDATE=t DELETE=t
+EXECUTE is_admin : authenticated=t  anon=f
+```
+- `authenticated` possède **déjà** INSERT/UPDATE/DELETE → la faille d'écriture ordinaire est
+  **confirmée au niveau privilège** (seule la policy permissive la « débloquait »). → **la migration
+  de policies SUFFIT** ; `admin_brand_writes_require_additional_table_grants = false`.
+- `anon` possède aussi les grants DML **mais aucune policy ne l'autorisera** après correction (RLS
+  bloque). On **n'ajoute aucun** privilège d'écriture à anon (et on ne re-grante pas is_admin à anon).
+- La migration **ne modifie aucun grant** ; elle ne touche que les policies de `brands`.
+- Précondition : vérifie **exactement** les 3 policies attendues (`Anyone can view active brands`,
+  `Authenticated users can manage brands`, `brands_admin_write`) — annulation intégrale si l'état diffère.
+
 ## B. Correction (par policies — pas de grant is_admin à anon)
 
 Fichier : `20260805191820_fix_brands_policies.sql` (transactionnel + préconditions).

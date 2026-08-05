@@ -24,26 +24,36 @@
 
 BEGIN;
 
--- 0) PRÉCONDITIONS (anti-verrouillage + structure)
+-- 0) PRÉCONDITIONS (anti-verrouillage + structure + état EXACT des policies).
+--    La transaction s'annule INTÉGRALEMENT (BEGIN/COMMIT) si l'état diffère.
 DO $precheck$
-DECLARE n_isadmin int; n_pubread int; n_valid int; brands_rls boolean;
+DECLARE
+  n_isadmin int; n_valid int; brands_rls boolean;
+  current_names text[];
+  expected_names text[] := ARRAY[
+    'Anyone can view active brands',
+    'Authenticated users can manage brands',
+    'brands_admin_write'
+  ];  -- (ordre alphabétique = ordre de array_agg ci-dessous)
 BEGIN
-  -- fonction d'autorité durcie présente
+  -- (a) fonction d'autorité durcie présente
   SELECT count(*) INTO n_isadmin FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace
    WHERE n.nspname='public' AND p.proname='is_admin' AND p.prosecdef IS TRUE
      AND EXISTS (SELECT 1 FROM unnest(COALESCE(p.proconfig, ARRAY[]::text[])) c WHERE c LIKE 'search_path=%');
   IF n_isadmin < 1 THEN RAISE EXCEPTION 'Brands policy fix aborted: hardened public.is_admin() not found'; END IF;
 
-  -- RLS activée sur brands
+  -- (b) RLS activée sur brands
   SELECT relrowsecurity INTO brands_rls FROM pg_class WHERE oid='public.brands'::regclass;
   IF NOT brands_rls THEN RAISE EXCEPTION 'Brands policy fix aborted: RLS not enabled on public.brands'; END IF;
 
-  -- la policy publique de lecture des marques actives doit exister (on la conserve)
-  SELECT count(*) INTO n_pubread FROM pg_policies
-   WHERE schemaname='public' AND tablename='brands' AND policyname='Anyone can view active brands';
-  IF n_pubread <> 1 THEN RAISE EXCEPTION 'Brands policy fix aborted: public active-read policy missing'; END IF;
+  -- (c) ÉTAT EXACT : exactement les 3 policies attendues, ni plus ni moins.
+  SELECT array_agg(policyname ORDER BY policyname) INTO current_names
+   FROM pg_policies WHERE schemaname='public' AND tablename='brands';
+  IF current_names IS DISTINCT FROM expected_names THEN
+    RAISE EXCEPTION 'Brands policy fix aborted: brands policy set differs from the expected 3 (got %)', current_names;
+  END IF;
 
-  -- une autorité administrateur valide existe (ne pas rendre brands ingérable)
+  -- (d) une autorité administrateur valide existe (ne pas rendre brands ingérable)
   SELECT count(*) INTO n_valid FROM public.site_settings s
    CROSS JOIN LATERAL pg_catalog.regexp_split_to_table(COALESCE(s.value,''),',') ce
    JOIN auth.users u ON pg_catalog.lower(pg_catalog.btrim(u.email))=pg_catalog.lower(pg_catalog.btrim(ce))
