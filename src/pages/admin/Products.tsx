@@ -381,36 +381,43 @@ export default function Products() {
 
   const handleExportTemplate = () => downloadJSON(IMPORT_TEMPLATE, 'template_produits.json');
 
-  const handleExport = () => {
-    const data = filtered.map(p => ({
-      name: p.name,
-      description: p.description,
-      details: p.details,
-      image_url: p.image_url,
-      ean: p.ean ?? '',
-      hs_code: p.hs_code ?? '',
-      category_slug: p.category?.slug ?? '',
-      temperature: p.temperature,
-      commande_min: p.commande_min,
-      colisage: p.colisage,
-      duree_conservation: p.duree_conservation,
-      devise: p.devise,
-      pays_origine: p.pays_origine,
-      pays_export_autorises: p.pays_export_autorises ?? [],
-      incoterms_dispo: p.incoterms_dispo ?? [],
-      certifications: p.certifications ?? [],
-      regimes: p.regimes ?? [],
-      allergenes: p.allergenes ?? [],
-      ingredients_texte: p.ingredients_texte ?? '',
-      nutrition_texte: p.nutrition_texte ?? '',
-      statut: p.statut,
-      is_active: p.is_active,
-      is_new: p.is_new,
-      is_promo: p.is_promo,
-      est_sponsored: p.est_sponsored,
-      sort_order: p.sort_order,
-    }));
-    downloadJSON(data, `produits_${new Date().toISOString().slice(0, 10)}.json`);
+  const toExportRow = (p: Product) => ({
+    name: p.name,
+    description: p.description,
+    details: p.details,
+    image_url: p.image_url,
+    ean: p.ean ?? '',
+    hs_code: p.hs_code ?? '',
+    category_slug: p.category?.slug ?? '',
+    temperature: p.temperature,
+    commande_min: p.commande_min,
+    colisage: p.colisage,
+    duree_conservation: p.duree_conservation,
+    devise: p.devise,
+    pays_origine: p.pays_origine,
+    pays_export_autorises: p.pays_export_autorises ?? [],
+    incoterms_dispo: p.incoterms_dispo ?? [],
+    certifications: p.certifications ?? [],
+    regimes: p.regimes ?? [],
+    allergenes: p.allergenes ?? [],
+    ingredients_texte: p.ingredients_texte ?? '',
+    nutrition_texte: p.nutrition_texte ?? '',
+    statut: p.statut,
+    is_active: p.is_active,
+    is_new: p.is_new,
+    is_promo: p.is_promo,
+    est_sponsored: p.est_sponsored,
+    sort_order: p.sort_order,
+  });
+
+  const handleExport = () =>
+    downloadJSON(filtered.map(toExportRow), `produits_${new Date().toISOString().slice(0, 10)}.json`);
+
+  // Export uniquement les produits sélectionnés (utile pour dupliquer/archiver un lot).
+  const bulkExport = () => {
+    const sel = products.filter(p => selectedIds.has(p.id));
+    if (sel.length === 0) return;
+    downloadJSON(sel.map(toExportRow), `produits_selection_${new Date().toISOString().slice(0, 10)}.json`);
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -521,6 +528,16 @@ export default function Products() {
     load(page, search, filterCat);
   };
 
+  const bulkDelete = async () => {
+    if (selectedIds.size === 0) return;
+    if (!confirm(t('admin.pages.products.confirmDeleteSelection', { count: selectedIds.size }))) return;
+    setBulkLoading(true);
+    await supabase.from('products').delete().in('id', [...selectedIds]);
+    setSelectedIds(new Set());
+    setBulkLoading(false);
+    load(page, search, filterCat);
+  };
+
   const hasIssue = (p: Product) =>
     !p.image_url || !p.ean || !p.description || !p.marque_id || !p.category_id ||
     !(p as any).hs_code || !(p as any).pays_origine;
@@ -574,6 +591,14 @@ export default function Products() {
             <button onClick={() => bulkSetActive(false)} disabled={bulkLoading}
               className="flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 bg-stone-500 hover:bg-stone-600 text-white rounded-lg transition-colors disabled:opacity-50">
               {t('admin.pages.products.deactivate')}
+            </button>
+            <button onClick={bulkExport} disabled={bulkLoading}
+              className="flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 border border-stone-300 text-stone-600 hover:bg-stone-100 rounded-lg transition-colors disabled:opacity-50">
+              <Download className="w-3.5 h-3.5" /> {t('admin.pages.products.exportSelection')}
+            </button>
+            <button onClick={bulkDelete} disabled={bulkLoading}
+              className="flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors disabled:opacity-50">
+              <Trash2 className="w-3.5 h-3.5" /> {t('admin.pages.products.deleteSelection')}
             </button>
             <button onClick={() => setSelectedIds(new Set())}
               className="text-xs text-stone-500 hover:text-stone-700 px-2 py-1.5 transition-colors">

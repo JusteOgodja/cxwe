@@ -663,7 +663,7 @@ const ar = {
         btnSave: 'حفظ',
         loadError: 'تعذّر تحميل المنتجات.',
         countPage: '{{count}} منتج · الصفحة {{page}}/{{total}}', templateTitle: 'تنزيل نموذج JSON فارغ', template: 'النموذج', export: 'تصدير ({{count}})', exportTitle: 'تصدير {{count}} منتج معروض بصيغة JSON', importJson: 'استيراد JSON', addProduct: 'إضافة منتج',
-        selectedCount: 'تم تحديد {{count}} منتج', activate: 'تفعيل', deactivate: 'تعطيل', allCategories: 'كل الفئات',
+        selectedCount: 'تم تحديد {{count}} منتج', activate: 'تفعيل', deactivate: 'تعطيل', deleteSelection: 'حذف', exportSelection: 'تصدير المحدد', confirmDeleteSelection: 'حذف المنتجات المحددة ({{count}})؟ لا يمكن التراجع عن هذا الإجراء.', allCategories: 'كل الفئات',
         colImage: 'الصورة', colProduct: 'المنتج', colCurrency: 'العملة', colTemperature: 'الحرارة', colShelfLife: 'الصلاحية (يوم)', colPackaging: 'التعبئة', colWeight: 'الوزن', colMarketPrice: 'سعر السوق', colOldPrice: 'السعر القديم', colDiscount: 'الخصم %', colCertifications: 'الشهادات', colDiets: 'الأنظمة', colAllergens: 'مسببات الحساسية', colIngredients: 'المكونات', colRating: 'التقييم', colReviews: 'المراجعات', colActive: 'نشط', colOrder: 'الترتيب', colSource: 'المصدر', colSourceUrl: 'رابط المصدر', colCreated: 'تاريخ الإنشاء', colFlags: 'المؤشرات', colQuality: 'الجودة',
         view: 'عرض', sponsored: 'ممول', viewInQuality: 'عرض في جودة البيانات', issue: 'مشكلة', paginationRange: '{{from}}–{{to}} من {{total}} منتج',
         importTitle: 'استيراد JSON — تم اكتشاف {{count}} منتج', importErrors: '{{count}} خطأ — سيتم تجاهل المنتجات غير الصالحة', errorsDetected: 'الأخطاء المكتشفة', importPreview: 'معاينة — {{valid}} صالح من {{total}}', firstFive: '(عرض أول 5)', missing: 'مفقود', importProducts: 'استيراد {{count}} منتج',
