@@ -35,7 +35,10 @@
     X-Frame-Options = "DENY"
     Referrer-Policy = "strict-origin-when-cross-origin"
     Permissions-Policy = "camera=(), microphone=(), geolocation=(), payment=(), usb=(), interest-cohort=()"
-    Content-Security-Policy = "default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: https:; connect-src 'self' https://fknxppuvpdmcfhtfrjcx.supabase.co wss://fknxppuvpdmcfhtfrjcx.supabase.co; manifest-src 'self'; worker-src 'self' blob:; upgrade-insecure-requests"
+    # frame-src autorise UNIQUEMENT la barre d'outils que Netlify injecte dans les Deploy
+    # Previews (app.netlify.com) — inerte en production (rien n'y est framé). La protection
+    # anti-clickjacking reste assurée par frame-ancestors 'none' (qui cadre-t-NOUS).
+    Content-Security-Policy = "default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; frame-src 'self' https://app.netlify.com; form-action 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: https:; connect-src 'self' https://fknxppuvpdmcfhtfrjcx.supabase.co wss://fknxppuvpdmcfhtfrjcx.supabase.co; manifest-src 'self'; worker-src 'self' blob:; upgrade-insecure-requests"
 
 # Static assets — long-lived cache (JS/CSS are content-hashed by Vite)
 [[headers]]
