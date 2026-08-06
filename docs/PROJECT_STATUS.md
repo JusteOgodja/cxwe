@@ -12,6 +12,31 @@ _Résumé sobre de l'état courant. Mis à jour à la mise en pause du chantier 
 - **Frontend** : plus aucune gestion de `admin_emails` ; autorité admin déterminée côté serveur
   (`is_admin()`). Validé en production.
 
+## Audit RLS global (TERMINÉ — appliqué en production)
+- **Terminé.** Audit lecture seule de toutes les tables/fonctions/RPC, corrections classées et
+  appliquées en production, vérifiées par tests **vrais JWT** sur pile Supabase locale.
+- **brands** (PR #10) : lecture publique rétablie, écriture admin-only. Appliqué.
+- **Durcissement RLS global** (PR #11, `security-audit/global-rls/`) : `quote_requests`,
+  `collaboration_requests`, `suppliers`, `product_pricing_tiers`, `product_images`, `product_lots`,
+  `media` — fin de l'écriture par utilisateur ordinaire ; demandes en admin-only ; lecture publique
+  du catalogue conservée ; `suppliers` anon-401 corrigé. Appliqué + vérifié.
+- **Lot MEDIUM/LOW + 1 HIGH** (PR #12, `security-audit/remaining-rls/`) : `buyer_profiles`
+  (accès propriétaire strict, admin `TO authenticated`, doublons supprimés) ; `EXECUTE` des RPC
+  admin/recherche retiré à anon + `search_path` fixe ; `refresh_product_counts` (trigger) EXECUTE
+  révoqué ; grants anon réduits à une whitelist (SELECT public + INSERT formulaires) ; policies
+  admin `categories`/`products` `TO authenticated`. Appliqué + vérifié.
+- **Reporté** (nécessite changement de modèle/donnée, hors périmètre) : espace acheteur
+  « mes demandes » (ownership sur `quote_requests`/`collaboration_requests`).
+
+## Actions manuelles restantes
+1. **Supprimer manuellement le compte de test jetable** créé pendant la validation du fix brands,
+   via **Supabase Dashboard → Authentication → Users** (voir
+   `security-audit/global-rls/PRODUCTION_TEST_ACCOUNT_CLEANUP.md`). Ne pas supprimer via
+   `service_role` ni script.
+2. **Ne lancer aucun `supabase db push` / `migration repair` / `db reset` (ni `migration up`)**
+   lié à la base tant que la **réconciliation de l'historique des migrations** n'est pas réalisée
+   (voir avertissement `supabase/migrations/README.md`).
+
 ## Historique des migrations
 - **Scripts manuels archivés** hors du dossier de migrations actives, sous
   `security-audit/applied-manual-sql/` (hotfix + gel), avec empreintes et manifeste
