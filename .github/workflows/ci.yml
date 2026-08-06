@@ -1,0 +1,81 @@
+name: CI
+
+# Frontend/quality CI. Touches NO remote database:
+# no Supabase URL/keys hardcoded, no execute_sql, no db push/repair/reset, no migrations.
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  quality:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install
+        run: npm ci
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Lint (report-only — known pre-existing debt tracked in PROJECT_STATUS)
+        run: npm run lint
+        continue-on-error: true
+
+      - name: Build
+        run: npm run build
+
+      - name: Secret scan (fail on obvious secrets committed)
+        run: |
+          set -e
+          # Fail if a service_role JWT, a Supabase secret key, or a private key is committed.
+          if git grep -nE 'sb_secret_[A-Za-z0-9_-]{10,}|-----BEGIN (RSA |EC |OPENSSH )?PRIVATE KEY-----|role["'"'"']?:["'"'"']?service_role' -- . ':(exclude)**/*.md' ':(exclude)tests/**' ':(exclude)security-audit/**'; then
+            echo "::error::Potential secret detected in tracked files."
+            exit 1
+          fi
+          echo "No obvious secrets found."
+
+      - name: npm audit (threshold: fail on critical)
+        run: npm audit --audit-level=critical
+
+      - name: npm audit (report high/moderate — non-blocking)
+        run: npm audit --audit-level=moderate || true
+
+  e2e-public:
+    runs-on: ubuntu-latest
+    needs: quality
+    # Runs only when the maintainer has configured public Supabase build vars
+    # (anon key + URL are public by design). No secrets/keys live in this file.
+    if: ${{ vars.VITE_SUPABASE_URL != '' }}
+    env:
+      VITE_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL }}
+      VITE_SUPABASE_ANON_KEY: ${{ vars.VITE_SUPABASE_ANON_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - name: Install Playwright browser (chromium)
+        run: npx playwright install --with-deps chromium
+      - name: Build
+        run: npm run build
+      - name: Serve + run public E2E (read-only)
+        run: |
+          npx vite preview --port 4173 --host 127.0.0.1 &
+          npx wait-on http://127.0.0.1:4173 --timeout 60000
+          BASE_URL=http://127.0.0.1:4173 npx playwright test public.spec.ts --project=chromium
