@@ -4,6 +4,17 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/png" href="/logo.png" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <!-- Preload the LCP hero image (slide 1 only) so it is discovered during HTML parse
+         instead of after the JS bundle renders the <img>. imagesrcset/imagesizes match the
+         <picture><source> in HeroCarousel exactly, so the fetch is reused (no double download). -->
+    <link
+      rel="preload"
+      as="image"
+      type="image/webp"
+      imagesrcset="/hero/slide1-900.webp 900w, /hero/slide1.webp 1600w"
+      imagesizes="100vw"
+      fetchpriority="high"
+    />
     <title>Morocco Food Export</title>
     <meta name="description" content="Catalogue export de produits alimentaires marocains — huiles, épices, dattes, fruits de mer et plus. Proforma sous 24h." />
     <meta property="og:title" content="Morocco Food Export" />
