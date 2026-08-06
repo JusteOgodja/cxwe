@@ -32,14 +32,14 @@ Catégories les plus polluées : **Confectionery (61), Dairy UHT Milk (43), Fres
 Biscuits (8), Tea/Infusions (8)**, plus Wheat Flour, Dates, Chips, Vegetable Oil.
 
 ## Mauvaise classification (intra-catalogue) — routée en MANUAL_REVIEW
-Aucune reclassification automatique dans ce lot (conforme à la consigne : ambigu → revue humaine).
-Candidats détectés (signaux, à vérifier via description/source/image) :
-| Signal | Candidats |
-|---|---|
-| soda/cola dans « Fruit Juices » (→ Soft Drinks ?) | 11 |
-| pâtes/spaghetti dans « Wheat Flour/Semolina » (→ Pasta ?) | 8 |
-| « olives » dans « Olive Oil » (souvent légitime) | 36 |
-| jus dans « Soft Drinks » (→ Fruit Juices ?) | 1 |
+Aucune reclassification automatique dans ce lot. Détail : `.local-audit/product-cleanup/misclassification_review.csv`.
+| Bucket | Nombre | Exemples |
+|---|---|---|
+| CONFIRMED_MISCLASSIFIED | **12** | pâtes/fusilli dans « Wheat Flour/Semolina » → Pasta and Couscous |
+| PROBABLY_MISCLASSIFIED | **5** | boisson gazeuse / San Pellegrino / Schweppes dans « Fruit Juices » → Soft Drinks |
+| UNRESOLVED (décision humaine) | **10** | nectars « Pina Colada » (jus vs soft) ; tapenades d'olives (pâte, ni huile ni olives entières) |
+| LEGITIMATE_CURRENT_CATEGORY | **~33** | produits « Olive Oil » nommés « olive » mais avec « huile/oil » (correct) |
+| reclassifications appliquées en production | **0** |
 
 ## Synthèse des actions proposées
 | Action | Nombre |

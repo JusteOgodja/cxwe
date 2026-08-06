@@ -1,5 +1,29 @@
 import { test, expect } from '@playwright/test';
-import { classifyProductScope } from '../../src/lib/productScope';
+import { classifyProductScope, dryRunScope } from '../../src/lib/productScope';
+
+test('import gate: only ACCEPT rows would be written (mixed batch)', () => {
+  const batch = [
+    { name: 'Huile d\'Olive Extra Vierge 1L', category: 'Olive Oil' },          // accept
+    { name: 'Biscuits Chocolat Prince (kids)', category: 'Biscuits' },          // accept (kid marketing)
+    { name: 'NUK Sucette Sensitive 0-6m', category: 'Confectionery' },          // reject (baby)
+    { name: 'Babybio Petit Pot Pomme (Dès 4mois)', category: 'Fresh Fruits' },  // reject (baby food)
+    { name: 'Couche-culotte Taille 3', category: 'Hygiene & Paper Products' },  // reject (baby in hygiene)
+    { name: 'Chaise haute bébé', category: 'Baby Furniture' },                  // reject (unauthorized cat)
+    { name: 'Shot Ginseng', description: 'déconseillé aux nourrissons', category: 'Tea/Infusions' }, // review
+  ];
+  const { summary, rejected, review } = dryRunScope(batch);
+  expect(summary.ACCEPT).toBe(2);
+  expect(summary.REJECT_OUT_OF_SCOPE).toBe(4);
+  expect(summary.REVIEW_REQUIRED).toBe(1);
+  // Ce qui serait écrit = uniquement les ACCEPT.
+  const written = batch.filter((r) => classifyProductScope(r).decision === 'ACCEPT');
+  expect(written.map((r) => r.name)).toEqual([
+    "Huile d'Olive Extra Vierge 1L",
+    'Biscuits Chocolat Prince (kids)',
+  ]);
+  expect(rejected.length).toBe(4);
+  expect(review.length).toBe(1);
+});
 
 // Unit tests for the catalogue-scope validator (no browser needed).
 

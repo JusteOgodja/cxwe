@@ -3,6 +3,7 @@ import { Plus, Pencil, Trash2, X, Save, Search, Minus, Upload, Download, FileJso
 import { supabase } from '../../lib/supabase';
 import type { Product, Category, Brand, Supplier } from '../../types';
 import { useTranslation } from 'react-i18next';
+import { classifyProductScope, type ScopeResult } from '../../lib/productScope';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -456,9 +457,35 @@ export default function Products() {
     setImportErrors([]);
   };
 
-  const validImportRows = importRows.filter(row => {
+  // Validation de périmètre (prévention) sur chaque ligne d'import.
+  const slugToName = useMemo(() => new Map(categories.map(c => [c.slug, c.name])), [categories]);
+  const scopeOf = (row: Record<string, unknown>): ScopeResult =>
+    classifyProductScope({
+      name: row.name as string,
+      description: (row.description as string) ?? '',
+      brand: (row.brand as string) ?? (row.marque as string) ?? '',
+      category: slugToName.get(row.category_slug as string),
+    });
+
+  // Dry-run agrégé (affiché avant import). Seuls les ACCEPT structurellement valides sont insérés.
+  const importDryRun = useMemo(() => {
     const catSlugs = new Set(categories.map(c => c.slug));
-    return row.name && row.category_slug && catSlugs.has(row.category_slug as string);
+    const acc = { accepted: [] as number[], rejected: [] as { i: number; reason: string }[], review: [] as { i: number; reason: string }[] };
+    importRows.forEach((row, i) => {
+      const structOk = !!(row.name && row.category_slug && catSlugs.has(row.category_slug as string));
+      const s = scopeOf(row);
+      if (s.decision === 'REJECT_OUT_OF_SCOPE') acc.rejected.push({ i: i + 1, reason: s.reason });
+      else if (s.decision === 'REVIEW_REQUIRED') acc.review.push({ i: i + 1, reason: s.reason });
+      else if (structOk) acc.accepted.push(i);
+    });
+    return acc;
+  }, [importRows, categories]);
+
+  // N'insère QUE les lignes ACCEPT (périmètre) ET structurellement valides.
+  const validImportRows = importRows.filter((row) => {
+    const catSlugs = new Set(categories.map(c => c.slug));
+    const structOk = !!(row.name && row.category_slug && catSlugs.has(row.category_slug as string));
+    return structOk && scopeOf(row).decision === 'ACCEPT';
   });
 
   const handleImportConfirm = async () => {
@@ -914,6 +941,26 @@ export default function Products() {
                   <ul className="space-y-1 max-h-32 overflow-y-auto">
                     {importErrors.map((err, i) => (
                       <li key={i} className="text-xs text-red-500">• {err}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              {(importDryRun.rejected.length > 0 || importDryRun.review.length > 0) && (
+                <div className="bg-amber-50 border border-amber-100 rounded-xl p-4">
+                  <p className="text-xs font-semibold text-amber-700 mb-2">
+                    {t('admin.pages.products.scopeDryRun', {
+                      accepted: importDryRun.accepted.length,
+                      rejected: importDryRun.rejected.length,
+                      review: importDryRun.review.length,
+                    })}
+                  </p>
+                  <ul className="space-y-1 max-h-32 overflow-y-auto">
+                    {importDryRun.rejected.map((r, i) => (
+                      <li key={`rej-${i}`} className="text-xs text-amber-700">⛔ #{r.i} — {t('admin.pages.products.scopeRejected')} ({r.reason})</li>
+                    ))}
+                    {importDryRun.review.map((r, i) => (
+                      <li key={`rev-${i}`} className="text-xs text-amber-600">🔍 #{r.i} — {t('admin.pages.products.scopeReview')} ({r.reason})</li>
                     ))}
                   </ul>
                 </div>
