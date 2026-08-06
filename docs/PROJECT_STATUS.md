@@ -2,6 +2,36 @@
 
 _Résumé sobre de l'état courant. Mis à jour à la mise en pause du chantier de réconciliation._
 
+## Robustesse & exploitation (round 5)
+- **Sécurité RLS : terminée** et appliquée en production (brands, durcissement global, lot MEDIUM/LOW).
+- **Performance : terminée** — suppression N+1, code splitting, optimisations images ; **LCP preload
+  déployé** (image hero découverte ~26 ms après TTFB en prod ; LCP mobile −30 % en mesure locale).
+- **Limitations des mesures Lighthouse** : non exécutable *contre* la production depuis l'environnement
+  (pas de réseau sortant vers les hôtes arbitraires). Chiffres via Lighthouse sur build local
+  (throttle CPU 4×) + Resource Timing réel en production. Absolus locaux plus pessimistes que la prod.
+- **Dette lint** : 21 → 20 erreurs (scoping des non-sources, aucune règle désactivée). Restant :
+  17 `no-explicit-any` + 3 `no-unused-expressions` + 11 warnings, **non mécaniques → reportés**
+  (détail : `docs/operations/PRODUCTION_READINESS_ROUND5.md`).
+- **Tests E2E ajoutés** : Playwright — publics (accueil/catalogue/route protégée/partenariat, console,
+  4xx/5xx) exécutables contre Deploy Preview ; régressions sécurité (RLS/RPC/isolation) **niveau API
+  contre la pile Supabase locale uniquement** (self-skip sinon).
+- **CI ajoutée** : GitHub Actions (`.github/workflows/ci.yml`) — npm ci, typecheck, lint (report),
+  build, scan secrets, `npm audit` (seuil = critical). **Ne touche aucune base distante** ; E2E public
+  conditionnel aux variables publiques du mainteneur. Aucune commande Supabase.
+- **Headers HTTP** : ajoutés dans `netlify.toml` (HSTS, CSP sans `*`/`unsafe-eval`, X-Content-Type-
+  Options, Referrer-Policy, Permissions-Policy, frame-ancestors/X-Frame-Options). `unsafe-inline`
+  conservé pour `style-src` uniquement (styles inline du hero/Tailwind), documenté.
+- **Monitoring : en attente** — code inerte prêt (`src/lib/monitoring.ts`), **activation manuelle**
+  (`VITE_MONITORING_DSN`). Aucun compte/secret.
+- **Sauvegardes : non prouvées** — voir `docs/operations/BACKUP_AND_RESTORE.md` (actions manuelles).
+- **Staging : indisponible** — actions manuelles listées (`PRODUCTION_READINESS_ROUND5.md`, Phase 8).
+- **Rappels permanents** :
+  - **Compte de test jetable** (lot brands) **toujours à supprimer manuellement** (Supabase Auth).
+  - **Aucune commande Supabase** (`db push`/`migration repair`/`reset --linked`/`migration up`) tant
+    que l'historique n'est pas réconcilié — les changements DB passent par `execute_sql` (migration
+    archivée à préconditions), jamais la CLI.
+- Procédures : `docs/operations/{DEPLOYMENT_ROLLBACK,INCIDENT_RESPONSE,BACKUP_AND_RESTORE}.md`.
+
 ## Sécurité (appliqué en production)
 - **Hotfix de sécurité appliqué** : l'escalade de privilèges via `site_settings` est fermée
   (policy permissive `site_settings_authenticated_all` supprimée ; `public.is_admin()` durcie —

@@ -8,7 +8,10 @@
     "build": "vite build",
     "lint": "eslint .",
     "preview": "vite preview",
-    "typecheck": "tsc --noEmit -p tsconfig.app.json"
+    "typecheck": "tsc --noEmit -p tsconfig.app.json",
+    "test:e2e": "playwright test",
+    "test:e2e:public": "playwright test public.spec.ts",
+    "test:e2e:security": "playwright test security-regression.spec.ts"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.57.4",
@@ -25,6 +28,7 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.9.1",
+    "@playwright/test": "^1.62.1",
     "@types/react": "^18.3.5",
     "@types/react-dom": "^18.3.0",
     "@vitejs/plugin-react": "^4.3.1",
