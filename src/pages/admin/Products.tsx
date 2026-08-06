@@ -343,6 +343,18 @@ export default function Products() {
       nutrition_texte: form.nutrition_texte || null,
     };
 
+    // Garde de périmètre (création/édition manuelle) : un produit hors périmètre (bébé/enfant
+    // haute confiance) est bloqué, sauf override humain explicite (human-in-the-loop).
+    {
+      const catName = categories.find(c => c.id === (payload as { category_id?: string }).category_id)?.name;
+      const scope = classifyProductScope({ name: form.name, description: form.description, category: catName });
+      if (scope.decision === 'REJECT_OUT_OF_SCOPE'
+          && !confirm(t('admin.pages.products.scopeCreateWarn', { reason: scope.reason }))) {
+        setSaving(false);
+        return;
+      }
+    }
+
     let productId: string | undefined;
     if (modal === 'edit' && editing) {
       await supabase.from('products').update(payload).eq('id', editing.id);
