@@ -19,6 +19,24 @@
     "^https://[a-z0-9.-]+\\.com/.*"
   ]
 
+# ── Sécurité HTTP — appliquée à toutes les réponses ──────────────────────────
+# CSP construite pour les seuls services réellement utilisés :
+#  - self (bundle Vite, images proxifiées via /.netlify/images = same-origin)
+#  - Supabase (REST + Auth + Realtime) : https + wss vers le projet
+#  - Google Fonts (feuille de style googleapis + fichiers gstatic)
+# Pas de '*' global ; pas de 'unsafe-eval'. 'unsafe-inline' conservé UNIQUEMENT pour
+# style-src : le carrousel hero et Tailwind utilisent des styles inline (attribut style=).
+# Aucun script inline → script-src sans 'unsafe-inline'.
+[[headers]]
+  for = "/*"
+  [headers.values]
+    Strict-Transport-Security = "max-age=63072000; includeSubDomains; preload"
+    X-Content-Type-Options = "nosniff"
+    X-Frame-Options = "DENY"
+    Referrer-Policy = "strict-origin-when-cross-origin"
+    Permissions-Policy = "camera=(), microphone=(), geolocation=(), payment=(), usb=(), interest-cohort=()"
+    Content-Security-Policy = "default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: https:; connect-src 'self' https://fknxppuvpdmcfhtfrjcx.supabase.co wss://fknxppuvpdmcfhtfrjcx.supabase.co; manifest-src 'self'; worker-src 'self' blob:; upgrade-insecure-requests"
+
 # Static assets — long-lived cache (JS/CSS are content-hashed by Vite)
 [[headers]]
   for = "/assets/*"
