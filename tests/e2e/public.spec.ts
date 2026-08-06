@@ -68,6 +68,17 @@ test('partner (collaboration) page renders a functional form (no submit)', async
   expect(consoleErrors, consoleErrors.join(' | ')).toHaveLength(0);
 });
 
+test('direct access to a non-visible product redirects to /catalog', async ({ page }) => {
+  // ProductDetail filtre is_active=true et redirige si introuvable : un produit inactif
+  // (ou inexistant) ne doit jamais afficher de fiche publique.
+  await page.goto('/product/00000000-0000-0000-0000-000000000000', { waitUntil: 'networkidle' });
+  // ProtectedRoute peut d'abord rediriger vers /login (anonyme) ; sinon /catalog. Jamais la fiche.
+  await page.waitForLoadState('networkidle');
+  const url = page.url();
+  expect(/\/catalog|\/login/.test(url), `expected redirect away from product page, got ${url}`).toBeTruthy();
+  expect(url).not.toContain('/product/00000000');
+});
+
 test('no horizontal overflow on mobile home', async ({ page }) => {
   await page.goto('/', { waitUntil: 'networkidle' });
   const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);

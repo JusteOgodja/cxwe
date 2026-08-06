@@ -54,3 +54,8 @@ performance-audit/lighthouse/after-preview/
 performance-audit/screenshots/
 performance-audit/lighthouse/_*.json
 performance-audit*.zip
+
+# Audits locaux (données produit — jamais versionnées)
+.local-audit/
+test-results/
+playwright-report/
